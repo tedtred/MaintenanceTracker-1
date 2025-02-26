@@ -67,11 +67,7 @@ export default function MaintenanceSchedules() {
 
   const createMutation = useMutation({
     mutationFn: async (data: InsertMaintenanceSchedule) => {
-      const res = await apiRequest("POST", "/api/maintenance-schedules", {
-        ...data,
-        startDate: data.startDate.toISOString(),
-        endDate: data.endDate?.toISOString() || null,
-      });
+      const res = await apiRequest("POST", "/api/maintenance-schedules", data);
       return res.json();
     },
     onSuccess: () => {
@@ -136,13 +132,7 @@ export default function MaintenanceSchedules() {
                 </DialogHeader>
                 <Form {...form}>
                   <form
-                    onSubmit={form.handleSubmit((data) =>
-                      createMutation.mutate({
-                        ...data,
-                        startDate: data.startDate.toISOString(),
-                        endDate: data.endDate ? data.endDate.toISOString() : null,
-                      })
-                    )}
+                    onSubmit={form.handleSubmit((data) => createMutation.mutate(data))}
                     className="space-y-4"
                   >
                     <FormField
@@ -269,6 +259,33 @@ export default function MaintenanceSchedules() {
                         )}
                       />
                     </div>
+                    <FormField
+                      control={form.control}
+                      name="status"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Status</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select status" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {Object.values(MaintenanceStatus).map((status) => (
+                                <SelectItem key={status} value={status}>
+                                  {status}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                     <Button
                       type="submit"
                       className="w-full"

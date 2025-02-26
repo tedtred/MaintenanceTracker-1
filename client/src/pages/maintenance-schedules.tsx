@@ -77,6 +77,7 @@ export default function MaintenanceSchedules() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/maintenance-schedules"] });
       setIsCreateDialogOpen(false);
+      form.reset(); // Reset form after successful submission
       toast({
         title: "Success",
         description: "Maintenance schedule created successfully",
@@ -95,6 +96,14 @@ export default function MaintenanceSchedules() {
       endDate: new Date(),
     },
   });
+
+  // Handle dialog close
+  const handleDialogChange = (open: boolean) => {
+    if (!open) {
+      form.reset(); // Reset form when dialog closes
+    }
+    setIsCreateDialogOpen(open);
+  };
 
   const events = schedules.map((schedule) => ({
     id: schedule.id,
@@ -117,7 +126,7 @@ export default function MaintenanceSchedules() {
               </p>
             </div>
 
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <Dialog open={isCreateDialogOpen} onOpenChange={handleDialogChange}>
               <DialogTrigger asChild>
                 <Button>Schedule Maintenance</Button>
               </DialogTrigger>

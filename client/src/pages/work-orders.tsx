@@ -40,9 +40,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Archive } from "lucide-react";
 
 export default function WorkOrders() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
   const { toast } = useToast();
 
   const { data: workOrders = [] } = useQuery<WorkOrder[]>({
@@ -87,6 +89,17 @@ export default function WorkOrders() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/work-orders"] });
+      toast({
+        title: "Success",
+        description: "Work order status updated successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -98,10 +111,15 @@ export default function WorkOrders() {
       status: WorkOrderStatus.OPEN,
       priority: WorkOrderPriority.MEDIUM,
       dueDate: new Date(),
-      assignedTo: undefined, // This will require explicit assignment
-      assetId: undefined, // This will require asset selection
+      assignedTo: undefined,
+      assetId: undefined,
     },
   });
+
+  // Filter work orders based on archived status
+  const filteredWorkOrders = workOrders.filter(
+    (wo) => showArchived ? wo.status === WorkOrderStatus.ARCHIVED : wo.status !== WorkOrderStatus.ARCHIVED
+  );
 
   return (
     <div className="flex h-screen">
@@ -116,106 +134,112 @@ export default function WorkOrders() {
               </p>
             </div>
 
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>Create Work Order</Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Create New Work Order</DialogTitle>
-                </DialogHeader>
-                <Form {...form}>
-                  <form
-                    onSubmit={form.handleSubmit((data) =>
-                      createMutation.mutate({
-                        ...data,
-                        dueDate: new Date(data.dueDate).toISOString(),
-                      })
-                    )}
-                    className="space-y-4"
-                  >
-                    <FormField
-                      control={form.control}
-                      name="title"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Title</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
+            <div className="flex gap-4">
+              <Button
+                variant="outline"
+                onClick={() => setShowArchived(!showArchived)}
+              >
+                {showArchived ? "Hide Archived" : "Show Archived"}
+              </Button>
+
+              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button>Create Work Order</Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Create New Work Order</DialogTitle>
+                  </DialogHeader>
+                  <Form {...form}>
+                    <form
+                      onSubmit={form.handleSubmit((data) =>
+                        createMutation.mutate(data)
                       )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="description"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Description</FormLabel>
-                          <FormControl>
-                            <Textarea {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="priority"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Priority</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select priority" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {Object.values(WorkOrderPriority).map((priority) => (
-                                <SelectItem key={priority} value={priority}>
-                                  {priority}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="dueDate"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Due Date</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="datetime-local"
-                              {...field}
-                              value={field.value instanceof Date ? field.value.toISOString().slice(0, 16) : ''}
-                              onChange={(e) => field.onChange(new Date(e.target.value))}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <Button
-                      type="submit"
-                      className="w-full"
-                      disabled={createMutation.isPending}
+                      className="space-y-4"
                     >
-                      Create Work Order
-                    </Button>
-                  </form>
-                </Form>
-              </DialogContent>
-            </Dialog>
+                      <FormField
+                        control={form.control}
+                        name="title"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Title</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="description"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Description</FormLabel>
+                            <FormControl>
+                              <Textarea {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="priority"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Priority</FormLabel>
+                            <Select
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select priority" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {Object.values(WorkOrderPriority).map((priority) => (
+                                  <SelectItem key={priority} value={priority}>
+                                    {priority}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="dueDate"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Due Date</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="datetime-local"
+                                {...field}
+                                value={field.value instanceof Date ? field.value.toISOString().slice(0, 16) : ''}
+                                onChange={(e) => field.onChange(new Date(e.target.value))}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Button
+                        type="submit"
+                        className="w-full"
+                        disabled={createMutation.isPending}
+                      >
+                        Create Work Order
+                      </Button>
+                    </form>
+                  </Form>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
 
           <Table>
@@ -229,7 +253,7 @@ export default function WorkOrders() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {workOrders.map((wo) => (
+              {filteredWorkOrders.map((wo) => (
                 <TableRow key={wo.id}>
                   <TableCell className="font-medium">{wo.title}</TableCell>
                   <TableCell>{wo.priority}</TableCell>
@@ -238,23 +262,39 @@ export default function WorkOrders() {
                     {new Date(wo.dueDate).toLocaleDateString()}
                   </TableCell>
                   <TableCell>
-                    <Select
-                      value={wo.status}
-                      onValueChange={(status) =>
-                        updateStatusMutation.mutate({ id: wo.id, status })
-                      }
-                    >
-                      <SelectTrigger className="w-32">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.values(WorkOrderStatus).map((status) => (
-                          <SelectItem key={status} value={status}>
-                            {status}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="flex items-center gap-2">
+                      <Select
+                        value={wo.status}
+                        onValueChange={(status) =>
+                          updateStatusMutation.mutate({ id: wo.id, status })
+                        }
+                      >
+                        <SelectTrigger className="w-32">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.values(WorkOrderStatus).map((status) => (
+                            <SelectItem key={status} value={status}>
+                              {status}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {wo.status !== WorkOrderStatus.ARCHIVED && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() =>
+                            updateStatusMutation.mutate({
+                              id: wo.id,
+                              status: WorkOrderStatus.ARCHIVED,
+                            })
+                          }
+                        >
+                          <Archive className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

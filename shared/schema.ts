@@ -72,6 +72,7 @@ export const WorkOrderStatus = {
   OPEN: "OPEN",
   IN_PROGRESS: "IN_PROGRESS",
   COMPLETED: "COMPLETED",
+  ARCHIVED: "ARCHIVED", // Add ARCHIVED status
 } as const;
 
 export const WorkOrderPriority = {
@@ -99,10 +100,10 @@ export const maintenanceSchedules = pgTable("maintenance_schedules", {
   description: text("description").notNull(),
   assetId: integer("asset_id").references(() => assets.id).notNull(),
   startDate: timestamp("start_date").notNull(),
-  endDate: timestamp("end_date"), 
-  frequency: text("frequency").notNull(), 
+  endDate: timestamp("end_date"),
+  frequency: text("frequency").notNull(),
   lastCompleted: timestamp("last_completed"),
-  status: text("status").notNull(), 
+  status: text("status").notNull(),
 });
 
 export const insertMaintenanceScheduleSchema = createInsertSchema(maintenanceSchedules)

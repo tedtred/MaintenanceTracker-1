@@ -70,7 +70,7 @@ export default function MaintenanceSchedules() {
       const res = await apiRequest("POST", "/api/maintenance-schedules", {
         ...data,
         startDate: data.startDate.toISOString(),
-        endDate: data.endDate.toISOString(),
+        endDate: data.endDate?.toISOString() || null,
       });
       return res.json();
     },
@@ -93,7 +93,7 @@ export default function MaintenanceSchedules() {
       frequency: MaintenanceFrequency.MONTHLY,
       status: MaintenanceStatus.SCHEDULED,
       startDate: new Date(),
-      endDate: new Date(),
+      endDate: null,
     },
   });
 
@@ -109,7 +109,7 @@ export default function MaintenanceSchedules() {
     id: schedule.id,
     title: schedule.title,
     start: new Date(schedule.startDate),
-    end: new Date(schedule.endDate),
+    end: schedule.endDate ? new Date(schedule.endDate) : undefined,
     resource: schedule,
   }));
 
@@ -136,7 +136,13 @@ export default function MaintenanceSchedules() {
                 </DialogHeader>
                 <Form {...form}>
                   <form
-                    onSubmit={form.handleSubmit((data) => createMutation.mutate(data))}
+                    onSubmit={form.handleSubmit((data) =>
+                      createMutation.mutate({
+                        ...data,
+                        startDate: data.startDate.toISOString(),
+                        endDate: data.endDate ? data.endDate.toISOString() : null,
+                      })
+                    )}
                     className="space-y-4"
                   >
                     <FormField
@@ -246,13 +252,16 @@ export default function MaintenanceSchedules() {
                         name="endDate"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>End Date</FormLabel>
+                            <FormLabel>End Date (Optional)</FormLabel>
                             <FormControl>
                               <Input
                                 type="datetime-local"
                                 {...field}
                                 value={field.value instanceof Date ? field.value.toISOString().slice(0, 16) : ''}
-                                onChange={(e) => field.onChange(new Date(e.target.value))}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  field.onChange(value ? new Date(value) : null);
+                                }}
                               />
                             </FormControl>
                             <FormMessage />

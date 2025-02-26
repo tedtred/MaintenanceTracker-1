@@ -90,7 +90,7 @@ export const maintenanceSchedules = pgTable("maintenance_schedules", {
   description: text("description").notNull(),
   assetId: integer("asset_id").references(() => assets.id).notNull(),
   startDate: timestamp("start_date").notNull(),
-  endDate: timestamp("end_date").notNull(),
+  endDate: timestamp("end_date"), // Remove .notNull()
   frequency: text("frequency").notNull(), // DAILY, WEEKLY, MONTHLY, QUARTERLY, YEARLY
   lastCompleted: timestamp("last_completed"),
   status: text("status").notNull(), // SCHEDULED, IN_PROGRESS, COMPLETED, OVERDUE
@@ -102,8 +102,8 @@ export const insertMaintenanceScheduleSchema = createInsertSchema(maintenanceSch
     startDate: z.string().or(z.date()).transform((val) =>
       typeof val === 'string' ? new Date(val) : val
     ),
-    endDate: z.string().or(z.date()).transform((val) =>
-      typeof val === 'string' ? new Date(val) : val
+    endDate: z.string().or(z.date()).nullable().transform((val) =>
+      val ? (typeof val === 'string' ? new Date(val) : val) : null
     ),
   });
 

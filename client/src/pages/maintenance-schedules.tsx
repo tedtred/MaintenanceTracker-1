@@ -68,7 +68,7 @@ export default function MaintenanceSchedules() {
   const createMutation = useMutation({
     mutationFn: async (data: InsertMaintenanceSchedule) => {
       const res = await apiRequest("POST", "/api/maintenance-schedules", data);
-      return res.json();
+      return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/maintenance-schedules"] });

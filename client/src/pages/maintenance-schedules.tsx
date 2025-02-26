@@ -132,7 +132,9 @@ export default function MaintenanceSchedules() {
                 </DialogHeader>
                 <Form {...form}>
                   <form
-                    onSubmit={form.handleSubmit((data) => createMutation.mutate(data))}
+                    onSubmit={form.handleSubmit((data) =>
+                      createMutation.mutate(data)
+                    )}
                     className="space-y-4"
                   >
                     <FormField

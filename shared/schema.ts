@@ -28,9 +28,13 @@ export const workOrders = pgTable("work_orders", {
   dueDate: timestamp("due_date").notNull()
 });
 
-export const insertWorkOrderSchema = createInsertSchema(workOrders).omit({
-  id: true
-});
+export const insertWorkOrderSchema = createInsertSchema(workOrders)
+  .omit({ id: true })
+  .extend({
+    dueDate: z.string().or(z.date()).transform((val) => 
+      typeof val === 'string' ? new Date(val) : val
+    ),
+  });
 
 // Asset schema
 export const assets = pgTable("assets", {

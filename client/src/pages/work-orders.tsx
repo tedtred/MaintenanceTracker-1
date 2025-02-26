@@ -89,7 +89,7 @@ export default function WorkOrders() {
       description: "",
       status: WorkOrderStatus.OPEN,
       priority: WorkOrderPriority.MEDIUM,
-      dueDate: new Date().toISOString().split(".")[0], // Format as YYYY-MM-DDTHH:mm:ss
+      dueDate: new Date(),
     },
   });
 
@@ -117,7 +117,10 @@ export default function WorkOrders() {
                 <Form {...form}>
                   <form
                     onSubmit={form.handleSubmit((data) =>
-                      createMutation.mutate(data)
+                      createMutation.mutate({
+                        ...data,
+                        dueDate: new Date(data.dueDate).toISOString(),
+                      })
                     )}
                     className="space-y-4"
                   >
@@ -181,10 +184,11 @@ export default function WorkOrders() {
                         <FormItem>
                           <FormLabel>Due Date</FormLabel>
                           <FormControl>
-                            <Input 
-                              type="datetime-local" 
-                              {...field} 
-                              value={field.value ? field.value.split(".")[0] : field.value} // Ensure proper datetime-local format
+                            <Input
+                              type="datetime-local"
+                              {...field}
+                              value={field.value instanceof Date ? field.value.toISOString().slice(0, 16) : ''}
+                              onChange={(e) => field.onChange(new Date(e.target.value))}
                             />
                           </FormControl>
                           <FormMessage />

@@ -1,7 +1,7 @@
-import { User, WorkOrder, Asset, InsertUser, InsertWorkOrder, InsertAsset } from "@shared/schema";
-import { users, workOrders, assets } from "@shared/schema";
+import { User, WorkOrder, Asset, MaintenanceSchedule, InsertUser, InsertWorkOrder, InsertAsset, InsertMaintenanceSchedule } from "@shared/schema";
+import { users, workOrders, assets, maintenanceSchedules } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, and, gte, lte } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -28,6 +28,13 @@ export interface IStorage {
   getAssets(): Promise<Asset[]>;
   getAsset(id: number): Promise<Asset | undefined>;
   updateAsset(id: number, asset: Partial<Asset>): Promise<Asset>;
+
+  // Maintenance Schedules
+  createMaintenanceSchedule(schedule: InsertMaintenanceSchedule): Promise<MaintenanceSchedule>;
+  getMaintenanceSchedules(): Promise<MaintenanceSchedule[]>;
+  getMaintenanceSchedulesByDateRange(start: Date, end: Date): Promise<MaintenanceSchedule[]>;
+  getMaintenanceSchedule(id: number): Promise<MaintenanceSchedule | undefined>;
+  updateMaintenanceSchedule(id: number, schedule: Partial<MaintenanceSchedule>): Promise<MaintenanceSchedule>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -104,6 +111,46 @@ export class DatabaseStorage implements IStorage {
       .returning();
     if (!asset) throw new Error("Asset not found");
     return asset;
+  }
+
+  // Maintenance Schedule Methods
+  async createMaintenanceSchedule(schedule: InsertMaintenanceSchedule): Promise<MaintenanceSchedule> {
+    const [newSchedule] = await db.insert(maintenanceSchedules).values(schedule).returning();
+    return newSchedule;
+  }
+
+  async getMaintenanceSchedules(): Promise<MaintenanceSchedule[]> {
+    return await db.select().from(maintenanceSchedules);
+  }
+
+  async getMaintenanceSchedulesByDateRange(start: Date, end: Date): Promise<MaintenanceSchedule[]> {
+    return await db
+      .select()
+      .from(maintenanceSchedules)
+      .where(
+        and(
+          gte(maintenanceSchedules.startDate, start),
+          lte(maintenanceSchedules.endDate, end)
+        )
+      );
+  }
+
+  async getMaintenanceSchedule(id: number): Promise<MaintenanceSchedule | undefined> {
+    const [schedule] = await db
+      .select()
+      .from(maintenanceSchedules)
+      .where(eq(maintenanceSchedules.id, id));
+    return schedule;
+  }
+
+  async updateMaintenanceSchedule(id: number, updates: Partial<MaintenanceSchedule>): Promise<MaintenanceSchedule> {
+    const [schedule] = await db
+      .update(maintenanceSchedules)
+      .set(updates)
+      .where(eq(maintenanceSchedules.id, id))
+      .returning();
+    if (!schedule) throw new Error("Maintenance schedule not found");
+    return schedule;
   }
 }
 

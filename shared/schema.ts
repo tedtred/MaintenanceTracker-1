@@ -31,7 +31,7 @@ export const workOrders = pgTable("work_orders", {
 export const insertWorkOrderSchema = createInsertSchema(workOrders)
   .omit({ id: true })
   .extend({
-    dueDate: z.string().or(z.date()).transform((val) => 
+    dueDate: z.string().or(z.date()).transform((val) =>
       typeof val === 'string' ? new Date(val) : val
     ),
   });
@@ -81,4 +81,49 @@ export const UserRole = {
   ADMIN: "ADMIN",
   TECHNICIAN: "TECHNICIAN",
   MANAGER: "MANAGER",
+} as const;
+
+// Maintenance Schedule schema
+export const maintenanceSchedules = pgTable("maintenance_schedules", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  assetId: integer("asset_id").references(() => assets.id).notNull(),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  frequency: text("frequency").notNull(), // DAILY, WEEKLY, MONTHLY, QUARTERLY, YEARLY
+  lastCompleted: timestamp("last_completed"),
+  status: text("status").notNull(), // SCHEDULED, IN_PROGRESS, COMPLETED, OVERDUE
+});
+
+export const insertMaintenanceScheduleSchema = createInsertSchema(maintenanceSchedules)
+  .omit({ id: true })
+  .extend({
+    startDate: z.string().or(z.date()).transform((val) =>
+      typeof val === 'string' ? new Date(val) : val
+    ),
+    endDate: z.string().or(z.date()).transform((val) =>
+      typeof val === 'string' ? new Date(val) : val
+    ),
+  });
+
+// Add new types
+export type MaintenanceSchedule = typeof maintenanceSchedules.$inferSelect;
+export type InsertMaintenanceSchedule = z.infer<typeof insertMaintenanceScheduleSchema>;
+
+
+// Add new enums
+export const MaintenanceFrequency = {
+  DAILY: "DAILY",
+  WEEKLY: "WEEKLY",
+  MONTHLY: "MONTHLY",
+  QUARTERLY: "QUARTERLY",
+  YEARLY: "YEARLY",
+} as const;
+
+export const MaintenanceStatus = {
+  SCHEDULED: "SCHEDULED",
+  IN_PROGRESS: "IN_PROGRESS",
+  COMPLETED: "COMPLETED",
+  OVERDUE: "OVERDUE",
 } as const;

@@ -89,7 +89,7 @@ export default function WorkOrders() {
       description: "",
       status: WorkOrderStatus.OPEN,
       priority: WorkOrderPriority.MEDIUM,
-      dueDate: new Date().toISOString(),
+      dueDate: new Date().toISOString().split(".")[0], // Format as YYYY-MM-DDTHH:mm:ss
     },
   });
 
@@ -181,7 +181,11 @@ export default function WorkOrders() {
                         <FormItem>
                           <FormLabel>Due Date</FormLabel>
                           <FormControl>
-                            <Input type="datetime-local" {...field} />
+                            <Input 
+                              type="datetime-local" 
+                              {...field} 
+                              value={field.value ? field.value.split(".")[0] : field.value} // Ensure proper datetime-local format
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

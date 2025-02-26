@@ -73,10 +73,17 @@ export default function MaintenanceSchedules() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/maintenance-schedules"] });
       setIsCreateDialogOpen(false);
-      form.reset(); // Reset form after successful submission
+      form.reset();
       toast({
         title: "Success",
         description: "Maintenance schedule created successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
       });
     },
   });
@@ -90,6 +97,7 @@ export default function MaintenanceSchedules() {
       status: MaintenanceStatus.SCHEDULED,
       startDate: new Date(),
       endDate: null,
+      assetId: undefined, // This will force user to select an asset
     },
   });
 

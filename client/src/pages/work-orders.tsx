@@ -52,14 +52,22 @@ export default function WorkOrders() {
   const createMutation = useMutation({
     mutationFn: async (data: InsertWorkOrder) => {
       const res = await apiRequest("POST", "/api/work-orders", data);
-      return res.json();
+      return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/work-orders"] });
       setIsCreateDialogOpen(false);
+      form.reset();
       toast({
         title: "Success",
         description: "Work order created successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
       });
     },
   });
@@ -90,6 +98,8 @@ export default function WorkOrders() {
       status: WorkOrderStatus.OPEN,
       priority: WorkOrderPriority.MEDIUM,
       dueDate: new Date(),
+      assignedTo: undefined, // This will require explicit assignment
+      assetId: undefined, // This will require asset selection
     },
   });
 

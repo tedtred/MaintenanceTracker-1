@@ -31,6 +31,10 @@ export const workOrders = pgTable("work_orders", {
 export const insertWorkOrderSchema = createInsertSchema(workOrders)
   .omit({ id: true })
   .extend({
+    title: z.string().min(1, "Title is required"),
+    description: z.string().min(1, "Description is required"),
+    status: z.string().min(1, "Status is required"),
+    priority: z.string().min(1, "Priority is required"),
     dueDate: z.string().or(z.date()).transform((val) =>
       typeof val === 'string' ? new Date(val) : val
     ),
@@ -46,9 +50,14 @@ export const assets = pgTable("assets", {
   lastMaintenance: timestamp("last_maintenance")
 });
 
-export const insertAssetSchema = createInsertSchema(assets).omit({
-  id: true
-});
+export const insertAssetSchema = createInsertSchema(assets)
+  .omit({ id: true })
+  .extend({
+    name: z.string().min(1, "Name is required"),
+    description: z.string().min(1, "Description is required"),
+    location: z.string().min(1, "Location is required"),
+    status: z.string().min(1, "Status is required"),
+  });
 
 // Types
 export type User = typeof users.$inferSelect;
@@ -90,27 +99,31 @@ export const maintenanceSchedules = pgTable("maintenance_schedules", {
   description: text("description").notNull(),
   assetId: integer("asset_id").references(() => assets.id).notNull(),
   startDate: timestamp("start_date").notNull(),
-  endDate: timestamp("end_date"), // Remove .notNull()
-  frequency: text("frequency").notNull(), // DAILY, WEEKLY, MONTHLY, QUARTERLY, YEARLY
+  endDate: timestamp("end_date"), 
+  frequency: text("frequency").notNull(), 
   lastCompleted: timestamp("last_completed"),
-  status: text("status").notNull(), // SCHEDULED, IN_PROGRESS, COMPLETED, OVERDUE
+  status: text("status").notNull(), 
 });
 
 export const insertMaintenanceScheduleSchema = createInsertSchema(maintenanceSchedules)
   .omit({ id: true })
   .extend({
+    title: z.string().min(1, "Title is required"),
+    description: z.string().min(1, "Description is required"),
+    assetId: z.number().min(1, "Asset selection is required"),
     startDate: z.string().or(z.date()).transform((val) =>
       typeof val === 'string' ? new Date(val) : val
     ),
     endDate: z.string().or(z.date()).nullable().transform((val) =>
       val ? (typeof val === 'string' ? new Date(val) : val) : null
     ),
+    frequency: z.string().min(1, "Frequency is required"),
+    status: z.string().min(1, "Status is required"),
   });
 
 // Add new types
 export type MaintenanceSchedule = typeof maintenanceSchedules.$inferSelect;
 export type InsertMaintenanceSchedule = z.infer<typeof insertMaintenanceScheduleSchema>;
-
 
 // Add new enums
 export const MaintenanceFrequency = {

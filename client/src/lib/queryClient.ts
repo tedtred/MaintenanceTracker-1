@@ -1,11 +1,5 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
-
-async function throwIfResNotOk(res: Response) {
-  if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
-  }
-}
+import { handleAPIResponse } from "./api-error";
 
 export async function apiRequest(
   method: string,
@@ -19,8 +13,7 @@ export async function apiRequest(
     credentials: "include",
   });
 
-  await throwIfResNotOk(res);
-  return res;
+  return handleAPIResponse(res);
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
@@ -37,8 +30,8 @@ export const getQueryFn: <T>(options: {
       return null;
     }
 
-    await throwIfResNotOk(res);
-    return await res.json();
+    const handledRes = await handleAPIResponse(res);
+    return handledRes.json();
   };
 
 export const queryClient = new QueryClient({

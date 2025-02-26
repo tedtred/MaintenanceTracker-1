@@ -4,90 +4,162 @@ import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { insertWorkOrderSchema, insertAssetSchema } from "@shared/schema";
 import { insertMaintenanceScheduleSchema } from "@shared/schema";
+import { ZodError } from "zod";
+
+function handleZodError(error: ZodError) {
+  const errors: Record<string, string[]> = {};
+  for (const issue of error.errors) {
+    const path = issue.path.join(".");
+    if (!errors[path]) {
+      errors[path] = [];
+    }
+    errors[path].push(issue.message);
+  }
+  return errors;
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   setupAuth(app);
 
-  // Work Orders
-  app.get("/api/work-orders", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    const workOrders = await storage.getWorkOrders();
-    res.json(workOrders);
-  });
-
-  app.post("/api/work-orders", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    const parsed = insertWorkOrderSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json(parsed.error);
+  // Error handling middleware
+  app.use((err: any, req: any, res: any, next: any) => {
+    console.error(err);
+    if (err instanceof ZodError) {
+      return res.status(400).json({
+        message: "Validation error",
+        errors: handleZodError(err),
+      });
     }
-    const workOrder = await storage.createWorkOrder(parsed.data);
-    res.status(201).json(workOrder);
+    res.status(500).json({
+      message: err.message || "An unexpected error occurred",
+    });
   });
 
-  app.patch("/api/work-orders/:id", async (req, res) => {
+  // Work Orders
+  app.get("/api/work-orders", async (req, res, next) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    const id = parseInt(req.params.id);
-    const workOrder = await storage.updateWorkOrder(id, req.body);
-    res.json(workOrder);
+    try {
+      const workOrders = await storage.getWorkOrders();
+      res.json(workOrders);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/work-orders", async (req, res, next) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const parsed = insertWorkOrderSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          message: "Validation error",
+          errors: handleZodError(parsed.error),
+        });
+      }
+      const workOrder = await storage.createWorkOrder(parsed.data);
+      res.status(201).json(workOrder);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.patch("/api/work-orders/:id", async (req, res, next) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const id = parseInt(req.params.id);
+      const workOrder = await storage.updateWorkOrder(id, req.body);
+      res.json(workOrder);
+    } catch (error) {
+      next(error);
+    }
   });
 
   // Assets
-  app.get("/api/assets", async (req, res) => {
+  app.get("/api/assets", async (req, res, next) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    const assets = await storage.getAssets();
-    res.json(assets);
-  });
-
-  app.post("/api/assets", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    const parsed = insertAssetSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json(parsed.error);
+    try {
+      const assets = await storage.getAssets();
+      res.json(assets);
+    } catch (error) {
+      next(error);
     }
-    const asset = await storage.createAsset(parsed.data);
-    res.status(201).json(asset);
   });
 
-  app.patch("/api/assets/:id", async (req, res) => {
+  app.post("/api/assets", async (req, res, next) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    const id = parseInt(req.params.id);
-    const asset = await storage.updateAsset(id, req.body);
-    res.json(asset);
+    try {
+      const parsed = insertAssetSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          message: "Validation error",
+          errors: handleZodError(parsed.error),
+        });
+      }
+      const asset = await storage.createAsset(parsed.data);
+      res.status(201).json(asset);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.patch("/api/assets/:id", async (req, res, next) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const id = parseInt(req.params.id);
+      const asset = await storage.updateAsset(id, req.body);
+      res.json(asset);
+    } catch (error) {
+      next(error);
+    }
   });
 
   // Maintenance Schedules
-  app.get("/api/maintenance-schedules", async (req, res) => {
+  app.get("/api/maintenance-schedules", async (req, res, next) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    const { start, end } = req.query;
+    try {
+      const { start, end } = req.query;
 
-    let schedules;
-    if (start && end) {
-      schedules = await storage.getMaintenanceSchedulesByDateRange(
-        new Date(start as string),
-        new Date(end as string)
-      );
-    } else {
-      schedules = await storage.getMaintenanceSchedules();
+      let schedules;
+      if (start && end) {
+        schedules = await storage.getMaintenanceSchedulesByDateRange(
+          new Date(start as string),
+          new Date(end as string)
+        );
+      } else {
+        schedules = await storage.getMaintenanceSchedules();
+      }
+      res.json(schedules);
+    } catch (error) {
+      next(error);
     }
-    res.json(schedules);
   });
 
-  app.post("/api/maintenance-schedules", async (req, res) => {
+  app.post("/api/maintenance-schedules", async (req, res, next) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    const parsed = insertMaintenanceScheduleSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json(parsed.error);
+    try {
+      const parsed = insertMaintenanceScheduleSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          message: "Validation error",
+          errors: handleZodError(parsed.error),
+        });
+      }
+      const schedule = await storage.createMaintenanceSchedule(parsed.data);
+      res.status(201).json(schedule);
+    } catch (error) {
+      next(error);
     }
-    const schedule = await storage.createMaintenanceSchedule(parsed.data);
-    res.status(201).json(schedule);
   });
 
-  app.patch("/api/maintenance-schedules/:id", async (req, res) => {
+  app.patch("/api/maintenance-schedules/:id", async (req, res, next) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    const id = parseInt(req.params.id);
-    const schedule = await storage.updateMaintenanceSchedule(id, req.body);
-    res.json(schedule);
+    try {
+      const id = parseInt(req.params.id);
+      const schedule = await storage.updateMaintenanceSchedule(id, req.body);
+      res.json(schedule);
+    } catch (error) {
+      next(error);
+    }
   });
 
   const httpServer = createServer(app);

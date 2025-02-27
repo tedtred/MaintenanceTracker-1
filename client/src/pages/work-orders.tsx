@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { SidebarNav } from "@/components/sidebar-nav";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { WorkOrder, InsertWorkOrder, WorkOrderStatus, WorkOrderPriority } from "@shared/schema";
+import { WorkOrder, InsertWorkOrder, WorkOrderStatus, WorkOrderPriority, WorkOrderAttachment } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -41,14 +41,22 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Archive } from "lucide-react";
+import { Upload } from "lucide-react";
 
 export default function WorkOrders() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
+  const [selectedWorkOrder, setSelectedWorkOrder] = useState<number | null>(null);
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const { data: workOrders = [] } = useQuery<WorkOrder[]>({
     queryKey: ["/api/work-orders"],
+  });
+
+  const { data: attachments = [] } = useQuery<WorkOrderAttachment[]>({
+    queryKey: ["/api/work-orders", selectedWorkOrder, "attachments"],
+    enabled: !!selectedWorkOrder,
   });
 
   const createMutation = useMutation({
@@ -103,6 +111,47 @@ export default function WorkOrders() {
     },
   });
 
+  const uploadMutation = useMutation({
+    mutationFn: async ({ workOrderId, file }: { workOrderId: number; file: File }) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`/api/work-orders/${workOrderId}/attachments`, {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+      if (!res.ok) {
+        throw new Error('Failed to upload file');
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["/api/work-orders", selectedWorkOrder, "attachments"]
+      });
+      setIsUploadDialogOpen(false);
+      toast({
+        title: "Success",
+        description: "File uploaded successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && selectedWorkOrder) {
+      uploadMutation.mutate({ workOrderId: selectedWorkOrder, file });
+    }
+  };
+
   const form = useForm<InsertWorkOrder>({
     resolver: zodResolver(insertWorkOrderSchema),
     defaultValues: {
@@ -116,7 +165,6 @@ export default function WorkOrders() {
     },
   });
 
-  // Filter work orders based on archived status
   const filteredWorkOrders = workOrders.filter(
     (wo) => showArchived ? wo.status === WorkOrderStatus.ARCHIVED : wo.status !== WorkOrderStatus.ARCHIVED
   );
@@ -294,12 +342,61 @@ export default function WorkOrders() {
                           <Archive className="h-4 w-4" />
                         </Button>
                       )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setSelectedWorkOrder(wo.id);
+                          setIsUploadDialogOpen(true);
+                        }}
+                      >
+                        <Upload className="h-4 w-4" />
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
+          <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Upload Attachment</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <Input
+                  type="file"
+                  onChange={handleFileUpload}
+                  accept="image/jpeg,image/png,image/gif,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                />
+                {attachments.length > 0 && (
+                  <div className="space-y-2">
+                    <h3 className="font-medium">Existing Attachments</h3>
+                    <div className="space-y-1">
+                      {attachments.map((attachment) => (
+                        <div
+                          key={attachment.id}
+                          className="flex items-center justify-between p-2 bg-muted rounded"
+                        >
+                          <a
+                            href={attachment.fileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-blue-500 hover:underline"
+                          >
+                            {attachment.fileName}
+                          </a>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(attachment.uploadedAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </div>

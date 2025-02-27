@@ -1,5 +1,5 @@
-import { User, WorkOrder, Asset, MaintenanceSchedule, InsertUser, InsertWorkOrder, InsertAsset, InsertMaintenanceSchedule } from "@shared/schema";
-import { users, workOrders, assets, maintenanceSchedules } from "@shared/schema";
+import { User, WorkOrder, Asset, MaintenanceSchedule, InsertUser, InsertWorkOrder, InsertAsset, InsertMaintenanceSchedule, WorkOrderAttachment, InsertWorkOrderAttachment } from "@shared/schema";
+import { users, workOrders, assets, maintenanceSchedules, workOrderAttachments } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gte, lte } from "drizzle-orm";
 import session from "express-session";
@@ -22,6 +22,10 @@ export interface IStorage {
   getWorkOrders(): Promise<WorkOrder[]>;
   getWorkOrder(id: number): Promise<WorkOrder | undefined>;
   updateWorkOrder(id: number, workOrder: Partial<WorkOrder>): Promise<WorkOrder>;
+
+  // Work Order Attachments
+  createWorkOrderAttachment(attachment: InsertWorkOrderAttachment): Promise<WorkOrderAttachment>;
+  getWorkOrderAttachments(workOrderId: number): Promise<WorkOrderAttachment[]>;
 
   // Assets
   createAsset(asset: InsertAsset): Promise<Asset>;
@@ -86,6 +90,19 @@ export class DatabaseStorage implements IStorage {
       .returning();
     if (!workOrder) throw new Error("Work order not found");
     return workOrder;
+  }
+
+  // Work Order Attachment Methods
+  async createWorkOrderAttachment(attachment: InsertWorkOrderAttachment): Promise<WorkOrderAttachment> {
+    const [newAttachment] = await db.insert(workOrderAttachments).values(attachment).returning();
+    return newAttachment;
+  }
+
+  async getWorkOrderAttachments(workOrderId: number): Promise<WorkOrderAttachment[]> {
+    return await db
+      .select()
+      .from(workOrderAttachments)
+      .where(eq(workOrderAttachments.workOrderId, workOrderId));
   }
 
   // Asset Methods

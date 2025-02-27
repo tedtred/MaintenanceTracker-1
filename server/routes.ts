@@ -5,6 +5,9 @@ import { storage } from "./storage";
 import { insertWorkOrderSchema, insertAssetSchema } from "@shared/schema";
 import { insertMaintenanceScheduleSchema } from "@shared/schema";
 import { ZodError } from "zod";
+import { upload, handleFileUpload } from "./services/file-storage";
+import path from "path";
+import express from "express";
 
 function handleZodError(error: ZodError) {
   const errors: Record<string, string[]> = {};
@@ -21,6 +24,9 @@ function handleZodError(error: ZodError) {
 export async function registerRoutes(app: Express): Promise<Server> {
   setupAuth(app);
 
+  // Serve uploaded files
+  app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
   // Error handling middleware
   app.use((err: any, req: any, res: any, next: any) => {
     console.error(err);
@@ -33,6 +39,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(500).json({
       message: err.message || "An unexpected error occurred",
     });
+  });
+
+  // File upload endpoint
+  app.post("/api/work-orders/:id/attachments", upload.single('file'), async (req, res, next) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const workOrderId = parseInt(req.params.id);
+      const fileData = await handleFileUpload(req.file);
+      const attachment = await storage.createWorkOrderAttachment({
+        ...fileData,
+        workOrderId,
+      });
+
+      res.status(201).json(attachment);
+    } catch (error) {
+      next(error);
+    }
   });
 
   // Work Orders

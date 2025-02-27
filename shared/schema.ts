@@ -59,6 +59,26 @@ export const insertAssetSchema = createInsertSchema(assets)
     status: z.string().min(1, "Status is required"),
   });
 
+// Work Order Attachments schema
+export const workOrderAttachments = pgTable("work_order_attachments", {
+  id: serial("id").primaryKey(),
+  workOrderId: integer("work_order_id").references(() => workOrders.id).notNull(),
+  fileName: text("file_name").notNull(),
+  fileUrl: text("file_url").notNull(),
+  fileType: text("file_type").notNull(),
+  uploadedAt: timestamp("uploaded_at").defaultNow().notNull(),
+});
+
+export const insertWorkOrderAttachmentSchema = createInsertSchema(workOrderAttachments)
+  .omit({ id: true })
+  .extend({
+    workOrderId: z.number().min(1, "Work order is required"),
+    fileName: z.string().min(1, "File name is required"),
+    fileUrl: z.string().min(1, "File URL is required"),
+    fileType: z.string().min(1, "File type is required"),
+  });
+
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -66,6 +86,9 @@ export type WorkOrder = typeof workOrders.$inferSelect;
 export type InsertWorkOrder = z.infer<typeof insertWorkOrderSchema>;
 export type Asset = typeof assets.$inferSelect;
 export type InsertAsset = z.infer<typeof insertAssetSchema>;
+// Add new types for attachments
+export type WorkOrderAttachment = typeof workOrderAttachments.$inferSelect;
+export type InsertWorkOrderAttachment = z.infer<typeof insertWorkOrderAttachmentSchema>;
 
 // Enums
 export const WorkOrderStatus = {

@@ -53,7 +53,7 @@ export default function Assets() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState<number | null>(null);
   const [isMaintenanceDialogOpen, setIsMaintenanceDialogOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
   const { toast } = useToast();
 
   const { data: assets = [] } = useQuery<Asset[]>({
@@ -102,6 +102,17 @@ export default function Assets() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/assets"] });
+      toast({
+        title: "Success",
+        description: "Asset status updated successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -146,9 +157,9 @@ export default function Assets() {
     }
   };
 
-  const filteredAssets = selectedCategory
-    ? assets.filter((asset) => asset.category === selectedCategory)
-    : assets;
+  const filteredAssets = selectedCategory === "ALL"
+    ? assets
+    : assets.filter((asset) => asset.category === selectedCategory);
 
   return (
     <div className="flex h-screen">
@@ -165,14 +176,14 @@ export default function Assets() {
 
             <div className="flex gap-4">
               <Select
-                value={selectedCategory || ""}
-                onValueChange={(value) => setSelectedCategory(value || null)}
+                value={selectedCategory}
+                onValueChange={setSelectedCategory}
               >
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Filter by category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Categories</SelectItem>
+                  <SelectItem value="ALL">All Categories</SelectItem>
                   {Object.values(AssetCategory).map((category) => (
                     <SelectItem key={category} value={category}>
                       {category}
@@ -213,8 +224,8 @@ export default function Assets() {
                     </SelectContent>
                   </Select>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
+                <CardContent>
+                  <div className="space-y-4">
                     <p className="text-sm text-muted-foreground">
                       {asset.description}
                     </p>
@@ -255,7 +266,7 @@ export default function Assets() {
                     </div>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-2 mt-4">
                     <div className="flex justify-between items-center">
                       <h3 className="font-semibold">Maintenance Schedules</h3>
                       <Button
@@ -474,7 +485,7 @@ export default function Assets() {
           <Form {...maintenanceForm}>
             <form
               onSubmit={maintenanceForm.handleSubmit((data) =>
-                createMaintenanceMutation.mutate(data)
+                createMutation.mutate(data)
               )}
               className="space-y-4"
             >

@@ -101,11 +101,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Add this new route in the Work Orders section
+  // Fix the work order route parameter parsing
   app.get("/api/work-orders/:id", async (req, res, next) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
       const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid work order ID" });
+      }
       const workOrder = await storage.getWorkOrder(id);
       if (!workOrder) {
         return res.status(404).json({ message: "Work order not found" });
@@ -120,6 +123,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
       const workOrderId = parseInt(req.params.id);
+      if (isNaN(workOrderId)) {
+        return res.status(400).json({ message: "Invalid work order ID" });
+      }
       const attachments = await storage.getWorkOrderAttachments(workOrderId);
       res.json(attachments);
     } catch (error) {

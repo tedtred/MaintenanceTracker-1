@@ -43,7 +43,10 @@ export default function WorkOrderDetails() {
 
   const updateMutation = useMutation({
     mutationFn: async (data: Partial<WorkOrder>) => {
-      const res = await apiRequest("PATCH", `/api/work-orders/${id}`, data);
+      const res = await apiRequest("PATCH", `/api/work-orders/${id}`, {
+        ...data,
+        dueDate: data.dueDate instanceof Date ? data.dueDate.toISOString() : data.dueDate,
+      });
       return res.json();
     },
     onSuccess: () => {

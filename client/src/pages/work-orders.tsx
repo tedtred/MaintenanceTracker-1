@@ -55,7 +55,7 @@ export default function WorkOrders() {
     mutationFn: async (data: InsertWorkOrder) => {
       const res = await apiRequest("POST", "/api/work-orders", {
         ...data,
-        reportedDate: new Date().toISOString().split('T')[0], // Always use current date
+        reportedDate: new Date().toISOString(), // Store full timestamp
       });
       return await res.json();
     },
@@ -106,7 +106,7 @@ export default function WorkOrders() {
       description: "",
       status: WorkOrderStatus.OPEN,
       priority: WorkOrderPriority.MEDIUM,
-      reportedDate: new Date().toISOString().split('T')[0],
+      reportedDate: new Date().toISOString(),
     },
   });
 
@@ -117,18 +117,14 @@ export default function WorkOrders() {
       description: "",
       status: WorkOrderStatus.OPEN,
       priority: WorkOrderPriority.MEDIUM,
-      reportedDate: new Date().toISOString().split('T')[0],
+      reportedDate: new Date().toISOString(),
     },
   });
 
   // Reset details form when selected work order changes
   useEffect(() => {
     if (selectedWorkOrder) {
-      const formattedWorkOrder = {
-        ...selectedWorkOrder,
-        reportedDate: new Date(selectedWorkOrder.reportedDate).toISOString().split('T')[0],
-      };
-      detailsForm.reset(formattedWorkOrder);
+      detailsForm.reset(selectedWorkOrder);
     }
   }, [selectedWorkOrder, detailsForm]);
 
@@ -164,7 +160,7 @@ export default function WorkOrders() {
                 <TableHead>Title</TableHead>
                 <TableHead>Priority</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Reported Date</TableHead>
+                <TableHead>Reported Date & Time</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -181,7 +177,7 @@ export default function WorkOrders() {
                   <TableCell>{wo.priority}</TableCell>
                   <TableCell>{wo.status}</TableCell>
                   <TableCell>
-                    {new Date(wo.reportedDate).toLocaleDateString()}
+                    {new Date(wo.reportedDate).toLocaleString()}
                   </TableCell>
                 </TableRow>
               ))}
@@ -361,7 +357,7 @@ export default function WorkOrders() {
                       )}
                     />
                     <div className="text-sm text-muted-foreground">
-                      Reported on: {new Date(selectedWorkOrder?.reportedDate).toLocaleDateString()}
+                      Reported on: {new Date(selectedWorkOrder?.reportedDate).toLocaleString()}
                     </div>
                     <Button
                       type="submit"

@@ -53,7 +53,10 @@ export default function WorkOrders() {
 
   const createMutation = useMutation({
     mutationFn: async (data: InsertWorkOrder) => {
-      const res = await apiRequest("POST", "/api/work-orders", data);
+      const res = await apiRequest("POST", "/api/work-orders", {
+        ...data,
+        dueDate: new Date(data.dueDate).toISOString().split('T')[0],
+      });
       return await res.json();
     },
     onSuccess: () => {
@@ -77,7 +80,10 @@ export default function WorkOrders() {
   const updateMutation = useMutation({
     mutationFn: async (data: Partial<WorkOrder> & { id: number }) => {
       const { id, ...updates } = data;
-      const res = await apiRequest("PATCH", `/api/work-orders/${id}`, updates);
+      const res = await apiRequest("PATCH", `/api/work-orders/${id}`, {
+        ...updates,
+        dueDate: new Date(updates.dueDate as string).toISOString().split('T')[0],
+      });
       return await res.json();
     },
     onSuccess: () => {
@@ -104,7 +110,7 @@ export default function WorkOrders() {
       description: "",
       status: WorkOrderStatus.OPEN,
       priority: WorkOrderPriority.MEDIUM,
-      dueDate: new Date(),
+      dueDate: new Date().toISOString().split('T')[0],
     },
   });
 
@@ -115,14 +121,18 @@ export default function WorkOrders() {
       description: "",
       status: WorkOrderStatus.OPEN,
       priority: WorkOrderPriority.MEDIUM,
-      dueDate: new Date(),
+      dueDate: new Date().toISOString().split('T')[0],
     },
   });
 
   // Reset details form when selected work order changes
   useEffect(() => {
     if (selectedWorkOrder) {
-      detailsForm.reset(selectedWorkOrder);
+      const formattedWorkOrder = {
+        ...selectedWorkOrder,
+        dueDate: new Date(selectedWorkOrder.dueDate).toISOString().split('T')[0],
+      };
+      detailsForm.reset(formattedWorkOrder);
     }
   }, [selectedWorkOrder, detailsForm]);
 
@@ -256,10 +266,8 @@ export default function WorkOrders() {
                         <FormLabel>Due Date</FormLabel>
                         <FormControl>
                           <Input
-                            type="datetime-local"
+                            type="date"
                             {...field}
-                            value={field.value instanceof Date ? field.value.toISOString().slice(0, 16) : ''}
-                            onChange={(e) => field.onChange(new Date(e.target.value))}
                           />
                         </FormControl>
                         <FormMessage />
@@ -380,14 +388,8 @@ export default function WorkOrders() {
                           <FormLabel>Due Date</FormLabel>
                           <FormControl>
                             <Input
-                              type="datetime-local"
+                              type="date"
                               {...field}
-                              value={
-                                field.value instanceof Date
-                                  ? field.value.toISOString().slice(0, 16)
-                                  : new Date(field.value).toISOString().slice(0, 16)
-                              }
-                              onChange={(e) => field.onChange(new Date(e.target.value))}
                             />
                           </FormControl>
                           <FormMessage />

@@ -78,10 +78,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getWorkOrder(id: number): Promise<WorkOrder | undefined> {
-    console.log("Getting work order with ID:", id); // Debug log
-    const [workOrder] = await db.select().from(workOrders).where(eq(workOrders.id, id));
-    console.log("Found work order:", workOrder); // Debug log
-    return workOrder;
+    try {
+      console.log("Getting work order with ID:", id); // Debug log
+      const [workOrder] = await db
+        .select()
+        .from(workOrders)
+        .where(eq(workOrders.id, id));
+
+      console.log("Found work order:", workOrder); // Debug log
+      return workOrder;
+    } catch (error) {
+      console.error("Error fetching work order:", error);
+      throw new Error("Failed to fetch work order");
+    }
   }
 
   async updateWorkOrder(id: number, updates: Partial<WorkOrder>): Promise<WorkOrder> {

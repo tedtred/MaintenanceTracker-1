@@ -335,30 +335,6 @@ export default function WorkOrders() {
                           ))}
                         </SelectContent>
                       </Select>
-                      {wo.status !== WorkOrderStatus.ARCHIVED && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() =>
-                            updateStatusMutation.mutate({
-                              id: wo.id,
-                              status: WorkOrderStatus.ARCHIVED,
-                            })
-                          }
-                        >
-                          <Archive className="h-4 w-4" />
-                        </Button>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                          setSelectedWorkOrder(wo.id);
-                          setIsUploadDialogOpen(true);
-                        }}
-                      >
-                        <Upload className="h-4 w-4" />
-                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>

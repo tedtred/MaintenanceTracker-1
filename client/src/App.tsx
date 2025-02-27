@@ -10,6 +10,7 @@ import AuthPage from "@/pages/auth-page";
 import Dashboard from "@/pages/dashboard";
 import WorkOrders from "@/pages/work-orders";
 import Assets from "@/pages/assets";
+import MaintenanceCalendar from "@/pages/maintenance-calendar";
 
 function Router() {
   return (
@@ -18,6 +19,7 @@ function Router() {
       <ProtectedRoute path="/" component={Dashboard} />
       <ProtectedRoute path="/work-orders" component={WorkOrders} />
       <ProtectedRoute path="/assets" component={Assets} />
+      <ProtectedRoute path="/maintenance-calendar" component={MaintenanceCalendar} />
       <Route component={NotFound} />
     </Switch>
   );

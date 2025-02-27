@@ -101,6 +101,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add this new route in the Work Orders section
+  app.get("/api/work-orders/:id", async (req, res, next) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const id = parseInt(req.params.id);
+      const workOrder = await storage.getWorkOrder(id);
+      if (!workOrder) {
+        return res.status(404).json({ message: "Work order not found" });
+      }
+      res.json(workOrder);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/work-orders/:id/attachments", async (req, res, next) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const workOrderId = parseInt(req.params.id);
+      const attachments = await storage.getWorkOrderAttachments(workOrderId);
+      res.json(attachments);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+
   // Assets
   app.get("/api/assets", async (req, res, next) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);

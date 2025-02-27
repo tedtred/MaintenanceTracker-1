@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import { insertWorkOrderSchema } from "@shared/schema";
+import { Link } from "wouter";
 import {
   Dialog,
   DialogContent,
@@ -42,6 +43,7 @@ import {
 } from "@/components/ui/table";
 import { Archive } from "lucide-react";
 import { Upload } from "lucide-react";
+
 
 export default function WorkOrders() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -143,7 +145,6 @@ export default function WorkOrders() {
       });
     },
   });
-
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -303,7 +304,13 @@ export default function WorkOrders() {
             <TableBody>
               {filteredWorkOrders.map((wo) => (
                 <TableRow key={wo.id}>
-                  <TableCell className="font-medium">{wo.title}</TableCell>
+                  <TableCell className="font-medium">
+                    <Link href={`/work-orders/${wo.id}`}>
+                      <span className="hover:underline text-primary cursor-pointer">
+                        {wo.title}
+                      </span>
+                    </Link>
+                  </TableCell>
                   <TableCell>{wo.priority}</TableCell>
                   <TableCell>{wo.status}</TableCell>
                   <TableCell>

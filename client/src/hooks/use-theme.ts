@@ -13,8 +13,12 @@ export const useTheme = create<ThemeStore>()(
     (set) => ({
       theme: "light",
       setTheme: (theme) => {
+        console.log('Setting theme to:', theme); // Debug log
         set({ theme });
         document.documentElement.setAttribute("data-theme", theme);
+        // Force a style recalculation
+        document.documentElement.classList.remove("light", "dark", "twilight");
+        document.documentElement.classList.add(theme);
       },
     }),
     {
@@ -26,5 +30,8 @@ export const useTheme = create<ThemeStore>()(
 // Initialize theme from stored value
 if (typeof window !== "undefined") {
   const theme = useTheme.getState().theme;
+  console.log('Initializing theme to:', theme); // Debug log
   document.documentElement.setAttribute("data-theme", theme);
+  document.documentElement.classList.remove("light", "dark", "twilight");
+  document.documentElement.classList.add(theme);
 }

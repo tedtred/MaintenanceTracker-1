@@ -7,7 +7,6 @@ import {
   LayoutDashboard,
   ClipboardList,
   Wrench,
-  Calendar,
   LogOut,
 } from "lucide-react";
 
@@ -26,11 +25,6 @@ const items = [
     title: "Assets",
     icon: Wrench,
     href: "/assets",
-  },
-  {
-    title: "Maintenance",
-    icon: Calendar,
-    href: "/maintenance-schedules",
   },
 ];
 

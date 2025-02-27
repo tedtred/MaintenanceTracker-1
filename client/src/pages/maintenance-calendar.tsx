@@ -4,7 +4,8 @@ import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay } from "date-fns";
 import { enUS } from "date-fns/locale";
 import "react-big-calendar/lib/css/react-big-calendar.css";
-import { MaintenanceSchedule } from "@shared/schema";
+import { MaintenanceSchedule, Asset } from "@shared/schema";
+import { Card } from "@/components/ui/card";
 
 const localizer = dateFnsLocalizer({
   format,
@@ -21,12 +22,24 @@ export default function MaintenanceCalendar() {
     queryKey: ["/api/maintenance-schedules"],
   });
 
+  const { data: assets = [] } = useQuery<Asset[]>({
+    queryKey: ["/api/assets"],
+  });
+
+  const getAssetName = (assetId: number) => {
+    const asset = assets.find(a => a.id === assetId);
+    return asset ? asset.name : 'Unknown Asset';
+  };
+
   const events = schedules.map((schedule) => ({
     id: schedule.id,
-    title: schedule.title,
+    title: `${schedule.title} - ${getAssetName(schedule.assetId)}`,
     start: new Date(schedule.startDate),
     end: schedule.endDate ? new Date(schedule.endDate) : undefined,
-    resource: schedule,
+    resource: {
+      ...schedule,
+      assetName: getAssetName(schedule.assetId),
+    },
   }));
 
   return (
@@ -41,15 +54,18 @@ export default function MaintenanceCalendar() {
             </p>
           </div>
 
-          <div className="h-[600px] bg-card rounded-lg p-4">
+          <Card className="p-6">
             <Calendar
               localizer={localizer}
               events={events}
               startAccessor="start"
               endAccessor="end"
-              style={{ height: "100%" }}
+              style={{ height: "700px" }}
+              views={['month', 'week', 'day']}
+              defaultView="month"
+              tooltipAccessor={(event) => `${event.title}\nFrequency: ${event.resource.frequency}\nStatus: ${event.resource.status}`}
             />
-          </div>
+          </Card>
         </div>
       </div>
     </div>

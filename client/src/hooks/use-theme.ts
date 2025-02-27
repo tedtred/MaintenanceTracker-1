@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-type Theme = "light" | "dark" | "twilight";
+type Theme = "light" | "dark";
 
 interface ThemeStore {
   theme: Theme;
@@ -17,7 +17,7 @@ export const useTheme = create<ThemeStore>()(
         set({ theme });
         document.documentElement.setAttribute("data-theme", theme);
         // Force a style recalculation
-        document.documentElement.classList.remove("light", "dark", "twilight");
+        document.documentElement.classList.remove("light", "dark");
         document.documentElement.classList.add(theme);
       },
     }),
@@ -32,6 +32,6 @@ if (typeof window !== "undefined") {
   const theme = useTheme.getState().theme;
   console.log('Initializing theme to:', theme); // Debug log
   document.documentElement.setAttribute("data-theme", theme);
-  document.documentElement.classList.remove("light", "dark", "twilight");
+  document.documentElement.classList.remove("light", "dark");
   document.documentElement.classList.add(theme);
 }

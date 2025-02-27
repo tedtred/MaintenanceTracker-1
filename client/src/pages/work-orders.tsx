@@ -1,19 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SidebarNav } from "@/components/sidebar-nav";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { WorkOrder, InsertWorkOrder, WorkOrderStatus, WorkOrderPriority, WorkOrderAttachment } from "@shared/schema";
+import { WorkOrder, InsertWorkOrder, WorkOrderStatus, WorkOrderPriority } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import { insertWorkOrderSchema } from "@shared/schema";
-import { Link } from "wouter";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -41,24 +39,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Archive } from "lucide-react";
-import { Upload } from "lucide-react";
-
+import { Loader2 } from "lucide-react";
 
 export default function WorkOrders() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [showArchived, setShowArchived] = useState(false);
-  const [selectedWorkOrder, setSelectedWorkOrder] = useState<number | null>(null);
-  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [selectedWorkOrder, setSelectedWorkOrder] = useState<WorkOrder | null>(null);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const { toast } = useToast();
 
-  const { data: workOrders = [] } = useQuery<WorkOrder[]>({
+  const { data: workOrders = [], isLoading } = useQuery<WorkOrder[]>({
     queryKey: ["/api/work-orders"],
-  });
-
-  const { data: attachments = [] } = useQuery<WorkOrderAttachment[]>({
-    queryKey: ["/api/work-orders", selectedWorkOrder, "attachments"],
-    enabled: !!selectedWorkOrder,
   });
 
   const createMutation = useMutation({
@@ -84,24 +74,18 @@ export default function WorkOrders() {
     },
   });
 
-  const updateStatusMutation = useMutation({
-    mutationFn: async ({
-      id,
-      status,
-    }: {
-      id: number;
-      status: string;
-    }) => {
-      const res = await apiRequest("PATCH", `/api/work-orders/${id}`, {
-        status,
-      });
-      return res.json();
+  const updateMutation = useMutation({
+    mutationFn: async (data: Partial<WorkOrder> & { id: number }) => {
+      const { id, ...updates } = data;
+      const res = await apiRequest("PATCH", `/api/work-orders/${id}`, updates);
+      return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/work-orders"] });
+      setIsDetailsDialogOpen(false);
       toast({
         title: "Success",
-        description: "Work order status updated successfully",
+        description: "Work order updated successfully",
       });
     },
     onError: (error: Error) => {
@@ -112,46 +96,6 @@ export default function WorkOrders() {
       });
     },
   });
-
-  const uploadMutation = useMutation({
-    mutationFn: async ({ workOrderId, file }: { workOrderId: number; file: File }) => {
-      const formData = new FormData();
-      formData.append('file', file);
-      const res = await fetch(`/api/work-orders/${workOrderId}/attachments`, {
-        method: 'POST',
-        body: formData,
-        credentials: 'include',
-      });
-      if (!res.ok) {
-        throw new Error('Failed to upload file');
-      }
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["/api/work-orders", selectedWorkOrder, "attachments"]
-      });
-      setIsUploadDialogOpen(false);
-      toast({
-        title: "Success",
-        description: "File uploaded successfully",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file && selectedWorkOrder) {
-      uploadMutation.mutate({ workOrderId: selectedWorkOrder, file });
-    }
-  };
 
   const form = useForm<InsertWorkOrder>({
     resolver: zodResolver(insertWorkOrderSchema),
@@ -161,14 +105,34 @@ export default function WorkOrders() {
       status: WorkOrderStatus.OPEN,
       priority: WorkOrderPriority.MEDIUM,
       dueDate: new Date(),
-      assignedTo: undefined,
-      assetId: undefined,
     },
   });
 
-  const filteredWorkOrders = workOrders.filter(
-    (wo) => showArchived ? wo.status === WorkOrderStatus.ARCHIVED : wo.status !== WorkOrderStatus.ARCHIVED
-  );
+  const detailsForm = useForm<WorkOrder>({
+    defaultValues: selectedWorkOrder || {
+      id: 0,
+      title: "",
+      description: "",
+      status: WorkOrderStatus.OPEN,
+      priority: WorkOrderPriority.MEDIUM,
+      dueDate: new Date(),
+    },
+  });
+
+  // Reset details form when selected work order changes
+  useEffect(() => {
+    if (selectedWorkOrder) {
+      detailsForm.reset(selectedWorkOrder);
+    }
+  }, [selectedWorkOrder, detailsForm]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen">
@@ -183,112 +147,9 @@ export default function WorkOrders() {
               </p>
             </div>
 
-            <div className="flex gap-4">
-              <Button
-                variant="outline"
-                onClick={() => setShowArchived(!showArchived)}
-              >
-                {showArchived ? "Hide Archived" : "Show Archived"}
-              </Button>
-
-              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button>Create Work Order</Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Create New Work Order</DialogTitle>
-                  </DialogHeader>
-                  <Form {...form}>
-                    <form
-                      onSubmit={form.handleSubmit((data) =>
-                        createMutation.mutate(data)
-                      )}
-                      className="space-y-4"
-                    >
-                      <FormField
-                        control={form.control}
-                        name="title"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Title</FormLabel>
-                            <FormControl>
-                              <Input {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="description"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Description</FormLabel>
-                            <FormControl>
-                              <Textarea {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="priority"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Priority</FormLabel>
-                            <Select
-                              onValueChange={field.onChange}
-                              defaultValue={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select priority" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {Object.values(WorkOrderPriority).map((priority) => (
-                                  <SelectItem key={priority} value={priority}>
-                                    {priority}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="dueDate"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Due Date</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="datetime-local"
-                                {...field}
-                                value={field.value instanceof Date ? field.value.toISOString().slice(0, 16) : ''}
-                                onChange={(e) => field.onChange(new Date(e.target.value))}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <Button
-                        type="submit"
-                        className="w-full"
-                        disabled={createMutation.isPending}
-                      >
-                        Create Work Order
-                      </Button>
-                    </form>
-                  </Form>
-                </DialogContent>
-              </Dialog>
-            </div>
+            <Button onClick={() => setIsCreateDialogOpen(true)}>
+              Create Work Order
+            </Button>
           </div>
 
           <Table>
@@ -298,86 +159,255 @@ export default function WorkOrders() {
                 <TableHead>Priority</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Due Date</TableHead>
-                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredWorkOrders.map((wo) => (
-                <TableRow key={wo.id}>
-                  <TableCell className="font-medium">
-                    <Link href={`/work-orders/${wo.id}`}>
-                      <span className="hover:underline text-primary cursor-pointer">
-                        {wo.title}
-                      </span>
-                    </Link>
-                  </TableCell>
+              {workOrders.map((wo) => (
+                <TableRow
+                  key={wo.id}
+                  className="cursor-pointer hover:bg-accent/50"
+                  onClick={() => {
+                    setSelectedWorkOrder(wo);
+                    setIsDetailsDialogOpen(true);
+                  }}
+                >
+                  <TableCell className="font-medium">{wo.title}</TableCell>
                   <TableCell>{wo.priority}</TableCell>
                   <TableCell>{wo.status}</TableCell>
                   <TableCell>
                     {new Date(wo.dueDate).toLocaleDateString()}
                   </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Select
-                        value={wo.status}
-                        onValueChange={(status) =>
-                          updateStatusMutation.mutate({ id: wo.id, status })
-                        }
-                      >
-                        <SelectTrigger className="w-32">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.values(WorkOrderStatus).map((status) => (
-                            <SelectItem key={status} value={status}>
-                              {status}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-          <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
+
+          {/* Create Dialog */}
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Upload Attachment</DialogTitle>
+                <DialogTitle>Create New Work Order</DialogTitle>
               </DialogHeader>
-              <div className="space-y-4">
-                <Input
-                  type="file"
-                  onChange={handleFileUpload}
-                  accept="image/jpeg,image/png,image/gif,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                />
-                {attachments.length > 0 && (
-                  <div className="space-y-2">
-                    <h3 className="font-medium">Existing Attachments</h3>
-                    <div className="space-y-1">
-                      {attachments.map((attachment) => (
-                        <div
-                          key={attachment.id}
-                          className="flex items-center justify-between p-2 bg-muted rounded"
+              <Form {...form}>
+                <form
+                  onSubmit={form.handleSubmit((data) =>
+                    createMutation.mutate(data)
+                  )}
+                  className="space-y-4"
+                >
+                  <FormField
+                    control={form.control}
+                    name="title"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Title</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="priority"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Priority</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
                         >
-                          <a
-                            href={attachment.fileUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-blue-500 hover:underline"
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select priority" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {Object.values(WorkOrderPriority).map((priority) => (
+                              <SelectItem key={priority} value={priority}>
+                                {priority}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="dueDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Due Date</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="datetime-local"
+                            {...field}
+                            value={field.value instanceof Date ? field.value.toISOString().slice(0, 16) : ''}
+                            onChange={(e) => field.onChange(new Date(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={createMutation.isPending}
+                  >
+                    Create Work Order
+                  </Button>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
+
+          {/* Details Dialog */}
+          <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Work Order Details</DialogTitle>
+              </DialogHeader>
+              {selectedWorkOrder && (
+                <Form {...detailsForm}>
+                  <form
+                    onSubmit={detailsForm.handleSubmit((data) =>
+                      updateMutation.mutate({ ...data, id: selectedWorkOrder.id })
+                    )}
+                    className="space-y-4"
+                  >
+                    <FormField
+                      control={detailsForm.control}
+                      name="title"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Title</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={detailsForm.control}
+                      name="description"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Description</FormLabel>
+                          <FormControl>
+                            <Textarea {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={detailsForm.control}
+                      name="status"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Status</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
                           >
-                            {attachment.fileName}
-                          </a>
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(attachment.uploadedAt).toLocaleDateString()}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {Object.values(WorkOrderStatus).map((status) => (
+                                <SelectItem key={status} value={status}>
+                                  {status}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={detailsForm.control}
+                      name="priority"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Priority</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {Object.values(WorkOrderPriority).map((priority) => (
+                                <SelectItem key={priority} value={priority}>
+                                  {priority}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={detailsForm.control}
+                      name="dueDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Due Date</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="datetime-local"
+                              {...field}
+                              value={
+                                field.value instanceof Date
+                                  ? field.value.toISOString().slice(0, 16)
+                                  : new Date(field.value).toISOString().slice(0, 16)
+                              }
+                              onChange={(e) => field.onChange(new Date(e.target.value))}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <Button
+                      type="submit"
+                      className="w-full"
+                      disabled={updateMutation.isPending}
+                    >
+                      {updateMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        "Save Changes"
+                      )}
+                    </Button>
+                  </form>
+                </Form>
+              )}
             </DialogContent>
           </Dialog>
         </div>

@@ -35,10 +35,12 @@ export default function WorkOrderDetails() {
 
   const { data: workOrder, isLoading } = useQuery<WorkOrder>({
     queryKey: [`/api/work-orders/${id}`],
+    enabled: !!id // Only run query if we have an ID
   });
 
   const { data: attachments = [] } = useQuery<WorkOrderAttachment[]>({
-    queryKey: ["/api/work-orders", id, "attachments"],
+    queryKey: [`/api/work-orders/${id}/attachments`],
+    enabled: !!id
   });
 
   const updateMutation = useMutation({
@@ -74,7 +76,7 @@ export default function WorkOrderDetails() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["/api/work-orders", id, "attachments"]
+        queryKey: [`/api/work-orders/${id}/attachments`]
       });
       setIsUploading(false);
       toast({

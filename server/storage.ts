@@ -199,6 +199,12 @@ export class DatabaseStorage implements IStorage {
     return newCompletion;
   }
   async deleteMaintenanceSchedule(id: number): Promise<void> {
+    // First delete all related maintenance completions
+    await db
+      .delete(maintenanceCompletions)
+      .where(eq(maintenanceCompletions.scheduleId, id));
+
+    // Then delete the maintenance schedule
     await db
       .delete(maintenanceSchedules)
       .where(eq(maintenanceSchedules.id, id));

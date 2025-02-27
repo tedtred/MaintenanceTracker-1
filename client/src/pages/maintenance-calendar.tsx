@@ -41,9 +41,11 @@ const localizer = dateFnsLocalizer({
 const generateRecurringEvents = (schedule: MaintenanceSchedule, assetName: string, completions: MaintenanceCompletion[]) => {
   const events = [];
   const start = new Date(schedule.startDate);
+  start.setHours(0, 0, 0, 0); // Set to start of day
   const end = schedule.endDate ? new Date(schedule.endDate) : addMonths(new Date(), 3);
+  end.setHours(23, 59, 59, 999); // Set to end of day
 
-  let currentDate = start;
+  let currentDate = new Date(start);
   while (currentDate <= end) {
     // Check if this date is marked as completed
     const isCompleted = completions.some(
@@ -54,16 +56,20 @@ const generateRecurringEvents = (schedule: MaintenanceSchedule, assetName: strin
 
     // Only add non-completed dates
     if (!isCompleted) {
+      const eventDate = new Date(currentDate);
+      eventDate.setHours(0, 0, 0, 0); // Set to start of day
+
       events.push({
-        id: `${schedule.id}-${currentDate.toISOString()}`,
+        id: `${schedule.id}-${eventDate.toISOString()}`,
         title: `${schedule.title} - ${assetName}`,
-        start: new Date(currentDate),
-        end: new Date(currentDate),
+        start: eventDate,
+        end: eventDate,
         resource: {
           ...schedule,
           assetName,
-          date: new Date(currentDate),
+          date: eventDate,
         },
+        allDay: true,
       });
     }
 
@@ -172,10 +178,10 @@ export default function MaintenanceCalendar() {
               startAccessor="start"
               endAccessor="end"
               style={{ height: "700px" }}
-              views={['month', 'week', 'day']}
+              views={['month']}
               defaultView="month"
               tooltipAccessor={(event) => 
-                `${event.title}\nFrequency: ${event.resource.frequency}\nStatus: ${event.resource.status}`
+                `${event.title}\nFrequency: ${event.resource.frequency}`
               }
               eventPropGetter={(event) => ({
                 className: 'bg-primary hover:bg-primary/90 cursor-pointer'

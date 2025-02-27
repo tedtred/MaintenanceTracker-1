@@ -47,7 +47,7 @@ export default function WorkOrderDetails() {
         ...data,
         dueDate: data.dueDate instanceof Date ? data.dueDate.toISOString() : data.dueDate,
       });
-      return res.json();
+      return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/work-orders/${id}`] });
@@ -92,6 +92,14 @@ export default function WorkOrderDetails() {
     },
   });
 
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setIsUploading(true);
+      uploadMutation.mutate(file);
+    }
+  };
+
   const form = useForm({
     values: {
       title: workOrder?.title || "",
@@ -101,14 +109,6 @@ export default function WorkOrderDetails() {
       dueDate: workOrder?.dueDate ? new Date(workOrder.dueDate).toISOString().slice(0, 16) : "",
     },
   });
-
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setIsUploading(true);
-      uploadMutation.mutate(file);
-    }
-  };
 
   if (isLoading) {
     return (

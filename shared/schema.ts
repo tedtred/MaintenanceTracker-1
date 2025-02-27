@@ -161,6 +161,28 @@ export const insertMaintenanceScheduleSchema = createInsertSchema(maintenanceSch
 export type MaintenanceSchedule = typeof maintenanceSchedules.$inferSelect;
 export type InsertMaintenanceSchedule = z.infer<typeof insertMaintenanceScheduleSchema>;
 
+// Add new table for completed maintenance dates
+export const maintenanceCompletions = pgTable("maintenance_completions", {
+  id: serial("id").primaryKey(),
+  scheduleId: integer("schedule_id").references(() => maintenanceSchedules.id).notNull(),
+  completedDate: timestamp("completed_date").notNull(),
+  notes: text("notes"),
+});
+
+export const insertMaintenanceCompletionSchema = createInsertSchema(maintenanceCompletions)
+  .omit({ id: true })
+  .extend({
+    scheduleId: z.number().min(1, "Schedule is required"),
+    completedDate: z.string().or(z.date()).transform((val) =>
+      typeof val === 'string' ? new Date(val) : val
+    ),
+    notes: z.string().optional(),
+  });
+
+// Add new types
+export type MaintenanceCompletion = typeof maintenanceCompletions.$inferSelect;
+export type InsertMaintenanceCompletion = z.infer<typeof insertMaintenanceCompletionSchema>;
+
 // Add new enums
 export const MaintenanceFrequency = {
   DAILY: "DAILY",

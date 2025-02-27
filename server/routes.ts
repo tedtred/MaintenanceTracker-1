@@ -222,6 +222,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Maintenance Completions
+  app.get("/api/maintenance-completions", async (req, res, next) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const completions = await storage.getMaintenanceCompletions();
+      res.json(completions);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/maintenance-completions", async (req, res, next) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const parsed = insertMaintenanceCompletionSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          message: "Validation error",
+          errors: handleZodError(parsed.error),
+        });
+      }
+      const completion = await storage.createMaintenanceCompletion(parsed.data);
+      res.status(201).json(completion);
+    } catch (error) {
+      next(error);
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

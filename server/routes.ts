@@ -221,6 +221,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/maintenance-schedules/:id", async (req, res, next) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteMaintenanceSchedule(id);
+      res.sendStatus(200);
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // Maintenance Completions
   app.get("/api/maintenance-completions", async (req, res, next) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);

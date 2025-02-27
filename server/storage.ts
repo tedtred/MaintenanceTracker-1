@@ -43,6 +43,7 @@ export interface IStorage {
   // Add new maintenance completion methods
   getMaintenanceCompletions(): Promise<MaintenanceCompletion[]>;
   createMaintenanceCompletion(completion: InsertMaintenanceCompletion): Promise<MaintenanceCompletion>;
+  deleteMaintenanceSchedule(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -196,6 +197,11 @@ export class DatabaseStorage implements IStorage {
       .values(completion)
       .returning();
     return newCompletion;
+  }
+  async deleteMaintenanceSchedule(id: number): Promise<void> {
+    await db
+      .delete(maintenanceSchedules)
+      .where(eq(maintenanceSchedules.id, id));
   }
 }
 

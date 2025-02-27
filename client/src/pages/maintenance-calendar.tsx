@@ -14,7 +14,19 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -26,6 +38,7 @@ import {
 } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { Textarea } from "@/components/ui/textarea";
+import { Trash2 } from "lucide-react";
 
 const localizer = dateFnsLocalizer({
   format,
@@ -37,7 +50,6 @@ const localizer = dateFnsLocalizer({
   },
 });
 
-// Helper function to generate recurring events
 const generateRecurringEvents = (schedule: MaintenanceSchedule, assetName: string, completions: MaintenanceCompletion[]) => {
   const events = [];
   const start = new Date(schedule.startDate);
@@ -47,14 +59,12 @@ const generateRecurringEvents = (schedule: MaintenanceSchedule, assetName: strin
 
   let currentDate = new Date(start);
   while (currentDate <= end) {
-    // Check if this date is marked as completed
     const isCompleted = completions.some(
-      completion => 
+      completion =>
         completion.scheduleId === schedule.id &&
         format(new Date(completion.completedDate), 'yyyy-MM-dd') === format(currentDate, 'yyyy-MM-dd')
     );
 
-    // Only add non-completed dates
     if (!isCompleted) {
       const eventDate = new Date(currentDate);
       eventDate.setHours(0, 0, 0, 0); // Set to start of day
@@ -73,7 +83,6 @@ const generateRecurringEvents = (schedule: MaintenanceSchedule, assetName: strin
       });
     }
 
-    // Calculate next occurrence based on frequency
     switch (schedule.frequency) {
       case MaintenanceFrequency.DAILY:
         currentDate = addDays(currentDate, 1);
@@ -98,7 +107,6 @@ const generateRecurringEvents = (schedule: MaintenanceSchedule, assetName: strin
   return events;
 };
 
-// Custom Agenda component without time display
 const CustomAgenda = ({ event }: { event: any }) => (
   <div className="flex items-center gap-4 p-2 hover:bg-accent rounded-md">
     <div className="w-24 text-sm text-muted-foreground">
@@ -153,6 +161,27 @@ export default function MaintenanceCalendar() {
     },
   });
 
+  const deleteMaintenanceScheduleMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/maintenance-schedules/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/maintenance-schedules"] });
+      setIsCompleteDialogOpen(false);
+      toast({
+        title: "Success",
+        description: "Maintenance schedule removed",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const form = useForm({
     defaultValues: {
       notes: "",
@@ -164,8 +193,7 @@ export default function MaintenanceCalendar() {
     return asset ? asset.name : 'Unknown Asset';
   };
 
-  // Generate all events including recurring ones, excluding completed ones
-  const events = schedules.flatMap((schedule) => 
+  const events = schedules.flatMap((schedule) =>
     generateRecurringEvents(schedule, getAssetName(schedule.assetId), completions)
   );
 
@@ -198,7 +226,7 @@ export default function MaintenanceCalendar() {
                 agenda: true,
               }}
               defaultView="month"
-              tooltipAccessor={(event) => 
+              tooltipAccessor={(event) =>
                 `${event.title}\nFrequency: ${event.resource.frequency}`
               }
               className="[&_.rbc-month-view]:!rounded-lg [&_.rbc-month-view]:!border-border [&_.rbc-month-view]:!shadow-sm [&_.rbc-header]:!py-3 [&_.rbc-header]:!font-medium [&_.rbc-header]:!border-border [&_.rbc-month-row]:!border-border [&_.rbc-day-bg]:!border-border [&_.rbc-off-range-bg]:!bg-muted/50 [&_.rbc-today]:!bg-accent/20 [&_.rbc-event]:!px-2 [&_.rbc-event]:!py-1 [&_.rbc-event]:!rounded-md [&_.rbc-event]:!font-medium [&_.rbc-event]:!transition-colors [&_.rbc-event]:hover:!bg-primary/90 [&_.rbc-agenda-view]:!rounded-lg [&_.rbc-agenda-view]:!border-border [&_.rbc-agenda-view]:!shadow-sm [&_.rbc-agenda-view_table]:!border-border [&_.rbc-agenda-view_thead]:!border-border [&_.rbc-agenda-view_tbody]:!border-border [&_.rbc-agenda-view_tr]:!border-border [&_.rbc-agenda-view_td]:!border-border [&_.rbc-agenda-view_td]:!py-3 [&_.rbc-agenda-view_td]:!px-4 [&_.rbc-agenda-empty]:!text-muted-foreground [&_.rbc-agenda-date-cell]:!font-medium [&_.rbc-agenda-time-cell]:!text-muted-foreground [&_.rbc-button-link]:!text-sm [&_.rbc-toolbar-label]:!text-xl [&_.rbc-toolbar-label]:!font-semibold [&_.rbc-toolbar]:!mb-4 [&_.rbc-btn-group]:!gap-1 [&_.rbc-btn-group_button]:!rounded-md [&_.rbc-btn-group_button]:!px-3 [&_.rbc-btn-group_button]:!py-1.5 [&_.rbc-btn-group_button]:!text-sm [&_.rbc-btn-group_button]:!font-medium [&_.rbc-btn-group_button]:!bg-background [&_.rbc-btn-group_button]:!border-border [&_.rbc-btn-group_button]:!text-foreground [&_.rbc-btn-group_button.rbc-active]:!bg-primary [&_.rbc-btn-group_button.rbc-active]:!text-primary-foreground [&_.rbc-event]:!bg-primary/90 [&_.rbc-event]:!text-primary-foreground [&_.rbc-event]:hover:!bg-primary [&_.rbc-event]:!border-none [&_.rbc-today]:!bg-accent/10 [&_.rbc-off-range-bg]:!bg-muted/30 [&_.rbc-show-more]:!text-primary [&_.rbc-show-more]:hover:!text-primary/90"
@@ -221,50 +249,78 @@ export default function MaintenanceCalendar() {
           <Dialog open={isCompleteDialogOpen} onOpenChange={setIsCompleteDialogOpen}>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Complete Maintenance Task</DialogTitle>
+                <DialogTitle>Maintenance Task</DialogTitle>
               </DialogHeader>
               {selectedEvent && (
-                <Form {...form}>
-                  <form
-                    onSubmit={form.handleSubmit((data) =>
-                      completeMaintenanceMutation.mutate({
-                        scheduleId: selectedEvent.resource.id,
-                        completedDate: selectedEvent.resource.date.toISOString(),
-                        notes: data.notes,
-                      })
-                    )}
-                    className="space-y-4"
-                  >
-                    <div>
-                      <h3 className="font-medium">{selectedEvent.title}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Date: {format(selectedEvent.start, 'PPP')}
-                      </p>
-                    </div>
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-medium">{selectedEvent.title}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Date: {format(selectedEvent.start, 'PPP')}
+                    </p>
+                  </div>
 
-                    <FormField
-                      control={form.control}
-                      name="notes"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Completion Notes</FormLabel>
-                          <FormControl>
-                            <Textarea {...field} placeholder="Add any notes about the completed maintenance" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
+                  <Form {...form}>
+                    <form
+                      onSubmit={form.handleSubmit((data) =>
+                        completeMaintenanceMutation.mutate({
+                          scheduleId: selectedEvent.resource.id,
+                          completedDate: selectedEvent.resource.date.toISOString(),
+                          notes: data.notes,
+                        })
                       )}
-                    />
-
-                    <Button
-                      type="submit"
-                      className="w-full"
-                      disabled={completeMaintenanceMutation.isPending}
+                      className="space-y-4"
                     >
-                      Mark as Completed
-                    </Button>
-                  </form>
-                </Form>
+                      <FormField
+                        control={form.control}
+                        name="notes"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Completion Notes</FormLabel>
+                            <FormControl>
+                              <Textarea {...field} placeholder="Add any notes about the completed maintenance" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <div className="flex justify-between items-center">
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="destructive" type="button" size="sm">
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Remove Schedule
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Remove Maintenance Schedule</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will remove all future occurrences of this maintenance schedule. This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => deleteMaintenanceScheduleMutation.mutate(selectedEvent.resource.id)}
+                              >
+                                Remove
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+
+                        <Button
+                          type="submit"
+                          disabled={completeMaintenanceMutation.isPending}
+                        >
+                          Mark as Completed
+                        </Button>
+                      </div>
+                    </form>
+                  </Form>
+                </div>
               )}
             </DialogContent>
           </Dialog>

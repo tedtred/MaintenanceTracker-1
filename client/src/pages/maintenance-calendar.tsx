@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { SidebarNav } from "@/components/sidebar-nav";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Calendar, dateFnsLocalizer } from "react-big-calendar";
+import { Calendar, dateFnsLocalizer, Views } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay, addDays, addWeeks, addMonths } from "date-fns";
 import { enUS } from "date-fns/locale";
 import "react-big-calendar/lib/css/react-big-calendar.css";
@@ -98,6 +98,21 @@ const generateRecurringEvents = (schedule: MaintenanceSchedule, assetName: strin
   return events;
 };
 
+// Custom Agenda component without time display
+const CustomAgenda = ({ event }: { event: any }) => (
+  <div className="flex items-center gap-4 p-2 hover:bg-accent rounded-md">
+    <div className="w-24 text-sm text-muted-foreground">
+      {format(event.start, 'MMM dd, yyyy')}
+    </div>
+    <div>
+      <div className="font-medium">{event.title}</div>
+      <div className="text-sm text-muted-foreground">
+        Frequency: {event.resource.frequency}
+      </div>
+    </div>
+  </div>
+);
+
 export default function MaintenanceCalendar() {
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [isCompleteDialogOpen, setIsCompleteDialogOpen] = useState(false);
@@ -178,7 +193,10 @@ export default function MaintenanceCalendar() {
               startAccessor="start"
               endAccessor="end"
               style={{ height: "700px" }}
-              views={['month']}
+              views={{
+                month: true,
+                agenda: true,
+              }}
               defaultView="month"
               tooltipAccessor={(event) => 
                 `${event.title}\nFrequency: ${event.resource.frequency}`
@@ -187,6 +205,14 @@ export default function MaintenanceCalendar() {
                 className: 'bg-primary hover:bg-primary/90 cursor-pointer'
               })}
               onSelectEvent={handleSelectEvent}
+              components={{
+                agenda: {
+                  event: CustomAgenda,
+                },
+              }}
+              messages={{
+                agenda: 'Daily List',
+              }}
             />
           </Card>
 

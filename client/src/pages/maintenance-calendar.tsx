@@ -201,6 +201,7 @@ export default function MaintenanceCalendar() {
               tooltipAccessor={(event) => 
                 `${event.title}\nFrequency: ${event.resource.frequency}`
               }
+              className="[&_.rbc-month-view]:!rounded-lg [&_.rbc-month-view]:!border-border [&_.rbc-month-view]:!shadow-sm [&_.rbc-header]:!py-3 [&_.rbc-header]:!font-medium [&_.rbc-header]:!border-border [&_.rbc-month-row]:!border-border [&_.rbc-day-bg]:!border-border [&_.rbc-off-range-bg]:!bg-muted/50 [&_.rbc-today]:!bg-accent/20 [&_.rbc-event]:!px-2 [&_.rbc-event]:!py-1 [&_.rbc-event]:!rounded-md [&_.rbc-event]:!font-medium [&_.rbc-event]:!transition-colors [&_.rbc-event]:hover:!bg-primary/90 [&_.rbc-agenda-view]:!rounded-lg [&_.rbc-agenda-view]:!border-border [&_.rbc-agenda-view]:!shadow-sm [&_.rbc-agenda-view_table]:!border-border [&_.rbc-agenda-view_thead]:!border-border [&_.rbc-agenda-view_tbody]:!border-border [&_.rbc-agenda-view_tr]:!border-border [&_.rbc-agenda-view_td]:!border-border [&_.rbc-agenda-view_td]:!py-3 [&_.rbc-agenda-view_td]:!px-4 [&_.rbc-agenda-empty]:!text-muted-foreground [&_.rbc-agenda-date-cell]:!font-medium [&_.rbc-agenda-time-cell]:!text-muted-foreground"
               eventPropGetter={(event) => ({
                 className: 'bg-primary hover:bg-primary/90 cursor-pointer'
               })}

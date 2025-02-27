@@ -1,5 +1,5 @@
-import { User, WorkOrder, Asset, MaintenanceSchedule, InsertUser, InsertWorkOrder, InsertAsset, InsertMaintenanceSchedule, WorkOrderAttachment, InsertWorkOrderAttachment } from "@shared/schema";
-import { users, workOrders, assets, maintenanceSchedules, workOrderAttachments } from "@shared/schema";
+import { User, WorkOrder, Asset, MaintenanceSchedule, InsertUser, InsertWorkOrder, InsertAsset, InsertMaintenanceSchedule, WorkOrderAttachment, InsertWorkOrderAttachment, MaintenanceCompletion, InsertMaintenanceCompletion } from "@shared/schema";
+import { users, workOrders, assets, maintenanceSchedules, workOrderAttachments, maintenanceCompletions } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gte, lte } from "drizzle-orm";
 import session from "express-session";
@@ -39,6 +39,10 @@ export interface IStorage {
   getMaintenanceSchedulesByDateRange(start: Date, end: Date): Promise<MaintenanceSchedule[]>;
   getMaintenanceSchedule(id: number): Promise<MaintenanceSchedule | undefined>;
   updateMaintenanceSchedule(id: number, schedule: Partial<MaintenanceSchedule>): Promise<MaintenanceSchedule>;
+
+  // Add new maintenance completion methods
+  getMaintenanceCompletions(): Promise<MaintenanceCompletion[]>;
+  createMaintenanceCompletion(completion: InsertMaintenanceCompletion): Promise<MaintenanceCompletion>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -179,6 +183,19 @@ export class DatabaseStorage implements IStorage {
       .returning();
     if (!schedule) throw new Error("Maintenance schedule not found");
     return schedule;
+  }
+
+  // Implement new maintenance completion methods
+  async getMaintenanceCompletions(): Promise<MaintenanceCompletion[]> {
+    return await db.select().from(maintenanceCompletions);
+  }
+
+  async createMaintenanceCompletion(completion: InsertMaintenanceCompletion): Promise<MaintenanceCompletion> {
+    const [newCompletion] = await db
+      .insert(maintenanceCompletions)
+      .values(completion)
+      .returning();
+    return newCompletion;
   }
 }
 

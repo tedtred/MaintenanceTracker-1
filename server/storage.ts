@@ -78,7 +78,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getWorkOrder(id: number): Promise<WorkOrder | undefined> {
+    console.log("Getting work order with ID:", id); // Debug log
     const [workOrder] = await db.select().from(workOrders).where(eq(workOrders.id, id));
+    console.log("Found work order:", workOrder); // Debug log
     return workOrder;
   }
 

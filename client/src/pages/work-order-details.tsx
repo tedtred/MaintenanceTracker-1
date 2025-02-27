@@ -33,6 +33,8 @@ export default function WorkOrderDetails() {
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
 
+  console.log("Work Order ID:", id); // Debug log
+
   const { data: workOrder, isLoading } = useQuery<WorkOrder>({
     queryKey: [`/api/work-orders/${id}`],
     enabled: !!id // Only run query if we have an ID
@@ -40,7 +42,7 @@ export default function WorkOrderDetails() {
 
   const { data: attachments = [] } = useQuery<WorkOrderAttachment[]>({
     queryKey: [`/api/work-orders/${id}/attachments`],
-    enabled: !!id
+    enabled: !!id && !!workOrder, // Only fetch attachments if we have both ID and work order
   });
 
   const updateMutation = useMutation({

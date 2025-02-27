@@ -4,6 +4,7 @@ import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { Switch, Route } from "wouter";
 import { ProtectedRoute } from "./lib/protected-route";
+import { ThemeProvider } from "@/components/theme-provider";
 
 import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth-page";
@@ -29,12 +30,14 @@ function Router() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <Router />
-        <Toaster />
-      </AuthProvider>
-    </QueryClientProvider>
+    <ThemeProvider defaultTheme="system" storageKey="cmms-theme">
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <Router />
+          <Toaster />
+        </AuthProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }
 

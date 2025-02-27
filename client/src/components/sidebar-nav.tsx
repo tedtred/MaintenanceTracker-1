@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/hooks/use-auth";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   LayoutDashboard,
   ClipboardList,
@@ -65,14 +66,17 @@ export function SidebarNav() {
         </div>
       </ScrollArea>
       <div className="p-4 border-t">
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-2"
-          onClick={() => logoutMutation.mutate()}
-        >
-          <LogOut className="h-4 w-4" />
-          Logout
-        </Button>
+        <div className="flex items-center justify-between mb-4">
+          <ThemeToggle />
+          <Button
+            variant="ghost"
+            className="justify-start gap-2"
+            onClick={() => logoutMutation.mutate()}
+          >
+            <LogOut className="h-4 w-4" />
+            Logout
+          </Button>
+        </div>
       </div>
     </div>
   );

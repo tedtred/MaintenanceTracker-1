@@ -116,6 +116,33 @@ export default function Assets() {
     },
   });
 
+  const createMaintenanceScheduleMutation = useMutation({
+    mutationFn: async (data: InsertMaintenanceSchedule) => {
+      const res = await apiRequest("POST", "/api/maintenance-schedules", {
+        ...data,
+        startDate: new Date(data.startDate).toISOString(),
+        endDate: data.endDate ? new Date(data.endDate).toISOString() : null,
+      });
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/maintenance-schedules"] });
+      setIsMaintenanceDialogOpen(false);
+      maintenanceForm.reset();
+      toast({
+        title: "Success",
+        description: "Maintenance schedule created successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const form = useForm<InsertAsset>({
     resolver: zodResolver(insertAssetSchema),
     defaultValues: {
@@ -134,7 +161,7 @@ export default function Assets() {
       description: "",
       frequency: MaintenanceFrequency.MONTHLY,
       status: MaintenanceStatus.SCHEDULED,
-      startDate: new Date(),
+      startDate: new Date().toISOString().split('T')[0],
       endDate: null,
       assetId: undefined,
     },
@@ -485,7 +512,7 @@ export default function Assets() {
           <Form {...maintenanceForm}>
             <form
               onSubmit={maintenanceForm.handleSubmit((data) =>
-                createMutation.mutate(data)
+                createMaintenanceScheduleMutation.mutate(data)
               )}
               className="space-y-4"
             >
@@ -586,7 +613,7 @@ export default function Assets() {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={createMutation.isPending}
+                disabled={createMaintenanceScheduleMutation.isPending}
               >
                 Add Schedule
               </Button>

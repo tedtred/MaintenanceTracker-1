@@ -55,7 +55,7 @@ export default function WorkOrders() {
     mutationFn: async (data: InsertWorkOrder) => {
       const res = await apiRequest("POST", "/api/work-orders", {
         ...data,
-        dueDate: new Date(data.dueDate).toISOString().split('T')[0],
+        reportedDate: new Date().toISOString().split('T')[0], // Always use current date
       });
       return await res.json();
     },
@@ -80,10 +80,7 @@ export default function WorkOrders() {
   const updateMutation = useMutation({
     mutationFn: async (data: Partial<WorkOrder> & { id: number }) => {
       const { id, ...updates } = data;
-      const res = await apiRequest("PATCH", `/api/work-orders/${id}`, {
-        ...updates,
-        dueDate: new Date(updates.dueDate as string).toISOString().split('T')[0],
-      });
+      const res = await apiRequest("PATCH", `/api/work-orders/${id}`, updates);
       return await res.json();
     },
     onSuccess: () => {
@@ -104,13 +101,12 @@ export default function WorkOrders() {
   });
 
   const form = useForm<InsertWorkOrder>({
-    resolver: zodResolver(insertWorkOrderSchema),
     defaultValues: {
       title: "",
       description: "",
       status: WorkOrderStatus.OPEN,
       priority: WorkOrderPriority.MEDIUM,
-      dueDate: new Date().toISOString().split('T')[0],
+      reportedDate: new Date().toISOString().split('T')[0],
     },
   });
 
@@ -121,7 +117,7 @@ export default function WorkOrders() {
       description: "",
       status: WorkOrderStatus.OPEN,
       priority: WorkOrderPriority.MEDIUM,
-      dueDate: new Date().toISOString().split('T')[0],
+      reportedDate: new Date().toISOString().split('T')[0],
     },
   });
 
@@ -130,7 +126,7 @@ export default function WorkOrders() {
     if (selectedWorkOrder) {
       const formattedWorkOrder = {
         ...selectedWorkOrder,
-        dueDate: new Date(selectedWorkOrder.dueDate).toISOString().split('T')[0],
+        reportedDate: new Date(selectedWorkOrder.reportedDate).toISOString().split('T')[0],
       };
       detailsForm.reset(formattedWorkOrder);
     }
@@ -168,7 +164,7 @@ export default function WorkOrders() {
                 <TableHead>Title</TableHead>
                 <TableHead>Priority</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Due Date</TableHead>
+                <TableHead>Reported Date</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -185,7 +181,7 @@ export default function WorkOrders() {
                   <TableCell>{wo.priority}</TableCell>
                   <TableCell>{wo.status}</TableCell>
                   <TableCell>
-                    {new Date(wo.dueDate).toLocaleDateString()}
+                    {new Date(wo.reportedDate).toLocaleDateString()}
                   </TableCell>
                 </TableRow>
               ))}
@@ -254,22 +250,6 @@ export default function WorkOrders() {
                             ))}
                           </SelectContent>
                         </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="dueDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Due Date</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="date"
-                            {...field}
-                          />
-                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -380,22 +360,9 @@ export default function WorkOrders() {
                         </FormItem>
                       )}
                     />
-                    <FormField
-                      control={detailsForm.control}
-                      name="dueDate"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Due Date</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="date"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    <div className="text-sm text-muted-foreground">
+                      Reported on: {new Date(selectedWorkOrder?.reportedDate).toLocaleDateString()}
+                    </div>
                     <Button
                       type="submit"
                       className="w-full"

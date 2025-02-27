@@ -47,6 +47,11 @@ export const assets = pgTable("assets", {
   description: text("description").notNull(),
   location: text("location").notNull(),
   status: text("status").notNull(),
+  category: text("category").notNull(),
+  modelNumber: text("model_number"),
+  serialNumber: text("serial_number"),
+  manufacturer: text("manufacturer"),
+  purchaseDate: timestamp("purchase_date"),
   lastMaintenance: timestamp("last_maintenance")
 });
 
@@ -57,6 +62,13 @@ export const insertAssetSchema = createInsertSchema(assets)
     description: z.string().min(1, "Description is required"),
     location: z.string().min(1, "Location is required"),
     status: z.string().min(1, "Status is required"),
+    category: z.string().min(1, "Category is required"),
+    modelNumber: z.string().optional(),
+    serialNumber: z.string().optional(),
+    manufacturer: z.string().optional(),
+    purchaseDate: z.string().or(z.date()).optional().transform((val) =>
+      val ? (typeof val === 'string' ? new Date(val) : val) : null
+    ),
   });
 
 // Work Order Attachments schema
@@ -163,4 +175,13 @@ export const MaintenanceStatus = {
   IN_PROGRESS: "IN_PROGRESS",
   COMPLETED: "COMPLETED",
   OVERDUE: "OVERDUE",
+} as const;
+
+// Add Asset Category enum
+export const AssetCategory = {
+  MACHINERY: "MACHINERY",
+  VEHICLE: "VEHICLE",
+  TOOL: "TOOL",
+  COMPUTER: "COMPUTER",
+  OTHER: "OTHER",
 } as const;

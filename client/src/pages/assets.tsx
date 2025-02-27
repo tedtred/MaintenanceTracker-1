@@ -1,7 +1,16 @@
 import { useState } from "react";
 import { SidebarNav } from "@/components/sidebar-nav";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Asset, InsertAsset, AssetStatus, MaintenanceSchedule, InsertMaintenanceSchedule, MaintenanceFrequency, MaintenanceStatus } from "@shared/schema";
+import { 
+  Asset, 
+  InsertAsset, 
+  AssetStatus, 
+  AssetCategory,
+  MaintenanceSchedule, 
+  InsertMaintenanceSchedule, 
+  MaintenanceFrequency, 
+  MaintenanceStatus 
+} from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -12,7 +21,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -39,12 +47,13 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { Calendar } from "lucide-react";
+import { Calendar, Wrench, Car, Monitor, Box } from "lucide-react";
 
 export default function Assets() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState<number | null>(null);
   const [isMaintenanceDialogOpen, setIsMaintenanceDialogOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const { toast } = useToast();
 
   const { data: assets = [] } = useQuery<Asset[]>({
@@ -67,29 +76,6 @@ export default function Assets() {
       toast({
         title: "Success",
         description: "Asset created successfully",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const createMaintenanceMutation = useMutation({
-    mutationFn: async (data: InsertMaintenanceSchedule) => {
-      const res = await apiRequest("POST", "/api/maintenance-schedules", data);
-      return await res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/maintenance-schedules"] });
-      setIsMaintenanceDialogOpen(false);
-      maintenanceForm.reset();
-      toast({
-        title: "Success",
-        description: "Maintenance schedule created successfully",
       });
     },
     onError: (error: Error) => {
@@ -126,6 +112,7 @@ export default function Assets() {
       description: "",
       location: "",
       status: AssetStatus.OPERATIONAL,
+      category: AssetCategory.MACHINERY,
     },
   });
 
@@ -146,11 +133,28 @@ export default function Assets() {
     return maintenanceSchedules.filter((schedule) => schedule.assetId === assetId);
   };
 
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case AssetCategory.MACHINERY:
+        return <Wrench className="h-5 w-5" />;
+      case AssetCategory.VEHICLE:
+        return <Car className="h-5 w-5" />;
+      case AssetCategory.COMPUTER:
+        return <Monitor className="h-5 w-5" />;
+      default:
+        return <Box className="h-5 w-5" />;
+    }
+  };
+
+  const filteredAssets = selectedCategory
+    ? assets.filter((asset) => asset.category === selectedCategory)
+    : assets;
+
   return (
     <div className="flex h-screen">
       <SidebarNav />
       <div className="flex-1 p-8">
-        <div className="max-w-6xl mx-auto space-y-8">
+        <div className="max-w-7xl mx-auto space-y-8">
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold">Assets</h1>
@@ -159,105 +163,38 @@ export default function Assets() {
               </p>
             </div>
 
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>Add Asset</Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add New Asset</DialogTitle>
-                </DialogHeader>
-                <Form {...form}>
-                  <form
-                    onSubmit={form.handleSubmit((data) =>
-                      createMutation.mutate(data)
-                    )}
-                    className="space-y-4"
-                  >
-                    <FormField
-                      control={form.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Name</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="description"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Description</FormLabel>
-                          <FormControl>
-                            <Textarea {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="location"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Location</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="status"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Status</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select status" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {Object.values(AssetStatus).map((status) => (
-                                <SelectItem key={status} value={status}>
-                                  {status}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <Button
-                      type="submit"
-                      className="w-full"
-                      disabled={createMutation.isPending}
-                    >
-                      Add Asset
-                    </Button>
-                  </form>
-                </Form>
-              </DialogContent>
-            </Dialog>
+            <div className="flex gap-4">
+              <Select
+                value={selectedCategory || ""}
+                onValueChange={(value) => setSelectedCategory(value || null)}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Filter by category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Categories</SelectItem>
+                  {Object.values(AssetCategory).map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Button onClick={() => setIsCreateDialogOpen(true)}>
+                Add Asset
+              </Button>
+            </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {assets.map((asset) => (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {filteredAssets.map((asset) => (
               <Card key={asset.id}>
                 <CardHeader className="space-y-1">
-                  <CardTitle className="text-xl">{asset.name}</CardTitle>
+                  <div className="flex items-center gap-2">
+                    {getCategoryIcon(asset.category)}
+                    <CardTitle className="text-xl">{asset.name}</CardTitle>
+                  </div>
                   <Select
                     value={asset.status}
                     onValueChange={(status) =>
@@ -281,15 +218,41 @@ export default function Assets() {
                     <p className="text-sm text-muted-foreground">
                       {asset.description}
                     </p>
-                    <div className="text-sm">
-                      <strong>Location:</strong> {asset.location}
-                    </div>
-                    {asset.lastMaintenance && (
-                      <div className="text-sm">
-                        <strong>Last Maintenance:</strong>{" "}
-                        {new Date(asset.lastMaintenance).toLocaleDateString()}
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <strong>Location:</strong> {asset.location}
                       </div>
-                    )}
+                      <div>
+                        <strong>Category:</strong> {asset.category}
+                      </div>
+                      {asset.manufacturer && (
+                        <div>
+                          <strong>Manufacturer:</strong> {asset.manufacturer}
+                        </div>
+                      )}
+                      {asset.modelNumber && (
+                        <div>
+                          <strong>Model:</strong> {asset.modelNumber}
+                        </div>
+                      )}
+                      {asset.serialNumber && (
+                        <div>
+                          <strong>Serial:</strong> {asset.serialNumber}
+                        </div>
+                      )}
+                      {asset.purchaseDate && (
+                        <div>
+                          <strong>Purchased:</strong>{" "}
+                          {new Date(asset.purchaseDate).toLocaleDateString()}
+                        </div>
+                      )}
+                      {asset.lastMaintenance && (
+                        <div>
+                          <strong>Last Maintenance:</strong>{" "}
+                          {new Date(asset.lastMaintenance).toLocaleDateString()}
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div className="space-y-2">
@@ -300,7 +263,7 @@ export default function Assets() {
                         size="sm"
                         onClick={() => {
                           setSelectedAsset(asset.id);
-                          maintenanceForm.setValue('assetId', asset.id);
+                          maintenanceForm.setValue("assetId", asset.id);
                           setIsMaintenanceDialogOpen(true);
                         }}
                       >
@@ -315,10 +278,8 @@ export default function Assets() {
                       >
                         <div className="font-medium">{schedule.title}</div>
                         <div className="text-muted-foreground">
-                          Frequency: {schedule.frequency}
-                        </div>
-                        <div className="text-muted-foreground">
-                          Next: {new Date(schedule.startDate).toLocaleDateString()}
+                          {schedule.frequency} |{" "}
+                          {new Date(schedule.startDate).toLocaleDateString()}
                         </div>
                       </div>
                     ))}
@@ -330,6 +291,181 @@ export default function Assets() {
         </div>
       </div>
 
+      {/* Create Asset Dialog */}
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Add New Asset</DialogTitle>
+          </DialogHeader>
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit((data) => createMutation.mutate(data))}
+              className="space-y-4"
+            >
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Category</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {Object.values(AssetCategory).map((category) => (
+                          <SelectItem key={category} value={category}>
+                            {category}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="manufacturer"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Manufacturer</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="modelNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Model Number</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <FormField
+                control={form.control}
+                name="serialNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Serial Number</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="location"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Location</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {Object.values(AssetStatus).map((status) => (
+                          <SelectItem key={status} value={status}>
+                            {status}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="purchaseDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Purchase Date</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="date"
+                        {...field}
+                        value={field.value instanceof Date ? field.value.toISOString().split('T')[0] : field.value || ''}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={createMutation.isPending}
+              >
+                Add Asset
+              </Button>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Maintenance Schedule Dialog */}
       <Dialog open={isMaintenanceDialogOpen} onOpenChange={setIsMaintenanceDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -404,9 +540,9 @@ export default function Assets() {
                       <FormLabel>Start Date</FormLabel>
                       <FormControl>
                         <Input
-                          type="datetime-local"
+                          type="date"
                           {...field}
-                          value={field.value instanceof Date ? field.value.toISOString().slice(0, 16) : ''}
+                          value={field.value instanceof Date ? field.value.toISOString().split('T')[0] : ''}
                           onChange={(e) => field.onChange(new Date(e.target.value))}
                         />
                       </FormControl>
@@ -422,9 +558,9 @@ export default function Assets() {
                       <FormLabel>End Date (Optional)</FormLabel>
                       <FormControl>
                         <Input
-                          type="datetime-local"
+                          type="date"
                           {...field}
-                          value={field.value instanceof Date ? field.value.toISOString().slice(0, 16) : ''}
+                          value={field.value instanceof Date ? field.value.toISOString().split('T')[0] : ''}
                           onChange={(e) => {
                             const value = e.target.value;
                             field.onChange(value ? new Date(value) : null);
@@ -439,7 +575,7 @@ export default function Assets() {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={createMaintenanceMutation.isPending}
+                disabled={createMutation.isPending}
               >
                 Add Schedule
               </Button>

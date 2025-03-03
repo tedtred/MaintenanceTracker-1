@@ -262,6 +262,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add the DELETE route for assets
+  app.delete("/api/assets/:id", async (req, res, next) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteAsset(id);
+      res.sendStatus(200);
+    } catch (error) {
+      next(error);
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

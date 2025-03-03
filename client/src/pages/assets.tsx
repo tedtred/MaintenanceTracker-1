@@ -1,15 +1,15 @@
 import { useState } from "react";
 import { SidebarNav } from "@/components/sidebar-nav";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { 
-  Asset, 
-  InsertAsset, 
-  AssetStatus, 
+import {
+  Asset,
+  InsertAsset,
+  AssetStatus,
   AssetCategory,
-  MaintenanceSchedule, 
-  InsertMaintenanceSchedule, 
-  MaintenanceFrequency, 
-  MaintenanceStatus 
+  MaintenanceSchedule,
+  InsertMaintenanceSchedule,
+  MaintenanceFrequency,
+  MaintenanceStatus,
 } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -48,6 +48,18 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Calendar, Wrench, Car, Monitor, Box } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Trash2 } from "lucide-react";
 
 export default function Assets() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -143,6 +155,26 @@ export default function Assets() {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/assets/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/assets"] });
+      toast({
+        title: "Success",
+        description: "Asset deleted successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const form = useForm<InsertAsset>({
     resolver: zodResolver(insertAssetSchema),
     defaultValues: {
@@ -161,7 +193,7 @@ export default function Assets() {
       description: "",
       frequency: MaintenanceFrequency.MONTHLY,
       status: MaintenanceStatus.SCHEDULED,
-      startDate: new Date().toISOString().split('T')[0],
+      startDate: new Date().toISOString().split("T")[0],
       endDate: null,
       assetId: undefined,
     },
@@ -229,27 +261,57 @@ export default function Assets() {
             {filteredAssets.map((asset) => (
               <Card key={asset.id}>
                 <CardHeader className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    {getCategoryIcon(asset.category)}
-                    <CardTitle className="text-xl">{asset.name}</CardTitle>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {getCategoryIcon(asset.category)}
+                      <CardTitle className="text-xl">{asset.name}</CardTitle>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Select
+                        value={asset.status}
+                        onValueChange={(status) =>
+                          updateStatusMutation.mutate({ id: asset.id, status })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.values(AssetStatus).map((status) => (
+                            <SelectItem key={status} value={status}>
+                              {status}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="destructive" size="icon">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Asset</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This will permanently delete this asset and all its maintenance schedules.
+                              This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => deleteMutation.mutate(asset.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </div>
-                  <Select
-                    value={asset.status}
-                    onValueChange={(status) =>
-                      updateStatusMutation.mutate({ id: asset.id, status })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.values(AssetStatus).map((status) => (
-                        <SelectItem key={status} value={status}>
-                          {status}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">

@@ -40,6 +40,7 @@ export interface IStorage {
   getAssets(): Promise<Asset[]>;
   getAsset(id: number): Promise<Asset | undefined>;
   updateAsset(id: number, asset: Partial<Asset>): Promise<Asset>;
+  deleteAsset(id: number): Promise<void>;
 
   // Maintenance Schedules
   createMaintenanceSchedule(schedule: InsertMaintenanceSchedule): Promise<MaintenanceSchedule>;
@@ -163,6 +164,22 @@ export class DatabaseStorage implements IStorage {
       .returning();
     if (!asset) throw new Error("Asset not found");
     return asset;
+  }
+
+  async deleteAsset(id: number): Promise<void> {
+    // First check if there are any related maintenance schedules
+    const relatedSchedules = await db
+      .select()
+      .from(maintenanceSchedules)
+      .where(eq(maintenanceSchedules.assetId, id));
+
+    // If there are maintenance schedules, delete them first
+    for (const schedule of relatedSchedules) {
+      await this.deleteMaintenanceSchedule(schedule.id);
+    }
+
+    // Delete the asset
+    await db.delete(assets).where(eq(assets.id, id));
   }
 
   async createMaintenanceSchedule(schedule: InsertMaintenanceSchedule): Promise<MaintenanceSchedule> {

@@ -126,6 +126,7 @@ export const AssetStatus = {
   OPERATIONAL: "OPERATIONAL",
   MAINTENANCE: "MAINTENANCE",
   OFFLINE: "OFFLINE",
+  DECOMMISSIONED: "DECOMMISSIONED",  // Add new status
 } as const;
 
 export const UserRole = {

@@ -65,7 +65,9 @@ export default function WorkOrders() {
         assignedTo: null,
         assetId: null,
         reportedDate: new Date().toISOString(),
+        completedDate: null,
       };
+
       const res = await apiRequest("POST", "/api/work-orders", payload);
       if (!res.ok) {
         const error = await res.json();

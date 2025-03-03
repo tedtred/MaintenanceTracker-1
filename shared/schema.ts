@@ -26,7 +26,7 @@ export const workOrders = pgTable("work_orders", {
   assignedTo: integer("assigned_to").references(() => users.id),
   assetId: integer("asset_id").references(() => assets.id),
   reportedDate: timestamp("reported_date").notNull().defaultNow(),
-  completedDate: timestamp("completed_date"),  // Add new field
+  completedDate: timestamp("completed_date"),
 });
 
 export const insertWorkOrderSchema = createInsertSchema(workOrders)

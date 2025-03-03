@@ -106,8 +106,17 @@ export class DatabaseStorage implements IStorage {
     // Handle status change to COMPLETED
     const updateData: Partial<WorkOrder> = { ...updates };
 
-    if (updates.status === WorkOrderStatus.COMPLETED) {
+    if (updates.status === WorkOrderStatus.COMPLETED && !updates.completedDate) {
       updateData.completedDate = new Date();
+    }
+
+    // Ensure dates are properly formatted
+    if (updateData.reportedDate && typeof updateData.reportedDate === 'string') {
+      updateData.reportedDate = new Date(updateData.reportedDate);
+    }
+
+    if (updateData.completedDate && typeof updateData.completedDate === 'string') {
+      updateData.completedDate = new Date(updateData.completedDate);
     }
 
     const [workOrder] = await db

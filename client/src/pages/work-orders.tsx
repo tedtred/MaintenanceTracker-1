@@ -60,10 +60,17 @@ export default function WorkOrders() {
 
   const createMutation = useMutation({
     mutationFn: async (data: InsertWorkOrder) => {
-      const res = await apiRequest("POST", "/api/work-orders", {
+      const payload = {
         ...data,
+        assignedTo: null,
+        assetId: null,
         reportedDate: new Date().toISOString(),
-      });
+      };
+      const res = await apiRequest("POST", "/api/work-orders", payload);
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to create work order");
+      }
       return await res.json();
     },
     onSuccess: () => {
@@ -108,13 +115,16 @@ export default function WorkOrders() {
   });
 
   const form = useForm<InsertWorkOrder>({
-    resolver: zodResolver(insertWorkOrderSchema), // Add zod resolver
+    resolver: zodResolver(insertWorkOrderSchema),
     defaultValues: {
       title: "",
       description: "",
       status: WorkOrderStatus.OPEN,
       priority: WorkOrderPriority.MEDIUM,
       reportedDate: new Date().toISOString(),
+      completedDate: null,
+      assignedTo: null,
+      assetId: null,
     },
   });
 
@@ -126,6 +136,9 @@ export default function WorkOrders() {
       status: WorkOrderStatus.OPEN,
       priority: WorkOrderPriority.MEDIUM,
       reportedDate: new Date().toISOString(),
+      completedDate: null,
+      assignedTo: null,
+      assetId: null,
     },
   });
 
@@ -274,7 +287,11 @@ export default function WorkOrders() {
                     className="w-full"
                     disabled={createMutation.isPending}
                   >
-                    Create Work Order
+                    {createMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      "Create Work Order"
+                    )}
                   </Button>
                 </form>
               </Form>
@@ -364,11 +381,13 @@ export default function WorkOrders() {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {Object.values(WorkOrderPriority).map((priority) => (
-                                <SelectItem key={priority} value={priority}>
-                                  {priority}
-                                </SelectItem>
-                              ))}
+                              {Object.values(WorkOrderPriority).map(
+                                (priority) => (
+                                  <SelectItem key={priority} value={priority}>
+                                    {priority}
+                                  </SelectItem>
+                                )
+                              )}
                             </SelectContent>
                           </Select>
                           <FormMessage />

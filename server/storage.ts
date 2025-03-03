@@ -8,6 +8,14 @@ import { pool } from "./db";
 
 const PostgresSessionStore = connectPg(session);
 
+// Added WorkOrderStatus enum
+enum WorkOrderStatus {
+  COMPLETED = 'COMPLETED',
+  ARCHIVED = 'ARCHIVED',
+  // Add other statuses as needed
+}
+
+
 export interface IStorage {
   // Session
   sessionStore: session.Store;
@@ -44,6 +52,7 @@ export interface IStorage {
   getMaintenanceCompletions(): Promise<MaintenanceCompletion[]>;
   createMaintenanceCompletion(completion: InsertMaintenanceCompletion): Promise<MaintenanceCompletion>;
   deleteMaintenanceSchedule(id: number): Promise<void>;
+  checkAndArchiveCompletedWorkOrders(): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -99,11 +108,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateWorkOrder(id: number, updates: Partial<WorkOrder>): Promise<WorkOrder> {
+    // If status is being updated to COMPLETED, set completedDate
+    const updateData = {
+      ...updates,
+      ...(updates.status === WorkOrderStatus.COMPLETED ? {
+        completedDate: new Date()
+      } : {})
+    };
+
     const [workOrder] = await db
       .update(workOrders)
-      .set(updates)
+      .set(updateData)
       .where(eq(workOrders.id, id))
       .returning();
+
     if (!workOrder) throw new Error("Work order not found");
     return workOrder;
   }
@@ -208,6 +226,29 @@ export class DatabaseStorage implements IStorage {
     await db
       .delete(maintenanceSchedules)
       .where(eq(maintenanceSchedules.id, id));
+  }
+
+  async checkAndArchiveCompletedWorkOrders(): Promise<void> {
+    const now = new Date();
+    const fortyEightHoursAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+
+    // Get all completed work orders
+    const completedOrders = await db
+      .select()
+      .from(workOrders)
+      .where(
+        and(
+          eq(workOrders.status, WorkOrderStatus.COMPLETED),
+          lte(workOrders.completedDate, fortyEightHoursAgo)
+        )
+      );
+
+    // Archive orders completed more than 48 hours ago
+    for (const order of completedOrders) {
+      await this.updateWorkOrder(order.id, {
+        status: WorkOrderStatus.ARCHIVED
+      });
+    }
   }
 }
 

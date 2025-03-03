@@ -25,7 +25,8 @@ export const workOrders = pgTable("work_orders", {
   priority: text("priority").notNull(),
   assignedTo: integer("assigned_to").references(() => users.id),
   assetId: integer("asset_id").references(() => assets.id),
-  reportedDate: timestamp("reported_date").notNull().defaultNow()
+  reportedDate: timestamp("reported_date").notNull().defaultNow(),
+  completedDate: timestamp("completed_date"),  // Add new field
 });
 
 export const insertWorkOrderSchema = createInsertSchema(workOrders)
@@ -37,6 +38,9 @@ export const insertWorkOrderSchema = createInsertSchema(workOrders)
     priority: z.string().min(1, "Priority is required"),
     reportedDate: z.string().or(z.date()).transform((val) =>
       typeof val === 'string' ? new Date(val) : val
+    ),
+    completedDate: z.string().or(z.date()).nullable().transform((val) =>
+      val ? (typeof val === 'string' ? new Date(val) : val) : null
     ),
   });
 

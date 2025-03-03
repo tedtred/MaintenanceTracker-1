@@ -65,6 +65,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/work-orders", async (req, res, next) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
+      // Check and archive completed work orders before returning the list
+      await storage.checkAndArchiveCompletedWorkOrders();
       const workOrders = await storage.getWorkOrders();
       res.json(workOrders);
     } catch (error) {

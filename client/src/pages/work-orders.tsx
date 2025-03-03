@@ -108,6 +108,7 @@ export default function WorkOrders() {
   });
 
   const form = useForm<InsertWorkOrder>({
+    resolver: zodResolver(insertWorkOrderSchema), // Add zod resolver
     defaultValues: {
       title: "",
       description: "",

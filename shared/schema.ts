@@ -36,6 +36,8 @@ export const insertWorkOrderSchema = createInsertSchema(workOrders)
     description: z.string().min(1, "Description is required"),
     status: z.string().min(1, "Status is required"),
     priority: z.string().min(1, "Priority is required"),
+    assignedTo: z.number().nullable(),
+    assetId: z.number().nullable(),
     reportedDate: z.string().or(z.date()).transform((val) =>
       typeof val === 'string' ? new Date(val) : val
     ),

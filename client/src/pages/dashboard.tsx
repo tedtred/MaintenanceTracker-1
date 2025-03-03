@@ -18,11 +18,16 @@ export default function Dashboard() {
     queryKey: ["/api/assets"],
   });
 
-  // Calculate statistics
-  const openWorkOrders = workOrders.filter(
+  // Filter out archived work orders
+  const activeWorkOrders = workOrders.filter(
+    (wo) => wo.status !== WorkOrderStatus.ARCHIVED
+  );
+
+  // Calculate statistics from active work orders only
+  const openWorkOrders = activeWorkOrders.filter(
     (wo) => wo.status === WorkOrderStatus.OPEN
   ).length;
-  const completedWorkOrders = workOrders.filter(
+  const completedWorkOrders = activeWorkOrders.filter(
     (wo) => wo.status === WorkOrderStatus.COMPLETED
   ).length;
   const assetsNeedingMaintenance = assets.filter(
@@ -75,7 +80,7 @@ export default function Dashboard() {
             <div className="space-y-4">
               <h2 className="text-xl font-semibold">Recent Work Orders</h2>
               <div className="space-y-2">
-                {workOrders.slice(0, 5).map((wo) => (
+                {activeWorkOrders.slice(0, 5).map((wo) => (
                   <div
                     key={wo.id}
                     className="p-4 border rounded-lg bg-card hover:bg-accent/50 transition-colors"

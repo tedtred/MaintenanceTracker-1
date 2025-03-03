@@ -1,20 +1,20 @@
 import { User, WorkOrder, Asset, MaintenanceSchedule, InsertUser, InsertWorkOrder, InsertAsset, InsertMaintenanceSchedule, WorkOrderAttachment, InsertWorkOrderAttachment, MaintenanceCompletion, InsertMaintenanceCompletion } from "@shared/schema";
 import { users, workOrders, assets, maintenanceSchedules, workOrderAttachments, maintenanceCompletions } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, gte, lte } from "drizzle-orm";
+import { eq, and, lte, gte } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
 
 const PostgresSessionStore = connectPg(session);
 
-// Added WorkOrderStatus enum
+// Added WorkOrderStatus enum for type safety
 enum WorkOrderStatus {
+  OPEN = 'OPEN',
+  IN_PROGRESS = 'IN_PROGRESS',
   COMPLETED = 'COMPLETED',
   ARCHIVED = 'ARCHIVED',
-  // Add other statuses as needed
 }
-
 
 export interface IStorage {
   // Session
@@ -48,7 +48,7 @@ export interface IStorage {
   getMaintenanceSchedule(id: number): Promise<MaintenanceSchedule | undefined>;
   updateMaintenanceSchedule(id: number, schedule: Partial<MaintenanceSchedule>): Promise<MaintenanceSchedule>;
 
-  // Add new maintenance completion methods
+  // Maintenance Completions
   getMaintenanceCompletions(): Promise<MaintenanceCompletion[]>;
   createMaintenanceCompletion(completion: InsertMaintenanceCompletion): Promise<MaintenanceCompletion>;
   deleteMaintenanceSchedule(id: number): Promise<void>;
@@ -83,7 +83,10 @@ export class DatabaseStorage implements IStorage {
 
   // Work Order Methods
   async createWorkOrder(workOrder: InsertWorkOrder): Promise<WorkOrder> {
-    const [newWorkOrder] = await db.insert(workOrders).values(workOrder).returning();
+    const [newWorkOrder] = await db.insert(workOrders).values({
+      ...workOrder,
+      reportedDate: new Date(),
+    }).returning();
     return newWorkOrder;
   }
 
@@ -92,29 +95,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getWorkOrder(id: number): Promise<WorkOrder | undefined> {
-    try {
-      console.log("Getting work order with ID:", id); // Debug log
-      const [workOrder] = await db
-        .select()
-        .from(workOrders)
-        .where(eq(workOrders.id, id));
-
-      console.log("Found work order:", workOrder); // Debug log
-      return workOrder;
-    } catch (error) {
-      console.error("Error fetching work order:", error);
-      throw new Error("Failed to fetch work order");
-    }
+    const [workOrder] = await db
+      .select()
+      .from(workOrders)
+      .where(eq(workOrders.id, id));
+    return workOrder;
   }
 
   async updateWorkOrder(id: number, updates: Partial<WorkOrder>): Promise<WorkOrder> {
-    // If status is being updated to COMPLETED, set completedDate
-    const updateData = {
-      ...updates,
-      ...(updates.status === WorkOrderStatus.COMPLETED ? {
-        completedDate: new Date()
-      } : {})
-    };
+    // Handle status change to COMPLETED
+    const updateData: Partial<WorkOrder> = { ...updates };
+
+    if (updates.status === WorkOrderStatus.COMPLETED) {
+      updateData.completedDate = new Date();
+    }
 
     const [workOrder] = await db
       .update(workOrders)
@@ -126,7 +120,6 @@ export class DatabaseStorage implements IStorage {
     return workOrder;
   }
 
-  // Work Order Attachment Methods
   async createWorkOrderAttachment(attachment: InsertWorkOrderAttachment): Promise<WorkOrderAttachment> {
     const [newAttachment] = await db.insert(workOrderAttachments).values(attachment).returning();
     return newAttachment;
@@ -139,7 +132,6 @@ export class DatabaseStorage implements IStorage {
       .where(eq(workOrderAttachments.workOrderId, workOrderId));
   }
 
-  // Asset Methods
   async createAsset(asset: InsertAsset): Promise<Asset> {
     const [newAsset] = await db.insert(assets).values(asset).returning();
     return newAsset;
@@ -164,7 +156,6 @@ export class DatabaseStorage implements IStorage {
     return asset;
   }
 
-  // Maintenance Schedule Methods
   async createMaintenanceSchedule(schedule: InsertMaintenanceSchedule): Promise<MaintenanceSchedule> {
     const [newSchedule] = await db.insert(maintenanceSchedules).values(schedule).returning();
     return newSchedule;
@@ -204,18 +195,15 @@ export class DatabaseStorage implements IStorage {
     return schedule;
   }
 
-  // Implement new maintenance completion methods
   async getMaintenanceCompletions(): Promise<MaintenanceCompletion[]> {
     return await db.select().from(maintenanceCompletions);
   }
 
   async createMaintenanceCompletion(completion: InsertMaintenanceCompletion): Promise<MaintenanceCompletion> {
-    const [newCompletion] = await db
-      .insert(maintenanceCompletions)
-      .values(completion)
-      .returning();
+    const [newCompletion] = await db.insert(maintenanceCompletions).values(completion).returning();
     return newCompletion;
   }
+
   async deleteMaintenanceSchedule(id: number): Promise<void> {
     // First delete all related maintenance completions
     await db

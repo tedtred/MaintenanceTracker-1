@@ -41,12 +41,16 @@ export default function WorkOrderDetails() {
   const updateMutation = useMutation({
     mutationFn: async (data: Partial<WorkOrder>) => {
       if (!workOrderId) throw new Error("No work order ID");
-      const res = await apiRequest("PATCH", `/api/work-orders/${workOrderId}`, {
-        ...data,
-        dueDate: data.dueDate instanceof Date 
-          ? data.dueDate.toISOString() 
-          : new Date(data.dueDate as string).toISOString(),
-      });
+
+      // Only send fields that are actually being updated
+      const updates = {
+        title: data.title,
+        description: data.description,
+        status: data.status,
+        priority: data.priority,
+      };
+
+      const res = await apiRequest("PATCH", `/api/work-orders/${workOrderId}`, updates);
       return await res.json();
     },
     onSuccess: () => {
@@ -71,9 +75,6 @@ export default function WorkOrderDetails() {
       description: workOrder?.description || "",
       status: workOrder?.status || WorkOrderStatus.OPEN,
       priority: workOrder?.priority || WorkOrderPriority.MEDIUM,
-      dueDate: workOrder?.dueDate 
-        ? new Date(workOrder.dueDate).toISOString().slice(0, 16) 
-        : new Date().toISOString().slice(0, 16),
     },
   });
 
@@ -230,19 +231,6 @@ export default function WorkOrderDetails() {
                       )}
                     />
                   </div>
-                  <FormField
-                    control={form.control}
-                    name="dueDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Due Date</FormLabel>
-                        <FormControl>
-                          <Input type="datetime-local" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
                   <Button
                     type="submit"
                     className="w-full"

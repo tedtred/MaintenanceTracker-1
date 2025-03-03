@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import { insertWorkOrderSchema } from "@shared/schema";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -39,23 +40,29 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2 } from "lucide-react";
+import { Loader2, Archive } from "lucide-react";
 
 export default function WorkOrders() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<WorkOrder | null>(null);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
   const { toast } = useToast();
 
   const { data: workOrders = [], isLoading } = useQuery<WorkOrder[]>({
     queryKey: ["/api/work-orders"],
   });
 
+  // Filter work orders based on archived status
+  const filteredWorkOrders = workOrders.filter((wo) =>
+    showArchived ? true : wo.status !== WorkOrderStatus.ARCHIVED
+  );
+
   const createMutation = useMutation({
     mutationFn: async (data: InsertWorkOrder) => {
       const res = await apiRequest("POST", "/api/work-orders", {
         ...data,
-        reportedDate: new Date().toISOString(), // Store full timestamp
+        reportedDate: new Date().toISOString(),
       });
       return await res.json();
     },
@@ -121,7 +128,6 @@ export default function WorkOrders() {
     },
   });
 
-  // Reset details form when selected work order changes
   useEffect(() => {
     if (selectedWorkOrder) {
       detailsForm.reset(selectedWorkOrder);
@@ -148,10 +154,22 @@ export default function WorkOrders() {
                 Manage and track maintenance tasks
               </p>
             </div>
-
-            <Button onClick={() => setIsCreateDialogOpen(true)}>
-              Create Work Order
-            </Button>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={showArchived}
+                  onCheckedChange={setShowArchived}
+                  className="data-[state=checked]:bg-primary"
+                />
+                <span className="text-sm flex items-center gap-1">
+                  <Archive className="h-4 w-4" />
+                  Show Archived
+                </span>
+              </div>
+              <Button onClick={() => setIsCreateDialogOpen(true)}>
+                Create Work Order
+              </Button>
+            </div>
           </div>
 
           <Table>
@@ -164,7 +182,7 @@ export default function WorkOrders() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {workOrders.map((wo) => (
+              {filteredWorkOrders.map((wo) => (
                 <TableRow
                   key={wo.id}
                   className="cursor-pointer hover:bg-accent/50"

@@ -184,6 +184,7 @@ export default function Assets() {
       location: "",
       status: AssetStatus.OPERATIONAL,
       category: AssetCategory.MACHINERY,
+      commissionedDate: "", // Added default value
     },
   });
 
@@ -351,6 +352,12 @@ export default function Assets() {
                         <div>
                           <strong>Last Maintenance:</strong>{" "}
                           {new Date(asset.lastMaintenance).toLocaleDateString()}
+                        </div>
+                      )}
+                      {asset.commissionedDate && (
+                        <div>
+                          <strong>Commissioned:</strong>{" "}
+                          {new Date(asset.commissionedDate).toLocaleDateString()}
                         </div>
                       )}
                     </div>
@@ -543,6 +550,23 @@ export default function Assets() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Purchase Date</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="date"
+                        {...field}
+                        value={field.value instanceof Date ? field.value.toISOString().split('T')[0] : field.value || ''}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="commissionedDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Commission Date</FormLabel>
                     <FormControl>
                       <Input
                         type="date"

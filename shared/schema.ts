@@ -46,7 +46,7 @@ export const insertWorkOrderSchema = createInsertSchema(workOrders)
     ),
   });
 
-// Asset schema
+// Assets schema
 export const assets = pgTable("assets", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -57,7 +57,7 @@ export const assets = pgTable("assets", {
   modelNumber: text("model_number"),
   serialNumber: text("serial_number"),
   manufacturer: text("manufacturer"),
-  purchaseDate: timestamp("purchase_date"),
+  commissionedDate: timestamp("commissioned_date"), // Changed from purchaseDate
   lastMaintenance: timestamp("last_maintenance")
 });
 
@@ -72,7 +72,7 @@ export const insertAssetSchema = createInsertSchema(assets)
     modelNumber: z.string().optional(),
     serialNumber: z.string().optional(),
     manufacturer: z.string().optional(),
-    purchaseDate: z.string().or(z.date()).optional().transform((val) =>
+    commissionedDate: z.string().or(z.date()).optional().transform((val) => // Changed from purchaseDate
       val ? (typeof val === 'string' ? new Date(val) : val) : null
     ),
   });

@@ -161,6 +161,7 @@ export default function Assets() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/assets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/maintenance-schedules"] });
       toast({
         title: "Success",
         description: "Asset deleted successfully",

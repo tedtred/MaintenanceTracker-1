@@ -102,6 +102,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add the DELETE route for work orders
+  app.delete("/api/work-orders/:id", async (req, res, next) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteWorkOrder(id);
+      res.sendStatus(200);
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // Fix the work order route parameter parsing
   app.get("/api/work-orders/:id", async (req, res, next) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);

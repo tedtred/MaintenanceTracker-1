@@ -30,6 +30,7 @@ export interface IStorage {
   getWorkOrders(): Promise<WorkOrder[]>;
   getWorkOrder(id: number): Promise<WorkOrder | undefined>;
   updateWorkOrder(id: number, workOrder: Partial<WorkOrder>): Promise<WorkOrder>;
+  deleteWorkOrder(id: number): Promise<void>; // Added deleteWorkOrder method
 
   // Work Order Attachments
   createWorkOrderAttachment(attachment: InsertWorkOrderAttachment): Promise<WorkOrderAttachment>;
@@ -263,6 +264,16 @@ export class DatabaseStorage implements IStorage {
         status: WorkOrderStatus.ARCHIVED
       });
     }
+  }
+
+  async deleteWorkOrder(id: number): Promise<void> {
+    // First delete any attachments
+    await db
+      .delete(workOrderAttachments)
+      .where(eq(workOrderAttachments.workOrderId, id));
+
+    // Then delete the work order
+    await db.delete(workOrders).where(eq(workOrders.id, id));
   }
 }
 

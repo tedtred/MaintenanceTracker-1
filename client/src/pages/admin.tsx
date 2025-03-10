@@ -20,6 +20,7 @@ import { User, UserRole } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SidebarNav } from "@/components/sidebar-nav"; // Add this import
 
 export default function AdminPage() {
   const { toast } = useToast();
@@ -103,93 +104,98 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="container mx-auto py-8">
-      <h1 className="text-3xl font-bold mb-8">User Management</h1>
+    <div className="flex h-screen">
+      <SidebarNav />
+      <div className="flex-1 p-8">
+        <div className="max-w-4xl mx-auto">
+          <h1 className="text-3xl font-bold mb-8">User Management</h1>
 
-      <Tabs defaultValue="users" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="users">Active Users</TabsTrigger>
-          <TabsTrigger value="pending">
-            Pending Approvals
-            {pendingUsers?.length ? (
-              <span className="ml-2 rounded-full bg-primary px-2 py-0.5 text-xs text-primary-foreground">
-                {pendingUsers.length}
-              </span>
-            ) : null}
-          </TabsTrigger>
-        </TabsList>
+          <Tabs defaultValue="users" className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="users">Active Users</TabsTrigger>
+              <TabsTrigger value="pending">
+                Pending Approvals
+                {pendingUsers?.length ? (
+                  <span className="ml-2 rounded-full bg-primary px-2 py-0.5 text-xs text-primary-foreground">
+                    {pendingUsers.length}
+                  </span>
+                ) : null}
+              </TabsTrigger>
+            </TabsList>
 
-        <TabsContent value="users" className="space-y-4">
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Username</TableHead>
-                  <TableHead>Current Role</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users?.filter(user => user.approved).map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell>{user.id}</TableCell>
-                    <TableCell>{user.username}</TableCell>
-                    <TableCell>{user.role}</TableCell>
-                    <TableCell>
-                      <Select
-                        defaultValue={user.role}
-                        onValueChange={(value) => handleRoleUpdate(user.id, value)}
-                        disabled={user.id === currentUser.id}
-                      >
-                        <SelectTrigger className="w-[180px]">
-                          <SelectValue placeholder="Select role" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value={UserRole.ADMIN}>Admin</SelectItem>
-                          <SelectItem value={UserRole.MANAGER}>Manager</SelectItem>
-                          <SelectItem value={UserRole.TECHNICIAN}>Technician</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </TabsContent>
+            <TabsContent value="users" className="space-y-4">
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ID</TableHead>
+                      <TableHead>Username</TableHead>
+                      <TableHead>Current Role</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {users?.filter(user => user.approved).map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell>{user.id}</TableCell>
+                        <TableCell>{user.username}</TableCell>
+                        <TableCell>{user.role}</TableCell>
+                        <TableCell>
+                          <Select
+                            defaultValue={user.role}
+                            onValueChange={(value) => handleRoleUpdate(user.id, value)}
+                            disabled={user.id === currentUser.id}
+                          >
+                            <SelectTrigger className="w-[180px]">
+                              <SelectValue placeholder="Select role" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value={UserRole.ADMIN}>Admin</SelectItem>
+                              <SelectItem value={UserRole.MANAGER}>Manager</SelectItem>
+                              <SelectItem value={UserRole.TECHNICIAN}>Technician</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </TabsContent>
 
-        <TabsContent value="pending" className="space-y-4">
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Username</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {pendingUsers?.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell>{user.id}</TableCell>
-                    <TableCell>{user.username}</TableCell>
-                    <TableCell>
-                      <Button
-                        onClick={() => handleApproveUser(user.id)}
-                        variant="default"
-                        size="sm"
-                      >
-                        Approve User
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </TabsContent>
-      </Tabs>
+            <TabsContent value="pending" className="space-y-4">
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ID</TableHead>
+                      <TableHead>Username</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {pendingUsers?.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell>{user.id}</TableCell>
+                        <TableCell>{user.username}</TableCell>
+                        <TableCell>
+                          <Button
+                            onClick={() => handleApproveUser(user.id)}
+                            variant="default"
+                            size="sm"
+                          >
+                            Approve User
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </div>
     </div>
   );
 }

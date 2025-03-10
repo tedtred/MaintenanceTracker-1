@@ -5,7 +5,7 @@ import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
-import { User as SelectUser } from "@shared/schema";
+import { User as SelectUser, UserRole } from "@shared/schema";
 
 declare global {
   namespace Express {
@@ -27,6 +27,17 @@ async function comparePasswords(supplied: string, stored: string) {
   const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
   return timingSafeEqual(hashedBuf, suppliedBuf);
 }
+
+// Middleware to check if user is admin
+const isAdmin = (req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  if (req.user.role !== UserRole.ADMIN) {
+    return res.status(403).json({ message: "Forbidden" });
+  }
+  next();
+};
 
 export function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
@@ -58,6 +69,7 @@ export function setupAuth(app: Express) {
     done(null, user);
   });
 
+  // Existing routes
   app.post("/api/register", async (req, res, next) => {
     const existingUser = await storage.getUserByUsername(req.body.username);
     if (existingUser) {
@@ -89,5 +101,32 @@ export function setupAuth(app: Express) {
   app.get("/api/user", (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     res.json(req.user);
+  });
+
+  // New admin routes
+  app.get("/api/admin/users", isAdmin, async (_req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      res.json(users);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  app.patch("/api/admin/users/:id", isAdmin, async (req, res) => {
+    const userId = parseInt(req.params.id);
+    const { role } = req.body;
+
+    // Validate role
+    if (!Object.values(UserRole).includes(role)) {
+      return res.status(400).json({ message: "Invalid role" });
+    }
+
+    try {
+      const updatedUser = await storage.updateUserRole(userId, role);
+      res.json(updatedUser);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update user role" });
+    }
   });
 }

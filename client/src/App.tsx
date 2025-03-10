@@ -13,6 +13,7 @@ import WorkOrders from "@/pages/work-orders";
 import WorkOrderDetails from "@/pages/work-order-details";
 import Assets from "@/pages/assets";
 import MaintenanceCalendar from "@/pages/maintenance-calendar";
+import AdminPage from "@/pages/admin";
 
 function Router() {
   return (
@@ -23,6 +24,7 @@ function Router() {
       <ProtectedRoute path="/work-orders/:id" component={WorkOrderDetails} />
       <ProtectedRoute path="/assets" component={Assets} />
       <ProtectedRoute path="/maintenance-calendar" component={MaintenanceCalendar} />
+      <ProtectedRoute path="/admin" component={AdminPage} />
       <Route component={NotFound} />
     </Switch>
   );

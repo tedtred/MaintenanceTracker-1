@@ -24,13 +24,15 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  getAllUsers(): Promise<User[]>; // New method
+  updateUserRole(userId: number, role: string): Promise<User>; // New method
 
   // Work Orders
   createWorkOrder(workOrder: InsertWorkOrder): Promise<WorkOrder>;
   getWorkOrders(): Promise<WorkOrder[]>;
   getWorkOrder(id: number): Promise<WorkOrder | undefined>;
   updateWorkOrder(id: number, workOrder: Partial<WorkOrder>): Promise<WorkOrder>;
-  deleteWorkOrder(id: number): Promise<void>; // Added deleteWorkOrder method
+  deleteWorkOrder(id: number): Promise<void>;
 
   // Work Order Attachments
   createWorkOrderAttachment(attachment: InsertWorkOrderAttachment): Promise<WorkOrderAttachment>;
@@ -81,6 +83,24 @@ export class DatabaseStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const [user] = await db.insert(users).values(insertUser).returning();
     return user;
+  }
+
+  // New method to get all users
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(users);
+  }
+
+  // New method to update user role
+  async updateUserRole(userId: number, role: string): Promise<User> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({ role })
+      .where(eq(users.id, userId))
+      .returning();
+    if (!updatedUser) {
+      throw new Error("User not found");
+    }
+    return updatedUser;
   }
 
   // Work Order Methods

@@ -32,12 +32,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Trash2 } from "lucide-react";
+import { Trash2, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { useState } from "react";
 
 export default function AdminPage() {
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
   const queryClient = useQueryClient();
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Fetch all users
   const { data: users, isLoading: isLoadingUsers } = useQuery<User[]>({
@@ -56,6 +59,15 @@ export default function AdminPage() {
       return response.json();
     },
   });
+
+  // Filter users based on search query
+  const filteredUsers = users?.filter(user => 
+    user.approved && user.username.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredPendingUsers = pendingUsers?.filter(user =>
+    user.username.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   // Update user role
   const handleRoleUpdate = async (userId: number, newRole: string) => {
@@ -141,14 +153,24 @@ export default function AdminPage() {
         <div className="max-w-4xl mx-auto">
           <h1 className="text-3xl font-bold mb-8">User Management</h1>
 
+          <div className="relative mb-6">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search users..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+
           <Tabs defaultValue="users" className="space-y-4">
             <TabsList>
               <TabsTrigger value="users">Active Users</TabsTrigger>
               <TabsTrigger value="pending">
                 Pending Approvals
-                {pendingUsers?.length ? (
+                {filteredPendingUsers?.length ? (
                   <span className="ml-2 rounded-full bg-primary px-2 py-0.5 text-xs text-primary-foreground">
-                    {pendingUsers.length}
+                    {filteredPendingUsers.length}
                   </span>
                 ) : null}
               </TabsTrigger>
@@ -166,7 +188,7 @@ export default function AdminPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {users?.filter(user => user.approved).map((user) => (
+                    {filteredUsers?.map((user) => (
                       <TableRow key={user.id}>
                         <TableCell>{user.id}</TableCell>
                         <TableCell>{user.username}</TableCell>
@@ -230,7 +252,7 @@ export default function AdminPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {pendingUsers?.map((user) => (
+                    {filteredPendingUsers?.map((user) => (
                       <TableRow key={user.id}>
                         <TableCell>{user.id}</TableCell>
                         <TableCell>{user.username}</TableCell>

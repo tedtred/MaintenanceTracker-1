@@ -45,9 +45,8 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
-import { Calendar, Wrench, Car, Monitor, Box } from "lucide-react";
+import { Calendar, Wrench, Car, Monitor, Box, Search } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -66,6 +65,7 @@ export default function Assets() {
   const [selectedAsset, setSelectedAsset] = useState<number | null>(null);
   const [isMaintenanceDialogOpen, setIsMaintenanceDialogOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
+  const [searchQuery, setSearchQuery] = useState(""); // Add search query state
   const { toast } = useToast();
 
   const { data: assets = [] } = useQuery<Asset[]>({
@@ -74,6 +74,20 @@ export default function Assets() {
 
   const { data: maintenanceSchedules = [] } = useQuery<MaintenanceSchedule[]>({
     queryKey: ["/api/maintenance-schedules"],
+  });
+
+  // Filter assets based on both search query and category
+  const filteredAssets = assets.filter((asset) => {
+    const matchesSearch = searchQuery === "" ||
+      asset.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      asset.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      asset.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (asset.serialNumber && asset.serialNumber.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (asset.modelNumber && asset.modelNumber.toLowerCase().includes(searchQuery.toLowerCase()));
+
+    const matchesCategory = selectedCategory === "ALL" || asset.category === selectedCategory;
+
+    return matchesSearch && matchesCategory;
   });
 
   const createMutation = useMutation({
@@ -218,9 +232,6 @@ export default function Assets() {
     }
   };
 
-  const filteredAssets = selectedCategory === "ALL"
-    ? assets
-    : assets.filter((asset) => asset.category === selectedCategory);
 
   return (
     <div className="flex h-screen">
@@ -236,6 +247,15 @@ export default function Assets() {
             </div>
 
             <div className="flex gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search assets..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 w-[280px]"
+                />
+              </div>
               <Select
                 value={selectedCategory}
                 onValueChange={setSelectedCategory}

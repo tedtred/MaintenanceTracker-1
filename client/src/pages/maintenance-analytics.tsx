@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { SidebarNav } from "@/components/sidebar-nav";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -15,10 +16,17 @@ import {
   Line,
   ResponsiveContainer
 } from "recharts";
-import { format, parseISO, startOfMonth, eachMonthOfInterval, subMonths } from "date-fns";
+import { format, parseISO, startOfMonth, eachMonthOfInterval, subMonths, differenceInDays } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Asset, WorkOrder, MaintenanceCompletion, WorkOrderStatus, AssetStatus } from "@shared/schema";
 import { Loader2 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
 
@@ -40,11 +48,11 @@ const EmptyState = () => (
 // Custom label component for the pie chart
 const CustomPieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }: any) => {
   const RADIAN = Math.PI / 180;
-  const radius = innerRadius + (outerRadius - innerRadius) * 1.4; // Increase distance from pie
+  const radius = innerRadius + (outerRadius - innerRadius) * 1.4;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
-  if (percent < 0.05) return null; // Don't show labels for very small segments
+  if (percent < 0.05) return null;
 
   return (
     <text
@@ -61,6 +69,8 @@ const CustomPieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, n
 };
 
 export default function MaintenanceAnalytics() {
+  const [timeRange, setTimeRange] = useState<"30" | "90" | "180" | "365">("90");
+
   // Fetch all required data
   const { data: maintenanceCompletions = [], isLoading: isLoadingCompletions } = useQuery<MaintenanceCompletion[]>({
     queryKey: ["/api/maintenance-completions"],
@@ -76,39 +86,33 @@ export default function MaintenanceAnalytics() {
 
   const isLoading = isLoadingCompletions || isLoadingWorkOrders || isLoadingAssets;
 
+  // Filter work orders based on time range
+  const filteredWorkOrders = workOrders.filter(wo => {
+    const orderDate = new Date(wo.reportedDate);
+    const daysAgo = differenceInDays(new Date(), orderDate);
+    return daysAgo <= parseInt(timeRange);
+  });
+
   // Prepare data for monthly completion trend
   const last6Months = eachMonthOfInterval({
     start: startOfMonth(subMonths(new Date(), 5)),
     end: startOfMonth(new Date())
   });
 
+  // Fix date handling in monthly completions data
   const monthlyCompletions = last6Months.map(month => {
     const completions = maintenanceCompletions.filter(completion =>
-      startOfMonth(parseISO(completion.completedDate)).getTime() === month.getTime()
+      startOfMonth(new Date(completion.completedDate)).getTime() === month.getTime()
     );
 
     return {
       month: format(month, 'MMM yyyy'),
       count: completions.length,
-      name: format(month, 'MMMM yyyy') // Full month name for tooltip
+      name: format(month, 'MMMM yyyy')
     };
   });
 
-  // Prepare work order status distribution
-  const workOrderStatusData = Object.values(WorkOrderStatus)
-    .map(status => ({
-      name: status,
-      value: workOrders.filter(wo => wo.status === status).length
-    }))
-    .filter(item => item.value > 0);
-
-  // Prepare asset status distribution
-  const assetStatusData = Object.values(AssetStatus).map(status => ({
-    name: status,
-    value: assets.filter(asset => asset.status === status).length
-  }));
-
-  // Calculate average completion time for work orders
+  // Work order metrics
   const completedWorkOrders = workOrders.filter(wo =>
     wo.status === WorkOrderStatus.COMPLETED && wo.completedDate && wo.reportedDate
   );
@@ -119,6 +123,49 @@ export default function MaintenanceAnalytics() {
   }, 0) / (completedWorkOrders.length || 1);
 
   const averageDays = Math.round(averageCompletionTime / (1000 * 60 * 60 * 24));
+
+  // Prepare work order priority distribution
+  const priorityData = filteredWorkOrders.reduce((acc: any[], wo) => {
+    const priority = wo.priority || 'UNSPECIFIED';
+    const existing = acc.find(item => item.name === priority);
+    if (existing) {
+      existing.value++;
+    } else {
+      acc.push({ name: priority, value: 1 });
+    }
+    return acc;
+  }, []);
+
+  // Prepare equipment breakdown
+  const equipmentData = filteredWorkOrders.reduce((acc: any[], wo) => {
+    if (!wo.assetId) return acc;
+    const asset = assets.find(a => a.id === wo.assetId);
+    if (!asset) return acc;
+
+    const existing = acc.find(item => item.name === asset.category);
+    if (existing) {
+      existing.value++;
+    } else {
+      acc.push({ name: asset.category, value: 1 });
+    }
+    return acc;
+  }, []).sort((a, b) => b.value - a.value);
+
+  // Prepare asset status distribution
+  const assetStatusData = Object.values(AssetStatus)
+    .map(status => ({
+      name: status,
+      value: assets.filter(asset => asset.status === status).length
+    }))
+    .filter(item => item.value > 0);
+
+  // Update status checks to use correct enum values
+  const statusCounts = {
+    total: filteredWorkOrders.length,
+    completed: filteredWorkOrders.filter(wo => wo.status === WorkOrderStatus.COMPLETED).length,
+    open: filteredWorkOrders.filter(wo => wo.status === WorkOrderStatus.OPEN).length,
+    inProgress: filteredWorkOrders.filter(wo => wo.status === WorkOrderStatus.IN_PROGRESS).length
+  };
 
   // Custom tooltip for charts
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -142,12 +189,183 @@ export default function MaintenanceAnalytics() {
       <SidebarNav />
       <div className="flex-1 p-8 overflow-y-auto">
         <div className="max-w-7xl mx-auto space-y-8">
-          <div>
-            <h1 className="text-3xl font-bold">Maintenance Analytics</h1>
-            <p className="text-muted-foreground">
-              Visualizing maintenance trends and performance metrics
-            </p>
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold">Maintenance Analytics</h1>
+              <p className="text-muted-foreground">
+                Visualizing maintenance trends and performance metrics
+              </p>
+            </div>
+            <Select
+              value={timeRange}
+              onValueChange={(value: "30" | "90" | "180" | "365") => setTimeRange(value)}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Select time range" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="30">Last 30 Days</SelectItem>
+                <SelectItem value="90">Last 90 Days</SelectItem>
+                <SelectItem value="180">Last 180 Days</SelectItem>
+                <SelectItem value="365">Last Year</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+
+          {/* Performance Summary Cards */}
+          <div className="grid gap-6 md:grid-cols-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Total Work Orders
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {statusCounts.total}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  in the last {timeRange} days
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Completed Orders
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {statusCounts.completed}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Average completion: {averageDays} days
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Open Orders
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {statusCounts.open}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  awaiting assignment
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  In Progress
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {statusCounts.inProgress}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  currently being worked on
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
+            {/* Work Order Priority Distribution */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Work Order Priority Distribution</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <LoadingSpinner />
+                ) : priorityData.length === 0 ? (
+                  <EmptyState />
+                ) : (
+                  <div className="h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={priorityData}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={CustomPieLabel}
+                          outerRadius={100}
+                          fill="#8884d8"
+                          dataKey="value"
+                          paddingAngle={2}
+                        >
+                          {priorityData.map((entry, index) => (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={COLORS[index % COLORS.length]}
+                              stroke="var(--background)"
+                              strokeWidth={2}
+                            />
+                          ))}
+                        </Pie>
+                        <Tooltip content={<CustomTooltip />} />
+                        <Legend
+                          verticalAlign="bottom"
+                          height={36}
+                          formatter={(value) => (
+                            <span className="text-sm">{value}</span>
+                          )}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Equipment Breakdown */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Equipment Type Breakdown</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <LoadingSpinner />
+                ) : equipmentData.length === 0 ? (
+                  <EmptyState />
+                ) : (
+                  <div className="h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={equipmentData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                        <XAxis
+                          dataKey="name"
+                          stroke="var(--foreground)"
+                          tick={{ fill: 'var(--foreground)' }}
+                        />
+                        <YAxis
+                          stroke="var(--foreground)"
+                          tick={{ fill: 'var(--foreground)' }}
+                        />
+                        <Tooltip content={<CustomTooltip />} />
+                        <Legend />
+                        <Bar
+                          dataKey="value"
+                          name="Work Orders"
+                          fill="#00C49F"
+                          radius={[4, 4, 0, 0]}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
 
           <div className="grid gap-6 md:grid-cols-2">
             {/* Monthly Maintenance Completions */}
@@ -181,70 +399,6 @@ export default function MaintenanceAnalytics() {
                           dot={{ fill: '#0088FE' }}
                         />
                       </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Work Order Status Distribution */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Work Order Status Distribution</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <LoadingSpinner />
-                ) : workOrderStatusData.length === 0 ? (
-                  <EmptyState />
-                ) : (
-                  <div className="h-[300px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={workOrderStatusData}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          label={CustomPieLabel}
-                          outerRadius={100}
-                          fill="#8884d8"
-                          dataKey="value"
-                          paddingAngle={2}
-                        >
-                          {workOrderStatusData.map((entry, index) => (
-                            <Cell
-                              key={`cell-${index}`}
-                              fill={COLORS[index % COLORS.length]}
-                              stroke="var(--background)"
-                              strokeWidth={2}
-                            />
-                          ))}
-                        </Pie>
-                        <Tooltip
-                          content={({ active, payload }) => {
-                            if (active && payload && payload.length) {
-                              const data = payload[0].payload;
-                              return (
-                                <div className="bg-background border rounded-lg shadow-lg p-3">
-                                  <p className="font-medium">{data.name}</p>
-                                  <p className="text-sm">
-                                    Count: {data.value} ({((data.value / workOrders.length) * 100).toFixed(1)}%)
-                                  </p>
-                                </div>
-                              );
-                            }
-                            return null;
-                          }}
-                        />
-                        <Legend
-                          verticalAlign="bottom"
-                          height={36}
-                          formatter={(value) => (
-                            <span className="text-sm">{value}</span>
-                          )}
-                        />
-                      </PieChart>
                     </ResponsiveContainer>
                   </div>
                 )}
@@ -285,36 +439,37 @@ export default function MaintenanceAnalytics() {
                 )}
               </CardContent>
             </Card>
-
-            {/* Performance Metrics */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Work Order Performance</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? <LoadingSpinner /> : (
-                  <div className="grid grid-cols-2 gap-4 p-4">
-                    <div className="space-y-2 text-center p-4 rounded-lg bg-muted">
-                      <h3 className="text-2xl font-bold text-primary">
-                        {averageDays} days
-                      </h3>
-                      <p className="text-sm text-muted-foreground">
-                        Average Completion Time
-                      </p>
-                    </div>
-                    <div className="space-y-2 text-center p-4 rounded-lg bg-muted">
-                      <h3 className="text-2xl font-bold text-primary">
-                        {completedWorkOrders.length}
-                      </h3>
-                      <p className="text-sm text-muted-foreground">
-                        Total Completed Orders
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
           </div>
+
+
+          {/* Work Order Performance (moved here for better layout) */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Work Order Performance</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? <LoadingSpinner /> : (
+                <div className="grid grid-cols-2 gap-4 p-4">
+                  <div className="space-y-2 text-center p-4 rounded-lg bg-muted">
+                    <h3 className="text-2xl font-bold text-primary">
+                      {averageDays} days
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Average Completion Time
+                    </p>
+                  </div>
+                  <div className="space-y-2 text-center p-4 rounded-lg bg-muted">
+                    <h3 className="text-2xl font-bold text-primary">
+                      {completedWorkOrders.length}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Total Completed Orders
+                    </p>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

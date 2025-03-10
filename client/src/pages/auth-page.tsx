@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useForm } from "react-hook-form";
 import { useLocation } from "wouter";
 import { useEffect, useState } from "react";
-import { insertUserSchema } from "@shared/schema";
+import { insertUserSchema, InsertUser } from "@shared/schema";
 import {
   Card,
   CardContent,
@@ -51,7 +51,7 @@ export default function AuthPage() {
     },
   });
 
-  const handleRegister = async (data) => {
+  const handleRegister = async (data: InsertUser) => {
     try {
       await registerMutation.mutateAsync(data);
       setRegistrationSuccess(true);

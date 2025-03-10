@@ -57,9 +57,12 @@ export function setupAuth(app: Express) {
       const user = await storage.getUserByUsername(username);
       if (!user || !(await comparePasswords(password, user.password))) {
         return done(null, false);
-      } else {
-        return done(null, user);
       }
+      // Check if user is approved
+      if (!user.approved && user.role !== UserRole.ADMIN) {
+        return done(null, false, { message: "Account pending approval" });
+      }
+      return done(null, user);
     }),
   );
 
@@ -69,7 +72,7 @@ export function setupAuth(app: Express) {
     done(null, user);
   });
 
-  // Existing routes
+  // Registration route - sets default role and requires approval
   app.post("/api/register", async (req, res, next) => {
     const existingUser = await storage.getUserByUsername(req.body.username);
     if (existingUser) {
@@ -77,18 +80,52 @@ export function setupAuth(app: Express) {
     }
 
     const user = await storage.createUser({
-      ...req.body,
+      username: req.body.username,
       password: await hashPassword(req.body.password),
+      role: UserRole.TECHNICIAN, // Default role
+      approved: false, // Requires approval
     });
 
-    req.login(user, (err) => {
-      if (err) return next(err);
-      res.status(201).json(user);
+    res.status(201).json({ 
+      message: "Registration successful. Your account is pending admin approval.",
+      username: user.username
     });
   });
 
-  app.post("/api/login", passport.authenticate("local"), (req, res) => {
-    res.status(200).json(req.user);
+  // Admin endpoints for user management
+  app.get("/api/admin/pending-users", isAdmin, async (_req, res) => {
+    try {
+      const users = await storage.getPendingUsers();
+      res.json(users);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch pending users" });
+    }
+  });
+
+  app.patch("/api/admin/users/:id/approve", isAdmin, async (req, res) => {
+    const userId = parseInt(req.params.id);
+    try {
+      const updatedUser = await storage.approveUser(userId);
+      res.json(updatedUser);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to approve user" });
+    }
+  });
+
+  // Existing routes
+  app.post("/api/login", (req, res, next) => {
+    passport.authenticate("local", (err, user, info) => {
+      if (err) return next(err);
+      if (!user) {
+        return res.status(401).json({ 
+          message: info?.message || "Invalid credentials" 
+        });
+      }
+      req.login(user, (err) => {
+        if (err) return next(err);
+        res.status(200).json(user);
+      });
+    })(req, res, next);
   });
 
   app.post("/api/logout", (req, res, next) => {
@@ -103,7 +140,7 @@ export function setupAuth(app: Express) {
     res.json(req.user);
   });
 
-  // New admin routes
+  // Existing admin routes for role management
   app.get("/api/admin/users", isAdmin, async (_req, res) => {
     try {
       const users = await storage.getAllUsers();
@@ -117,7 +154,6 @@ export function setupAuth(app: Express) {
     const userId = parseInt(req.params.id);
     const { role } = req.body;
 
-    // Validate role
     if (!Object.values(UserRole).includes(role)) {
       return res.status(400).json({ message: "Invalid role" });
     }

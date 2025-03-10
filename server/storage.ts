@@ -26,6 +26,8 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   getAllUsers(): Promise<User[]>; // New method
   updateUserRole(userId: number, role: string): Promise<User>; // New method
+  getPendingUsers(): Promise<User[]>;
+  approveUser(userId: number): Promise<User>;
 
   // Work Orders
   createWorkOrder(workOrder: InsertWorkOrder): Promise<WorkOrder>;
@@ -102,6 +104,27 @@ export class DatabaseStorage implements IStorage {
     }
     return updatedUser;
   }
+
+  async getPendingUsers(): Promise<User[]> {
+    return await db
+      .select()
+      .from(users)
+      .where(eq(users.approved, false));
+  }
+
+  async approveUser(userId: number): Promise<User> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({ approved: true })
+      .where(eq(users.id, userId))
+      .returning();
+
+    if (!updatedUser) {
+      throw new Error("User not found");
+    }
+    return updatedUser;
+  }
+
 
   // Work Order Methods
   async createWorkOrder(workOrder: InsertWorkOrder): Promise<WorkOrder> {

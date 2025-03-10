@@ -2,18 +2,27 @@ import { pgTable, text, serial, integer, timestamp, boolean } from "drizzle-orm/
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+export const UserRole = {
+  ADMIN: "ADMIN",
+  TECHNICIAN: "TECHNICIAN",
+  MANAGER: "MANAGER",
+} as const;
+
 // User schema
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
-  role: text("role").notNull()
+  role: text("role").notNull(),
+  approved: boolean("approved").notNull().default(false)
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
-  role: true,
+}).extend({
+  role: z.literal(UserRole.TECHNICIAN), // Default role for new users
+  approved: z.literal(false), // Always start as unapproved
 });
 
 // Work Order schema
@@ -129,11 +138,6 @@ export const AssetStatus = {
   DECOMMISSIONED: "DECOMMISSIONED",  // Add new status
 } as const;
 
-export const UserRole = {
-  ADMIN: "ADMIN",
-  TECHNICIAN: "TECHNICIAN",
-  MANAGER: "MANAGER",
-} as const;
 
 // Maintenance Schedule schema
 export const maintenanceSchedules = pgTable("maintenance_schedules", {

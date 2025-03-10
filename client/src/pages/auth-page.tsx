@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useForm } from "react-hook-form";
 import { useLocation } from "wouter";
 import { useEffect, useState } from "react";
-import { insertUserSchema, InsertUser } from "@shared/schema";
+import { z } from "zod";
 import {
   Card,
   CardContent,
@@ -25,6 +25,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Wrench } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
+// Define a simpler schema for the registration form
+const registrationSchema = z.object({
+  username: z.string().min(1, "Username is required"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+type RegistrationData = z.infer<typeof registrationSchema>;
+
 export default function AuthPage() {
   const [, setLocation] = useLocation();
   const { user, loginMutation, registerMutation } = useAuth();
@@ -43,21 +51,24 @@ export default function AuthPage() {
     },
   });
 
-  const registerForm = useForm({
-    resolver: zodResolver(insertUserSchema),
+  const registerForm = useForm<RegistrationData>({
+    resolver: zodResolver(registrationSchema),
     defaultValues: {
       username: "",
       password: "",
     },
   });
 
-  const handleRegister = async (data: InsertUser) => {
+  const handleRegister = async (data: RegistrationData) => {
     try {
-      await registerMutation.mutateAsync(data);
-      setRegistrationSuccess(true);
-      registerForm.reset();
+      const result = await registerMutation.mutateAsync(data);
+      if (result.message) {
+        setRegistrationSuccess(true);
+        registerForm.reset();
+      }
     } catch (error) {
       // Error handling is done by the mutation
+      console.error("Registration error:", error);
     }
   };
 

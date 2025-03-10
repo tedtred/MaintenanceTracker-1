@@ -14,10 +14,11 @@ type AuthContextType = {
   error: Error | null;
   loginMutation: UseMutationResult<SelectUser, Error, LoginData>;
   logoutMutation: UseMutationResult<void, Error, void>;
-  registerMutation: UseMutationResult<SelectUser, Error, InsertUser>;
+  registerMutation: UseMutationResult<SelectUser, Error, RegistrationData>;
 };
 
 type LoginData = Pick<InsertUser, "username" | "password">;
+type RegistrationData = Pick<InsertUser, "username" | "password">;
 
 export const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -49,12 +50,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   const registerMutation = useMutation({
-    mutationFn: async (credentials: InsertUser) => {
+    mutationFn: async (credentials: RegistrationData) => {
       const res = await apiRequest("POST", "/api/register", credentials);
       const data = await res.json();
-      // If registration was successful but waiting for approval
-      if (res.status === 201 && data.message) {
-        return data;
+      if (res.status === 201) {
+        toast({
+          title: "Registration successful",
+          description: "Your account is pending admin approval.",
+        });
       }
       return data;
     },

@@ -73,27 +73,38 @@ A comprehensive platform designed to streamline asset tracking, work order manag
 ## Getting Started
 
 ### Prerequisites
-- Node.js (v18 or later)
-- PostgreSQL database
-- NPM or Yarn package manager
+- For Docker deployment:
+  - Docker Engine
+  - Docker Compose
+- For manual deployment:
+  - Node.js (v18 or later)
+  - PostgreSQL database
+  - NPM or Yarn package manager
 
-### Quick Start (Single Command Deployment)
+### Docker Deployment (Recommended for Internal Networks)
 
-1. Make the setup script executable:
+1. Clone the repository:
 ```bash
-chmod +x setup.sh
+git clone [repository-url]
+cd cmms
 ```
 
-2. Run the setup script:
+2. Start the application using Docker Compose:
 ```bash
-./setup.sh
+docker-compose up -d
 ```
 
-The script will:
-- Check Node.js and npm requirements
-- Install dependencies
-- Set up the database
-- Start the application
+The application will be available at `http://localhost:5000`
+
+To stop the application:
+```bash
+docker-compose down
+```
+
+To view logs:
+```bash
+docker-compose logs -f
+```
 
 ### Manual Installation
 

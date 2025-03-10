@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/cmms
+      - NODE_ENV=production
+    depends_on:
+      - db
+    restart: unless-stopped
+    networks:
+      - cmms-network
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=cmms
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - cmms-network
+
+volumes:
+  postgres_data:
+
+networks:
+  cmms-network:
+    driver: bridge

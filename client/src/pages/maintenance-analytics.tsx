@@ -28,6 +28,38 @@ const LoadingSpinner = () => (
   </div>
 );
 
+const EmptyState = () => (
+  <div className="flex items-center justify-center h-[300px] text-center">
+    <div className="space-y-2">
+      <p className="text-lg font-medium text-muted-foreground">No data available</p>
+      <p className="text-sm text-muted-foreground">Start creating work orders to see analytics</p>
+    </div>
+  </div>
+);
+
+// Custom label component for the pie chart
+const CustomPieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }: any) => {
+  const RADIAN = Math.PI / 180;
+  const radius = innerRadius + (outerRadius - innerRadius) * 1.4; // Increase distance from pie
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+  if (percent < 0.05) return null; // Don't show labels for very small segments
+
+  return (
+    <text
+      x={x}
+      y={y}
+      fill="var(--foreground)"
+      textAnchor={x > cx ? 'start' : 'end'}
+      dominantBaseline="central"
+      className="text-xs"
+    >
+      {`${name} (${(percent * 100).toFixed(0)}%)`}
+    </text>
+  );
+};
+
 export default function MaintenanceAnalytics() {
   // Fetch all required data
   const { data: maintenanceCompletions = [], isLoading: isLoadingCompletions } = useQuery<MaintenanceCompletion[]>({
@@ -51,7 +83,7 @@ export default function MaintenanceAnalytics() {
   });
 
   const monthlyCompletions = last6Months.map(month => {
-    const completions = maintenanceCompletions.filter(completion => 
+    const completions = maintenanceCompletions.filter(completion =>
       startOfMonth(parseISO(completion.completedDate)).getTime() === month.getTime()
     );
 
@@ -63,10 +95,12 @@ export default function MaintenanceAnalytics() {
   });
 
   // Prepare work order status distribution
-  const workOrderStatusData = Object.values(WorkOrderStatus).map(status => ({
-    name: status,
-    value: workOrders.filter(wo => wo.status === status).length
-  }));
+  const workOrderStatusData = Object.values(WorkOrderStatus)
+    .map(status => ({
+      name: status,
+      value: workOrders.filter(wo => wo.status === status).length
+    }))
+    .filter(item => item.value > 0);
 
   // Prepare asset status distribution
   const assetStatusData = Object.values(AssetStatus).map(status => ({
@@ -75,7 +109,7 @@ export default function MaintenanceAnalytics() {
   }));
 
   // Calculate average completion time for work orders
-  const completedWorkOrders = workOrders.filter(wo => 
+  const completedWorkOrders = workOrders.filter(wo =>
     wo.status === WorkOrderStatus.COMPLETED && wo.completedDate && wo.reportedDate
   );
 
@@ -127,12 +161,12 @@ export default function MaintenanceAnalytics() {
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={monthlyCompletions}>
                         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                        <XAxis 
-                          dataKey="month" 
+                        <XAxis
+                          dataKey="month"
                           stroke="var(--foreground)"
                           tick={{ fill: 'var(--foreground)' }}
                         />
-                        <YAxis 
+                        <YAxis
                           stroke="var(--foreground)"
                           tick={{ fill: 'var(--foreground)' }}
                         />
@@ -159,7 +193,11 @@ export default function MaintenanceAnalytics() {
                 <CardTitle>Work Order Status Distribution</CardTitle>
               </CardHeader>
               <CardContent>
-                {isLoading ? <LoadingSpinner /> : (
+                {isLoading ? (
+                  <LoadingSpinner />
+                ) : workOrderStatusData.length === 0 ? (
+                  <EmptyState />
+                ) : (
                   <div className="h-[300px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
@@ -168,21 +206,44 @@ export default function MaintenanceAnalytics() {
                           cx="50%"
                           cy="50%"
                           labelLine={false}
-                          label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                          label={CustomPieLabel}
                           outerRadius={100}
                           fill="#8884d8"
                           dataKey="value"
+                          paddingAngle={2}
                         >
                           {workOrderStatusData.map((entry, index) => (
-                            <Cell 
-                              key={`cell-${index}`} 
+                            <Cell
+                              key={`cell-${index}`}
                               fill={COLORS[index % COLORS.length]}
                               stroke="var(--background)"
+                              strokeWidth={2}
                             />
                           ))}
                         </Pie>
-                        <Tooltip content={<CustomTooltip />} />
-                        <Legend verticalAlign="bottom" height={36} />
+                        <Tooltip
+                          content={({ active, payload }) => {
+                            if (active && payload && payload.length) {
+                              const data = payload[0].payload;
+                              return (
+                                <div className="bg-background border rounded-lg shadow-lg p-3">
+                                  <p className="font-medium">{data.name}</p>
+                                  <p className="text-sm">
+                                    Count: {data.value} ({((data.value / workOrders.length) * 100).toFixed(1)}%)
+                                  </p>
+                                </div>
+                              );
+                            }
+                            return null;
+                          }}
+                        />
+                        <Legend
+                          verticalAlign="bottom"
+                          height={36}
+                          formatter={(value) => (
+                            <span className="text-sm">{value}</span>
+                          )}
+                        />
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
@@ -201,20 +262,20 @@ export default function MaintenanceAnalytics() {
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={assetStatusData}>
                         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                        <XAxis 
-                          dataKey="name" 
+                        <XAxis
+                          dataKey="name"
                           stroke="var(--foreground)"
                           tick={{ fill: 'var(--foreground)' }}
                         />
-                        <YAxis 
+                        <YAxis
                           stroke="var(--foreground)"
                           tick={{ fill: 'var(--foreground)' }}
                         />
                         <Tooltip content={<CustomTooltip />} />
                         <Legend />
-                        <Bar 
-                          dataKey="value" 
-                          name="Assets" 
+                        <Bar
+                          dataKey="value"
+                          name="Assets"
                           fill="#00C49F"
                           radius={[4, 4, 0, 0]}
                         />

@@ -51,10 +51,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const registerMutation = useMutation({
     mutationFn: async (credentials: InsertUser) => {
       const res = await apiRequest("POST", "/api/register", credentials);
-      return await res.json();
-    },
-    onSuccess: (user: SelectUser) => {
-      queryClient.setQueryData(["/api/user"], user);
+      const data = await res.json();
+      // If registration was successful but waiting for approval
+      if (res.status === 201 && data.message) {
+        return data;
+      }
+      return data;
     },
     onError: (error: Error) => {
       toast({

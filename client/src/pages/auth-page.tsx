@@ -2,8 +2,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/hooks/use-auth";
 import { useForm } from "react-hook-form";
 import { useLocation } from "wouter";
-import { useEffect } from "react";
-import { insertUserSchema, UserRole } from "@shared/schema";
+import { useEffect, useState } from "react";
+import { insertUserSchema } from "@shared/schema";
 import {
   Card,
   CardContent,
@@ -21,19 +21,14 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Wrench } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function AuthPage() {
   const [, setLocation] = useLocation();
   const { user, loginMutation, registerMutation } = useAuth();
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -53,9 +48,18 @@ export default function AuthPage() {
     defaultValues: {
       username: "",
       password: "",
-      role: UserRole.TECHNICIAN,
     },
   });
+
+  const handleRegister = async (data) => {
+    try {
+      await registerMutation.mutateAsync(data);
+      setRegistrationSuccess(true);
+      registerForm.reset();
+    } catch (error) {
+      // Error handling is done by the mutation
+    }
+  };
 
   return (
     <div className="min-h-screen grid md:grid-cols-2">
@@ -124,79 +128,55 @@ export default function AuthPage() {
               </TabsContent>
 
               <TabsContent value="register">
-                <Form {...registerForm}>
-                  <form
-                    onSubmit={registerForm.handleSubmit((data) =>
-                      registerMutation.mutate(data)
-                    )}
-                    className="space-y-4"
-                  >
-                    <FormField
-                      control={registerForm.control}
-                      name="username"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Username</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={registerForm.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Password</FormLabel>
-                          <FormControl>
-                            <Input type="password" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={registerForm.control}
-                      name="role"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Role</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select a role" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value={UserRole.TECHNICIAN}>
-                                Technician
-                              </SelectItem>
-                              <SelectItem value={UserRole.MANAGER}>
-                                Manager
-                              </SelectItem>
-                              <SelectItem value={UserRole.ADMIN}>
-                                Admin
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <Button
-                      type="submit"
-                      className="w-full"
-                      disabled={registerMutation.isPending}
+                {registrationSuccess ? (
+                  <Alert className="mb-4">
+                    <AlertDescription>
+                      Registration successful! Your account is pending admin approval.
+                      You will be able to login once an administrator approves your account.
+                    </AlertDescription>
+                  </Alert>
+                ) : (
+                  <Form {...registerForm}>
+                    <form
+                      onSubmit={registerForm.handleSubmit(handleRegister)}
+                      className="space-y-4"
                     >
-                      Register
-                    </Button>
-                  </form>
-                </Form>
+                      <FormField
+                        control={registerForm.control}
+                        name="username"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Username</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={registerForm.control}
+                        name="password"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Password</FormLabel>
+                            <FormControl>
+                              <Input type="password" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Button
+                        type="submit"
+                        className="w-full"
+                        disabled={registerMutation.isPending}
+                      >
+                        Register
+                      </Button>
+                    </form>
+                  </Form>
+                )}
               </TabsContent>
             </Tabs>
           </CardContent>

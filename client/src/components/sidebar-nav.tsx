@@ -10,9 +10,10 @@ import {
   Wrench,
   Calendar,
   LogOut,
-  Users, // Added Users icon for admin page
+  Users,
+  BarChart, // Added BarChart icon for analytics
 } from "lucide-react";
-import { UserRole } from "@shared/schema"; // Import UserRole enum
+import { UserRole } from "@shared/schema";
 
 const items = [
   {
@@ -34,6 +35,11 @@ const items = [
     title: "Maintenance Calendar",
     icon: Calendar,
     href: "/maintenance-calendar",
+  },
+  {
+    title: "Analytics",
+    icon: BarChart,
+    href: "/maintenance-analytics",
   },
 ];
 

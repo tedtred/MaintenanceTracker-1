@@ -18,22 +18,31 @@ import {
 import { format, parseISO, startOfMonth, eachMonthOfInterval, subMonths } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Asset, WorkOrder, MaintenanceCompletion, WorkOrderStatus, AssetStatus } from "@shared/schema";
+import { Loader2 } from "lucide-react";
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
 
+const LoadingSpinner = () => (
+  <div className="flex items-center justify-center h-[300px]">
+    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+  </div>
+);
+
 export default function MaintenanceAnalytics() {
   // Fetch all required data
-  const { data: maintenanceCompletions = [] } = useQuery<MaintenanceCompletion[]>({
+  const { data: maintenanceCompletions = [], isLoading: isLoadingCompletions } = useQuery<MaintenanceCompletion[]>({
     queryKey: ["/api/maintenance-completions"],
   });
 
-  const { data: workOrders = [] } = useQuery<WorkOrder[]>({
+  const { data: workOrders = [], isLoading: isLoadingWorkOrders } = useQuery<WorkOrder[]>({
     queryKey: ["/api/work-orders"],
   });
 
-  const { data: assets = [] } = useQuery<Asset[]>({
+  const { data: assets = [], isLoading: isLoadingAssets } = useQuery<Asset[]>({
     queryKey: ["/api/assets"],
   });
+
+  const isLoading = isLoadingCompletions || isLoadingWorkOrders || isLoadingAssets;
 
   // Prepare data for monthly completion trend
   const last6Months = eachMonthOfInterval({
@@ -43,12 +52,13 @@ export default function MaintenanceAnalytics() {
 
   const monthlyCompletions = last6Months.map(month => {
     const completions = maintenanceCompletions.filter(completion => 
-      startOfMonth(parseISO(completion.completedAt)).getTime() === month.getTime()
+      startOfMonth(parseISO(completion.completedDate)).getTime() === month.getTime()
     );
 
     return {
       month: format(month, 'MMM yyyy'),
-      count: completions.length
+      count: completions.length,
+      name: format(month, 'MMMM yyyy') // Full month name for tooltip
     };
   });
 
@@ -76,10 +86,27 @@ export default function MaintenanceAnalytics() {
 
   const averageDays = Math.round(averageCompletionTime / (1000 * 60 * 60 * 24));
 
+  // Custom tooltip for charts
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-background border rounded-lg shadow-lg p-3">
+          <p className="font-medium">{label}</p>
+          {payload.map((entry: any, index: number) => (
+            <p key={index} style={{ color: entry.color }}>
+              {entry.name}: {entry.value}
+            </p>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="flex h-screen">
       <SidebarNav />
-      <div className="flex-1 p-8">
+      <div className="flex-1 p-8 overflow-y-auto">
         <div className="max-w-7xl mx-auto space-y-8">
           <div>
             <h1 className="text-3xl font-bold">Maintenance Analytics</h1>
@@ -95,24 +122,34 @@ export default function MaintenanceAnalytics() {
                 <CardTitle>Monthly Maintenance Completions</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={monthlyCompletions}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      <Line
-                        type="monotone"
-                        dataKey="count"
-                        name="Completions"
-                        stroke="#0088FE"
-                        strokeWidth={2}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
+                {isLoading ? <LoadingSpinner /> : (
+                  <div className="h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={monthlyCompletions}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                        <XAxis 
+                          dataKey="month" 
+                          stroke="var(--foreground)"
+                          tick={{ fill: 'var(--foreground)' }}
+                        />
+                        <YAxis 
+                          stroke="var(--foreground)"
+                          tick={{ fill: 'var(--foreground)' }}
+                        />
+                        <Tooltip content={<CustomTooltip />} />
+                        <Legend />
+                        <Line
+                          type="monotone"
+                          dataKey="count"
+                          name="Completions"
+                          stroke="#0088FE"
+                          strokeWidth={2}
+                          dot={{ fill: '#0088FE' }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -122,28 +159,34 @@ export default function MaintenanceAnalytics() {
                 <CardTitle>Work Order Status Distribution</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={workOrderStatusData}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        {workOrderStatusData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
+                {isLoading ? <LoadingSpinner /> : (
+                  <div className="h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={workOrderStatusData}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                          outerRadius={100}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          {workOrderStatusData.map((entry, index) => (
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill={COLORS[index % COLORS.length]}
+                              stroke="var(--background)"
+                            />
+                          ))}
+                        </Pie>
+                        <Tooltip content={<CustomTooltip />} />
+                        <Legend verticalAlign="bottom" height={36} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -153,45 +196,61 @@ export default function MaintenanceAnalytics() {
                 <CardTitle>Asset Status Distribution</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={assetStatusData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      <Bar dataKey="value" name="Assets" fill="#00C49F" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+                {isLoading ? <LoadingSpinner /> : (
+                  <div className="h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={assetStatusData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                        <XAxis 
+                          dataKey="name" 
+                          stroke="var(--foreground)"
+                          tick={{ fill: 'var(--foreground)' }}
+                        />
+                        <YAxis 
+                          stroke="var(--foreground)"
+                          tick={{ fill: 'var(--foreground)' }}
+                        />
+                        <Tooltip content={<CustomTooltip />} />
+                        <Legend />
+                        <Bar 
+                          dataKey="value" 
+                          name="Assets" 
+                          fill="#00C49F"
+                          radius={[4, 4, 0, 0]}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
-            {/* Average Completion Time */}
+            {/* Performance Metrics */}
             <Card>
               <CardHeader>
                 <CardTitle>Work Order Performance</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="text-center">
-                    <h3 className="text-2xl font-bold text-primary">
-                      {averageDays} days
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      Average time to complete work orders
-                    </p>
+                {isLoading ? <LoadingSpinner /> : (
+                  <div className="grid grid-cols-2 gap-4 p-4">
+                    <div className="space-y-2 text-center p-4 rounded-lg bg-muted">
+                      <h3 className="text-2xl font-bold text-primary">
+                        {averageDays} days
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        Average Completion Time
+                      </p>
+                    </div>
+                    <div className="space-y-2 text-center p-4 rounded-lg bg-muted">
+                      <h3 className="text-2xl font-bold text-primary">
+                        {completedWorkOrders.length}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        Total Completed Orders
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-center">
-                    <h3 className="text-2xl font-bold text-primary">
-                      {completedWorkOrders.length}
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      Total completed work orders
-                    </p>
-                  </div>
-                </div>
+                )}
               </CardContent>
             </Card>
           </div>

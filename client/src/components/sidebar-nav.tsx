@@ -10,7 +10,9 @@ import {
   Wrench,
   Calendar,
   LogOut,
+  Users, // Added Users icon for admin page
 } from "lucide-react";
+import { UserRole } from "@shared/schema"; // Import UserRole enum
 
 const items = [
   {
@@ -39,6 +41,11 @@ export function SidebarNav() {
   const { user, logoutMutation } = useAuth();
   const [location] = useLocation();
 
+  // Add admin page to navigation items if user is admin
+  const navItems = user?.role === UserRole.ADMIN 
+    ? [...items, { title: "User Management", icon: Users, href: "/admin" }]
+    : items;
+
   return (
     <div className="relative border-r bg-sidebar h-screen w-52 flex flex-col">
       <div className="p-4 border-b">
@@ -49,7 +56,7 @@ export function SidebarNav() {
       </div>
       <ScrollArea className="flex-1">
         <div className="space-y-1 p-2">
-          {items.map((item) => (
+          {navItems.map((item) => (
             <Link key={item.href} href={item.href}>
               <Button
                 variant={location === item.href ? "secondary" : "ghost"}

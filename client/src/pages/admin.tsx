@@ -20,7 +20,19 @@ import { User, UserRole } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { SidebarNav } from "@/components/sidebar-nav"; // Add this import
+import { SidebarNav } from "@/components/sidebar-nav";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Trash2 } from "lucide-react";
 
 export default function AdminPage() {
   const { toast } = useToast();
@@ -84,6 +96,25 @@ export default function AdminPage() {
     }
   };
 
+  // Delete user
+  const handleDeleteUser = async (userId: number) => {
+    try {
+      await apiRequest("DELETE", `/api/admin/users/${userId}`);
+      await queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/admin/pending-users"] });
+      toast({
+        title: "Success",
+        description: "User deleted successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete user",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (!currentUser || currentUser.role !== UserRole.ADMIN) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -94,7 +125,7 @@ export default function AdminPage() {
 
   if (isLoadingUsers || isLoadingPending) {
     return (
-      <div className="container mx-auto py-8">
+      <div className="flex items-center justify-center min-h-screen">
         <div className="animate-pulse space-y-4">
           <div className="h-8 w-1/4 bg-muted rounded"></div>
           <div className="h-64 bg-muted rounded"></div>
@@ -141,20 +172,45 @@ export default function AdminPage() {
                         <TableCell>{user.username}</TableCell>
                         <TableCell>{user.role}</TableCell>
                         <TableCell>
-                          <Select
-                            defaultValue={user.role}
-                            onValueChange={(value) => handleRoleUpdate(user.id, value)}
-                            disabled={user.id === currentUser.id}
-                          >
-                            <SelectTrigger className="w-[180px]">
-                              <SelectValue placeholder="Select role" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value={UserRole.ADMIN}>Admin</SelectItem>
-                              <SelectItem value={UserRole.MANAGER}>Manager</SelectItem>
-                              <SelectItem value={UserRole.TECHNICIAN}>Technician</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <div className="flex items-center gap-2">
+                            <Select
+                              defaultValue={user.role}
+                              onValueChange={(value) => handleRoleUpdate(user.id, value)}
+                              disabled={user.id === currentUser.id}
+                            >
+                              <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="Select role" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value={UserRole.ADMIN}>Admin</SelectItem>
+                                <SelectItem value={UserRole.MANAGER}>Manager</SelectItem>
+                                <SelectItem value={UserRole.TECHNICIAN}>Technician</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            {user.id !== currentUser.id && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="destructive" size="icon">
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete User</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to delete {user.username}? This action cannot be undone.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteUser(user.id)}>
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -179,13 +235,36 @@ export default function AdminPage() {
                         <TableCell>{user.id}</TableCell>
                         <TableCell>{user.username}</TableCell>
                         <TableCell>
-                          <Button
-                            onClick={() => handleApproveUser(user.id)}
-                            variant="default"
-                            size="sm"
-                          >
-                            Approve User
-                          </Button>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              onClick={() => handleApproveUser(user.id)}
+                              variant="default"
+                              size="sm"
+                            >
+                              Approve User
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="destructive" size="icon">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Pending User</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to delete {user.username}'s pending registration? This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeleteUser(user.id)}>
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}

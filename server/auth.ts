@@ -112,6 +112,23 @@ export function setupAuth(app: Express) {
     }
   });
 
+  // Delete user endpoint
+  app.delete("/api/admin/users/:id", isAdmin, async (req, res) => {
+    const userId = parseInt(req.params.id);
+
+    // Prevent admin from deleting themselves
+    if (req.user.id === userId) {
+      return res.status(400).json({ message: "Cannot delete your own account" });
+    }
+
+    try {
+      await storage.deleteUser(userId);
+      res.json({ message: "User deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete user" });
+    }
+  });
+
   // Existing routes
   app.post("/api/login", (req, res, next) => {
     passport.authenticate("local", (err, user, info) => {

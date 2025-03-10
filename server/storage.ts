@@ -16,6 +16,7 @@ enum WorkOrderStatus {
   ARCHIVED = 'ARCHIVED',
 }
 
+// Add deleteUser method to the interface
 export interface IStorage {
   // Session
   sessionStore: session.Store;
@@ -28,6 +29,7 @@ export interface IStorage {
   updateUserRole(userId: number, role: string): Promise<User>; // New method
   getPendingUsers(): Promise<User[]>;
   approveUser(userId: number): Promise<User>;
+  deleteUser(userId: number): Promise<void>;
 
   // Work Orders
   createWorkOrder(workOrder: InsertWorkOrder): Promise<WorkOrder>;
@@ -317,6 +319,10 @@ export class DatabaseStorage implements IStorage {
 
     // Then delete the work order
     await db.delete(workOrders).where(eq(workOrders.id, id));
+  }
+
+  async deleteUser(userId: number): Promise<void> {
+    await db.delete(users).where(eq(users.id, userId));
   }
 }
 

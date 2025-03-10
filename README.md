@@ -73,16 +73,31 @@ A comprehensive platform designed to streamline asset tracking, work order manag
 ## Getting Started
 
 ### Prerequisites
-- Node.js (v20 or later)
+- Node.js (v18 or later)
 - PostgreSQL database
 - NPM or Yarn package manager
 
-### Environment Variables
-The following environment variables are required:
-- `DATABASE_URL`: PostgreSQL connection string
-- `SESSION_SECRET`: Secret for session management
+### Quick Start (Single Command Deployment)
 
-### Installation
+1. Make the setup script executable:
+```bash
+chmod +x setup.sh
+```
+
+2. Run the setup script:
+```bash
+./setup.sh
+```
+
+The script will:
+- Check Node.js and npm requirements
+- Install dependencies
+- Set up the database
+- Start the application
+
+### Manual Installation
+
+If you prefer to set up manually, follow these steps:
 
 1. Clone the repository
 ```bash

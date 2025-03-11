@@ -1,52 +1,6 @@
 {
-  "variant": "professional",
-  "primary": "hsl(174 96% 70%)",
-  "appearance": "system",
-  "radius": 1.2,
-  "accentColor": "hsl(174 96% 70%)",
-  "grayColor": "hsl(220 13% 91%)",
-  "errorColor": "hsl(0 84% 60%)",
-  "warningColor": "hsl(38 92% 50%)",
-  "successColor": "hsl(142 76% 36%)",
-  "infoColor": "hsl(174 96% 70%)",
-  "background": {
-    "light": "hsl(0 0% 100%)",
-    "dark": "hsl(222 10% 5%)"
-  },
-  "foreground": {
-    "light": "hsl(224 71% 4%)",
-    "dark": "hsl(174 96% 70%)"
-  },
-  "muted": {
-    "light": "hsl(220 14% 96%)",
-    "dark": "hsl(223 27% 20%)"
-  },
-  "mutedForeground": {
-    "light": "hsl(220 9% 46%)",
-    "dark": "hsl(200 3% 79%)"
-  },
-  "card": {
-    "light": "hsl(0 0% 100%)",
-    "dark": "hsl(210 25% 15%)"
-  },
-  "cardForeground": {
-    "light": "hsl(224 71% 4%)",
-    "dark": "hsl(174 96% 70%)"
-  },
-  "border": {
-    "light": "hsl(220 13% 91%)",
-    "dark": "hsl(210 25% 15%)"
-  },
-  "input": {
-    "light": "hsl(220 13% 91%)",
-    "dark": "hsl(210 25% 15%)"
-  },
-  "accent": {
-    "light": "hsl(220 14% 96%)",
-    "dark": "hsl(174 40% 40%)"
-  },
-  "accentForeground": {
-    "light": "hsl(224 71% 4%)",
-    "dark": "hsl(174 96% 70%)"
-  }
+  "variant": "tint",
+  "primary": "hsl(222.2 47.4% 55.2%)",
+  "appearance": "light",
+  "radius": 1.2
 }

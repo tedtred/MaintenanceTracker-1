@@ -11,13 +11,11 @@ type ThemeProviderProps = {
 type ThemeProviderState = {
   theme: Theme
   setTheme: (theme: Theme) => void
-  isDark: boolean
 }
 
 const initialState: ThemeProviderState = {
   theme: "system",
   setTheme: () => null,
-  isDark: false,
 }
 
 const ThemeProviderContext = createContext<ThemeProviderState>(initialState)
@@ -31,27 +29,27 @@ export function ThemeProvider({
   const [theme, setTheme] = useState<Theme>(
     () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
   )
-  const [isDark, setIsDark] = useState(false)
 
   useEffect(() => {
     const root = window.document.documentElement
+
     root.classList.remove("light", "dark")
 
-    const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
-      ? "dark"
-      : "light"
+    if (theme === "system") {
+      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
+        .matches
+        ? "dark"
+        : "light"
 
-    const newTheme = theme === "system" ? systemTheme : theme
-    root.classList.add(newTheme)
-    setIsDark(newTheme === "dark")
+      root.classList.add(systemTheme)
+      return
+    }
 
-    // Add smooth transition class
-    root.classList.add("transition-colors", "duration-200")
+    root.classList.add(theme)
   }, [theme])
 
   const value = {
     theme,
-    isDark,
     setTheme: (theme: Theme) => {
       localStorage.setItem(storageKey, theme)
       setTheme(theme)

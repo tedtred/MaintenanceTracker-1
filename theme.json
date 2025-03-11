@@ -1,6 +1,28 @@
 {
-  "variant": "tint",
-  "primary": "hsl(222.2 47.4% 55.2%)",
-  "appearance": "light",
-  "radius": 1.2
+  "variant": "professional",
+  "primary": "hsl(220 85% 57%)",
+  "appearance": "system",
+  "radius": 1.2,
+  "accentColor": "hsl(220 85% 57%)",
+  "grayColor": "hsl(220 13% 91%)",
+  "errorColor": "hsl(0 84% 60%)",
+  "warningColor": "hsl(38 92% 50%)",
+  "successColor": "hsl(142 76% 36%)",
+  "infoColor": "hsl(199 89% 48%)",
+  "background": {
+    "light": "hsl(0 0% 100%)",
+    "dark": "hsl(224 71% 4%)"
+  },
+  "foreground": {
+    "light": "hsl(222 47% 11%)",
+    "dark": "hsl(213 31% 91%)"
+  },
+  "muted": {
+    "light": "hsl(210 40% 96%)",
+    "dark": "hsl(223 47% 11%)"
+  },
+  "mutedForeground": {
+    "light": "hsl(215.4 16.3% 46.9%)",
+    "dark": "hsl(215.4 13.3% 73.9%)"
+  }
 }

@@ -58,7 +58,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Trash2 } from "lucide-react";
+import { Trash2, Edit2 } from "lucide-react"; // Import Edit2 icon
 
 export default function Assets() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -179,6 +179,49 @@ export default function Assets() {
       toast({
         title: "Success",
         description: "Asset deleted successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteMaintenanceScheduleMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/maintenance-schedules/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/maintenance-schedules"] });
+      toast({
+        title: "Success",
+        description: "Maintenance schedule deleted successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateMaintenanceScheduleMutation = useMutation({
+    mutationFn: async (data: MaintenanceSchedule) => {
+      const res = await apiRequest("PATCH", `/api/maintenance-schedules/${data.id}`, data);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/maintenance-schedules"] });
+      setIsMaintenanceDialogOpen(false);
+      maintenanceForm.reset();
+      toast({
+        title: "Success",
+        description: "Maintenance schedule updated successfully",
       });
     },
     onError: (error: Error) => {
@@ -402,12 +445,55 @@ export default function Assets() {
                     {getAssetMaintenanceSchedules(asset.id).map((schedule) => (
                       <div
                         key={schedule.id}
-                        className="p-2 bg-muted rounded-lg text-sm"
+                        className="p-2 bg-muted rounded-lg text-sm space-y-2"
                       >
-                        <div className="font-medium">{schedule.title}</div>
-                        <div className="text-muted-foreground">
-                          {schedule.frequency} |{" "}
-                          {new Date(schedule.startDate).toLocaleDateString()}
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <div className="font-medium">{schedule.title}</div>
+                            <div className="text-muted-foreground">
+                              {schedule.frequency} |{" "}
+                              {new Date(schedule.startDate).toLocaleDateString()}
+                            </div>
+                            <div className="text-sm mt-1">{schedule.description}</div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setSelectedAsset(asset.id);
+                                maintenanceForm.reset(schedule);
+                                setIsMaintenanceDialogOpen(true);
+                              }}
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Maintenance Schedule</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This will permanently delete this maintenance schedule.
+                                    This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    onClick={() => deleteMaintenanceScheduleMutation.mutate(schedule.id)}
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -614,13 +700,19 @@ export default function Assets() {
       <Dialog open={isMaintenanceDialogOpen} onOpenChange={setIsMaintenanceDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Maintenance Schedule</DialogTitle>
+            <DialogTitle>
+              {maintenanceForm.getValues("id") ? "Edit" : "Add"} Maintenance Schedule
+            </DialogTitle>
           </DialogHeader>
           <Form {...maintenanceForm}>
             <form
-              onSubmit={maintenanceForm.handleSubmit((data) =>
-                createMaintenanceScheduleMutation.mutate(data)
-              )}
+              onSubmit={maintenanceForm.handleSubmit((data) => {
+                if (data.id) {
+                  updateMaintenanceScheduleMutation.mutate(data as MaintenanceSchedule);
+                } else {
+                  createMaintenanceScheduleMutation.mutate(data);
+                }
+              })}
               className="space-y-4"
             >
               <FormField
@@ -720,9 +812,9 @@ export default function Assets() {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={createMaintenanceScheduleMutation.isPending}
+                disabled={createMaintenanceScheduleMutation.isPending || updateMaintenanceScheduleMutation.isPending}
               >
-                Add Schedule
+                {maintenanceForm.getValues("id") ? "Update" : "Add"} Schedule
               </Button>
             </form>
           </Form>

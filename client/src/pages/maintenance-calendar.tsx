@@ -5,7 +5,13 @@ import { Calendar, dateFnsLocalizer, Views } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay, addDays, addWeeks, addMonths } from "date-fns";
 import { enUS } from "date-fns/locale";
 import "react-big-calendar/lib/css/react-big-calendar.css";
-import { MaintenanceSchedule, Asset, MaintenanceFrequency, InsertMaintenanceCompletion, MaintenanceCompletion } from "@shared/schema";
+import {
+  MaintenanceSchedule,
+  Asset,
+  MaintenanceFrequency,
+  InsertMaintenanceCompletion,
+  MaintenanceCompletion,
+} from "@shared/schema";
 import { Card } from "@/components/ui/card";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -15,18 +21,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -38,7 +34,7 @@ import {
 } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { Textarea } from "@/components/ui/textarea";
-import { Trash2, Info } from "lucide-react";
+import { Trash2, Info, CheckCircle2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Table,
@@ -156,6 +152,7 @@ export default function MaintenanceCalendar() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/maintenance-completions"] });
       setIsCompleteDialogOpen(false);
+      setIsDetailsDialogOpen(false);
       form.reset();
       toast({
         title: "Success",
@@ -209,7 +206,7 @@ export default function MaintenanceCalendar() {
 
   const handleSelectEvent = (event: any) => {
     setSelectedEvent(event);
-    setIsDetailsDialogOpen(true); // Changed to open details dialog
+    setIsDetailsDialogOpen(true); 
   };
 
   const showDetails = (event: any) => {
@@ -225,6 +222,11 @@ export default function MaintenanceCalendar() {
     return completions
       .filter(c => c.scheduleId === scheduleId)
       .sort((a, b) => new Date(b.completedDate).getTime() - new Date(a.completedDate).getTime());
+  };
+
+  const handleCompleteClick = () => {
+    setIsDetailsDialogOpen(false);
+    setIsCompleteDialogOpen(true);
   };
 
   return (
@@ -257,7 +259,7 @@ export default function MaintenanceCalendar() {
               className="[&_.rbc-month-view]:!rounded-lg [&_.rbc-month-view]:!border-border [&_.rbc-month-view]:!shadow-sm [&_.rbc-header]:!py-3 [&_.rbc-header]:!font-medium [&_.rbc-header]:!border-border [&_.rbc-month-row]:!border-border [&_.rbc-day-bg]:!border-border [&_.rbc-off-range-bg]:!bg-muted/50 [&_.rbc-today]:!bg-accent/20 [&_.rbc-event]:!px-2 [&_.rbc-event]:!py-1 [&_.rbc-event]:!rounded-md [&_.rbc-event]:!font-medium [&_.rbc-event]:!transition-colors [&_.rbc-event]:hover:!bg-primary/90 [&_.rbc-agenda-view]:!rounded-lg [&_.rbc-agenda-view]:!border-border [&_.rbc-agenda-view]:!shadow-sm [&_.rbc-agenda-view_table]:!border-border [&_.rbc-agenda-view_thead]:!border-border [&_.rbc-agenda-view_tbody]:!border-border [&_.rbc-agenda-view_tr]:!border-border [&_.rbc-agenda-view_td]:!border-border [&_.rbc-agenda-view_td]:!py-3 [&_.rbc-agenda-view_td]:!px-4 [&_.rbc-agenda-empty]:!text-muted-foreground [&_.rbc-agenda-date-cell]:!font-medium [&_.rbc-agenda-time-cell]:!text-muted-foreground [&_.rbc-button-link]:!text-sm [&_.rbc-toolbar-label]:!text-xl [&_.rbc-toolbar-label]:!font-semibold [&_.rbc-toolbar]:!mb-4 [&_.rbc-btn-group]:!gap-1 [&_.rbc-btn-group_button]:!rounded-md [&_.rbc-btn-group_button]:!px-3 [&_.rbc-btn-group_button]:!py-1.5 [&_.rbc-btn-group_button]:!text-sm [&_.rbc-btn-group_button]:!font-medium [&_.rbc-btn-group_button]:!bg-background [&_.rbc-btn-group_button]:!border-border [&_.rbc-btn-group_button]:!text-foreground [&_.rbc-btn-group_button.rbc-active]:!bg-primary [&_.rbc-btn-group_button.rbc-active]:!text-primary-foreground [&_.rbc-event]:!bg-primary/90 [&_.rbc-event]:!text-primary-foreground [&_.rbc-event]:hover:!bg-primary [&_.rbc-event]:!border-none [&_.rbc-today]:!bg-accent/10 [&_.rbc-off-range-bg]:!bg-muted/30 [&_.rbc-show-more]:!text-primary [&_.rbc-show-more]:hover:!text-primary/90"
               eventPropGetter={(event) => ({
                 className: 'bg-primary hover:bg-primary/90 cursor-pointer',
-                onClick: () => showDetails(event) // Added onClick handler
+                onClick: () => showDetails(event) 
               })}
               onSelectEvent={handleSelectEvent}
               components={{
@@ -271,107 +273,23 @@ export default function MaintenanceCalendar() {
             />
           </Card>
 
-          {/* Completion Dialog */}
-          <Dialog open={isCompleteDialogOpen} onOpenChange={setIsCompleteDialogOpen}>
-            <DialogContent>
+          <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
+            <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle className="flex items-center justify-between">
-                  <span>Maintenance Task</span>
+                  <span>Maintenance Schedule Details</span>
                   <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => {
-                      setIsCompleteDialogOpen(false);
-                      setIsDetailsDialogOpen(true);
-                    }}
+                    onClick={handleCompleteClick}
+                    variant="default"
+                    className="gap-2"
                   >
-                    <Info className="h-4 w-4" />
+                    <CheckCircle2 className="h-4 w-4" />
+                    Mark Complete
                   </Button>
                 </DialogTitle>
               </DialogHeader>
               {selectedEvent && (
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="font-medium">{selectedEvent.title}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Date: {format(selectedEvent.start, 'PPP')}
-                    </p>
-                  </div>
-
-                  <Form {...form}>
-                    <form
-                      onSubmit={form.handleSubmit((data) =>
-                        completeMaintenanceMutation.mutate({
-                          scheduleId: selectedEvent.resource.id,
-                          completedDate: selectedEvent.resource.date.toISOString(),
-                          notes: data.notes,
-                        })
-                      )}
-                      className="space-y-4"
-                    >
-                      <FormField
-                        control={form.control}
-                        name="notes"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Completion Notes</FormLabel>
-                            <FormControl>
-                              <Textarea {...field} placeholder="Add any notes about the completed maintenance" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <div className="flex justify-between items-center">
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="destructive" type="button" size="sm">
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Remove Schedule
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Remove Maintenance Schedule</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This will remove all future occurrences of this maintenance schedule. This action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => deleteMaintenanceScheduleMutation.mutate(selectedEvent.resource.id)}
-                              >
-                                Remove
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-
-                        <Button
-                          type="submit"
-                          disabled={completeMaintenanceMutation.isPending}
-                        >
-                          Mark as Completed
-                        </Button>
-                      </div>
-                    </form>
-                  </Form>
-                </div>
-              )}
-            </DialogContent>
-          </Dialog>
-
-          {/* Details Dialog */}
-          <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Maintenance Schedule Details</DialogTitle>
-              </DialogHeader>
-              {selectedEvent && (
                 <div className="space-y-6">
-                  {/* Schedule Information */}
                   <div className="space-y-2">
                     <h3 className="font-medium">Schedule Information</h3>
                     <div className="grid grid-cols-2 gap-4 text-sm">
@@ -398,7 +316,6 @@ export default function MaintenanceCalendar() {
                     </div>
                   </div>
 
-                  {/* Asset Information */}
                   {selectedEvent.resource.assetId && (
                     <div className="space-y-2">
                       <h3 className="font-medium">Asset Information</h3>
@@ -430,9 +347,13 @@ export default function MaintenanceCalendar() {
                     </div>
                   )}
 
-                  {/* Completion History */}
                   <div className="space-y-2">
-                    <h3 className="font-medium">Completion History</h3>
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-medium">Completion History</h3>
+                      <span className="text-sm text-muted-foreground">
+                        Latest completions
+                      </span>
+                    </div>
                     <ScrollArea className="h-[200px] rounded-md border">
                       <Table>
                         <TableHeader>
@@ -454,6 +375,78 @@ export default function MaintenanceCalendar() {
                       </Table>
                     </ScrollArea>
                   </div>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={isCompleteDialogOpen} onOpenChange={setIsCompleteDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Complete Maintenance Task</DialogTitle>
+              </DialogHeader>
+              {selectedEvent && (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <h3 className="font-medium">{selectedEvent.title}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {format(selectedEvent.start, 'PPP')}
+                    </p>
+                  </div>
+
+                  <Form {...form}>
+                    <form
+                      onSubmit={form.handleSubmit((data) =>
+                        completeMaintenanceMutation.mutate({
+                          scheduleId: selectedEvent.resource.id,
+                          completedDate: selectedEvent.resource.date.toISOString(),
+                          notes: data.notes,
+                        })
+                      )}
+                      className="space-y-4"
+                    >
+                      <FormField
+                        control={form.control}
+                        name="notes"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Completion Notes</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                {...field}
+                                placeholder="Enter any notes about the completed maintenance"
+                                className="min-h-[100px]"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            setIsCompleteDialogOpen(false);
+                            setIsDetailsDialogOpen(true);
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          type="submit"
+                          disabled={completeMaintenanceMutation.isPending}
+                        >
+                          {completeMaintenanceMutation.isPending ? (
+                            "Saving..."
+                          ) : (
+                            "Complete Maintenance"
+                          )}
+                        </Button>
+                      </div>
+                    </form>
+                  </Form>
                 </div>
               )}
             </DialogContent>

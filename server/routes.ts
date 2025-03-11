@@ -4,9 +4,10 @@ import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { insertWorkOrderSchema, insertAssetSchema, insertMaintenanceScheduleSchema, insertMaintenanceCompletionSchema } from "@shared/schema";
 import { ZodError } from "zod";
-import { upload, handleFileUpload } from "./services/file-storage";
+import { upload, handleFileUpload, processCSVImport } from "./services/file-storage";
 import path from "path";
 import express from "express";
+import fs from 'fs'; //Import fs module
 
 function handleZodError(error: ZodError) {
   const errors: Record<string, string[]> = {};
@@ -182,6 +183,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const asset = await storage.updateAsset(id, req.body);
       res.json(asset);
     } catch (error) {
+      next(error);
+    }
+  });
+
+  // Add the import route for assets
+  app.post("/api/assets/import", upload.single('file'), async (req, res, next) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const importResult = await processCSVImport(req.file.path);
+
+      // If the import was successful, create the assets
+      if (importResult.success) {
+        for (const assetData of importResult.records) {
+          await storage.createAsset(assetData);
+        }
+      }
+
+      // Delete the temporary file
+      fs.unlink(req.file.path, (err) => {
+        if (err) console.error('Error deleting temporary file:', err);
+      });
+
+      res.json(importResult);
+    } catch (error) {
+      // Delete the temporary file on error
+      if (req.file) {
+        fs.unlink(req.file.path, (err) => {
+          if (err) console.error('Error deleting temporary file:', err);
+        });
+      }
       next(error);
     }
   });

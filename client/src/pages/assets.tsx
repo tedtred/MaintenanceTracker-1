@@ -21,6 +21,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -46,7 +47,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Calendar, Wrench, Car, Monitor, Box, Search } from "lucide-react";
+import { Calendar, Wrench, Car, Monitor, Box, Search, Upload } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -58,14 +59,30 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Trash2, Edit2 } from "lucide-react"; // Import Edit2 icon
+import { Trash2, Edit2 } from "lucide-react";
+
+interface ImportResult {
+  success: boolean;
+  totalRows: number;
+  successfulImports: number;
+  failedImports: number;
+  errors: Array<{
+    row: number;
+    error: string;
+    data?: Record<string, any>;
+  }>;
+  importedAssets: Asset[];
+}
 
 export default function Assets() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState<number | null>(null);
   const [isMaintenanceDialogOpen, setIsMaintenanceDialogOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
-  const [searchQuery, setSearchQuery] = useState(""); // Add search query state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const { toast } = useToast();
 
   const { data: assets = [] } = useQuery<Asset[]>({
@@ -76,7 +93,6 @@ export default function Assets() {
     queryKey: ["/api/maintenance-schedules"],
   });
 
-  // Filter assets based on both search query and category
   const filteredAssets = assets.filter((asset) => {
     const matchesSearch = searchQuery === "" ||
       asset.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -233,6 +249,37 @@ export default function Assets() {
     },
   });
 
+  const importMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await apiRequest("POST", "/api/assets/import", formData, {
+        headers: {
+          'Content-Type': undefined,
+        },
+      });
+      return res.json();
+    },
+    onSuccess: (data: ImportResult) => {
+      setImportResult(data);
+      if (data.success) {
+        queryClient.invalidateQueries({ queryKey: ["/api/assets"] });
+        toast({
+          title: "Success",
+          description: `Successfully imported ${data.successfulImports} assets`,
+        });
+      }
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const form = useForm<InsertAsset>({
     resolver: zodResolver(insertAssetSchema),
     defaultValues: {
@@ -241,7 +288,7 @@ export default function Assets() {
       location: "",
       status: AssetStatus.OPERATIONAL,
       category: AssetCategory.MACHINERY,
-      commissionedDate: "", // Added default value
+      commissionedDate: "",
     },
   });
 
@@ -316,6 +363,10 @@ export default function Assets() {
                 </SelectContent>
               </Select>
 
+              <Button onClick={() => setIsImportDialogOpen(true)} variant="outline">
+                <Upload className="h-4 w-4 mr-2" />
+                Import CSV
+              </Button>
               <Button onClick={() => setIsCreateDialogOpen(true)}>
                 Add Asset
               </Button>
@@ -505,7 +556,6 @@ export default function Assets() {
         </div>
       </div>
 
-      {/* Create Asset Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
@@ -696,7 +746,6 @@ export default function Assets() {
         </DialogContent>
       </Dialog>
 
-      {/* Add Maintenance Schedule Dialog */}
       <Dialog open={isMaintenanceDialogOpen} onOpenChange={setIsMaintenanceDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -820,6 +869,95 @@ export default function Assets() {
           </Form>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Import Assets from CSV</DialogTitle>
+                <DialogDescription>
+                  Upload a CSV file with the following columns: name, description, location, status,
+                  category, manufacturer, modelNumber, serialNumber, commissionedDate, lastMaintenance
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-center w-full">
+                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-muted/5 hover:bg-muted/10">
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      <Upload className="w-8 h-8 mb-3 text-muted-foreground" />
+                      <p className="mb-2 text-sm text-muted-foreground">
+                        <span className="font-semibold">Click to upload</span> or drag and drop
+                      </p>
+                      <p className="text-xs text-muted-foreground/75">
+                        CSV files only
+                      </p>
+                    </div>
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept=".csv"
+                      onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                    />
+                  </label>
+                </div>
+
+                {selectedFile && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="font-medium">{selectedFile.name}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedFile(null)}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                )}
+
+                {importResult && (
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>Total Rows:</span>
+                      <span>{importResult.totalRows}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Successfully Imported:</span>
+                      <span className="text-green-600">{importResult.successfulImports}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Failed Imports:</span>
+                      <span className="text-red-600">{importResult.failedImports}</span>
+                    </div>
+
+                    {importResult.errors.length > 0 && (
+                      <div className="mt-4">
+                        <h4 className="font-medium mb-2">Errors:</h4>
+                        <div className="max-h-32 overflow-y-auto space-y-2">
+                          {importResult.errors.map((error, index) => (
+                            <div key={index} className="text-xs text-red-600">
+                              Row {error.row}: {error.error}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <Button
+                  className="w-full"
+                  disabled={!selectedFile || importMutation.isPending}
+                  onClick={() => {
+                    if (selectedFile) {
+                      importMutation.mutate(selectedFile);
+                    }
+                  }}
+                >
+                  {importMutation.isPending ? "Importing..." : "Import"}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
     </div>
   );
 }

@@ -38,7 +38,16 @@ import {
 } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { Textarea } from "@/components/ui/textarea";
-import { Trash2 } from "lucide-react";
+import { Trash2, Info } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 const localizer = dateFnsLocalizer({
   format,
@@ -124,6 +133,7 @@ const CustomAgenda = ({ event }: { event: any }) => (
 export default function MaintenanceCalendar() {
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [isCompleteDialogOpen, setIsCompleteDialogOpen] = useState(false);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const { data: schedules = [] } = useQuery<MaintenanceSchedule[]>({
@@ -199,7 +209,22 @@ export default function MaintenanceCalendar() {
 
   const handleSelectEvent = (event: any) => {
     setSelectedEvent(event);
-    setIsCompleteDialogOpen(true);
+    setIsDetailsDialogOpen(true); // Changed to open details dialog
+  };
+
+  const showDetails = (event: any) => {
+    setSelectedEvent(event);
+    setIsDetailsDialogOpen(true);
+  };
+
+  const getAssetDetails = (assetId: number) => {
+    return assets.find(a => a.id === assetId);
+  };
+
+  const getCompletionHistory = (scheduleId: number) => {
+    return completions
+      .filter(c => c.scheduleId === scheduleId)
+      .sort((a, b) => new Date(b.completedDate).getTime() - new Date(a.completedDate).getTime());
   };
 
   return (
@@ -231,7 +256,8 @@ export default function MaintenanceCalendar() {
               }
               className="[&_.rbc-month-view]:!rounded-lg [&_.rbc-month-view]:!border-border [&_.rbc-month-view]:!shadow-sm [&_.rbc-header]:!py-3 [&_.rbc-header]:!font-medium [&_.rbc-header]:!border-border [&_.rbc-month-row]:!border-border [&_.rbc-day-bg]:!border-border [&_.rbc-off-range-bg]:!bg-muted/50 [&_.rbc-today]:!bg-accent/20 [&_.rbc-event]:!px-2 [&_.rbc-event]:!py-1 [&_.rbc-event]:!rounded-md [&_.rbc-event]:!font-medium [&_.rbc-event]:!transition-colors [&_.rbc-event]:hover:!bg-primary/90 [&_.rbc-agenda-view]:!rounded-lg [&_.rbc-agenda-view]:!border-border [&_.rbc-agenda-view]:!shadow-sm [&_.rbc-agenda-view_table]:!border-border [&_.rbc-agenda-view_thead]:!border-border [&_.rbc-agenda-view_tbody]:!border-border [&_.rbc-agenda-view_tr]:!border-border [&_.rbc-agenda-view_td]:!border-border [&_.rbc-agenda-view_td]:!py-3 [&_.rbc-agenda-view_td]:!px-4 [&_.rbc-agenda-empty]:!text-muted-foreground [&_.rbc-agenda-date-cell]:!font-medium [&_.rbc-agenda-time-cell]:!text-muted-foreground [&_.rbc-button-link]:!text-sm [&_.rbc-toolbar-label]:!text-xl [&_.rbc-toolbar-label]:!font-semibold [&_.rbc-toolbar]:!mb-4 [&_.rbc-btn-group]:!gap-1 [&_.rbc-btn-group_button]:!rounded-md [&_.rbc-btn-group_button]:!px-3 [&_.rbc-btn-group_button]:!py-1.5 [&_.rbc-btn-group_button]:!text-sm [&_.rbc-btn-group_button]:!font-medium [&_.rbc-btn-group_button]:!bg-background [&_.rbc-btn-group_button]:!border-border [&_.rbc-btn-group_button]:!text-foreground [&_.rbc-btn-group_button.rbc-active]:!bg-primary [&_.rbc-btn-group_button.rbc-active]:!text-primary-foreground [&_.rbc-event]:!bg-primary/90 [&_.rbc-event]:!text-primary-foreground [&_.rbc-event]:hover:!bg-primary [&_.rbc-event]:!border-none [&_.rbc-today]:!bg-accent/10 [&_.rbc-off-range-bg]:!bg-muted/30 [&_.rbc-show-more]:!text-primary [&_.rbc-show-more]:hover:!text-primary/90"
               eventPropGetter={(event) => ({
-                className: 'bg-primary hover:bg-primary/90 cursor-pointer'
+                className: 'bg-primary hover:bg-primary/90 cursor-pointer',
+                onClick: () => showDetails(event) // Added onClick handler
               })}
               onSelectEvent={handleSelectEvent}
               components={{
@@ -245,11 +271,23 @@ export default function MaintenanceCalendar() {
             />
           </Card>
 
-          {/* Complete Maintenance Dialog */}
+          {/* Completion Dialog */}
           <Dialog open={isCompleteDialogOpen} onOpenChange={setIsCompleteDialogOpen}>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Maintenance Task</DialogTitle>
+                <DialogTitle className="flex items-center justify-between">
+                  <span>Maintenance Task</span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      setIsCompleteDialogOpen(false);
+                      setIsDetailsDialogOpen(true);
+                    }}
+                  >
+                    <Info className="h-4 w-4" />
+                  </Button>
+                </DialogTitle>
               </DialogHeader>
               {selectedEvent && (
                 <div className="space-y-4">
@@ -320,6 +358,102 @@ export default function MaintenanceCalendar() {
                       </div>
                     </form>
                   </Form>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
+
+          {/* Details Dialog */}
+          <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Maintenance Schedule Details</DialogTitle>
+              </DialogHeader>
+              {selectedEvent && (
+                <div className="space-y-6">
+                  {/* Schedule Information */}
+                  <div className="space-y-2">
+                    <h3 className="font-medium">Schedule Information</h3>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-muted-foreground">Title</p>
+                        <p>{selectedEvent.resource.title}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Frequency</p>
+                        <p>{selectedEvent.resource.frequency}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Start Date</p>
+                        <p>{format(new Date(selectedEvent.resource.startDate), 'PPP')}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">End Date</p>
+                        <p>
+                          {selectedEvent.resource.endDate
+                            ? format(new Date(selectedEvent.resource.endDate), 'PPP')
+                            : 'Ongoing'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Asset Information */}
+                  {selectedEvent.resource.assetId && (
+                    <div className="space-y-2">
+                      <h3 className="font-medium">Asset Information</h3>
+                      {(() => {
+                        const asset = getAssetDetails(selectedEvent.resource.assetId);
+                        return asset ? (
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                              <p className="text-muted-foreground">Name</p>
+                              <p>{asset.name}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Category</p>
+                              <p>{asset.category}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Location</p>
+                              <p>{asset.location}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Status</p>
+                              <p>{asset.status}</p>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">Asset information not available</p>
+                        );
+                      })()}
+                    </div>
+                  )}
+
+                  {/* Completion History */}
+                  <div className="space-y-2">
+                    <h3 className="font-medium">Completion History</h3>
+                    <ScrollArea className="h-[200px] rounded-md border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Notes</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {getCompletionHistory(selectedEvent.resource.id).map((completion) => (
+                            <TableRow key={completion.id}>
+                              <TableCell>
+                                {format(new Date(completion.completedDate), 'PPP')}
+                              </TableCell>
+                              <TableCell>{completion.notes || 'No notes'}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </ScrollArea>
+                  </div>
                 </div>
               )}
             </DialogContent>

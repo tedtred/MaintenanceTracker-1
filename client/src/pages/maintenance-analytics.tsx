@@ -48,7 +48,7 @@ const EmptyState = () => (
 // Custom label component for the pie chart
 const CustomPieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }: any) => {
   const RADIAN = Math.PI / 180;
-  const radius = innerRadius + (outerRadius - innerRadius) * 1.4;
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.5; // Reduced from 1.4 to 0.5
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
@@ -61,7 +61,7 @@ const CustomPieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, n
       fill="var(--foreground)"
       textAnchor={x > cx ? 'start' : 'end'}
       dominantBaseline="central"
-      className="text-xs"
+      className="text-xs font-medium"
     >
       {`${name} (${(percent * 100).toFixed(0)}%)`}
     </text>
@@ -295,9 +295,7 @@ export default function MaintenanceAnalytics() {
                           data={priorityData}
                           cx="50%"
                           cy="50%"
-                          labelLine={false}
-                          label={CustomPieLabel}
-                          outerRadius={100}
+                          outerRadius={80}
                           fill="#8884d8"
                           dataKey="value"
                           paddingAngle={2}
@@ -313,10 +311,11 @@ export default function MaintenanceAnalytics() {
                         </Pie>
                         <Tooltip content={<CustomTooltip />} />
                         <Legend
-                          verticalAlign="bottom"
-                          height={36}
+                          verticalAlign="middle"
+                          align="right"
+                          layout="vertical"
                           formatter={(value) => (
-                            <span className="text-sm">{value}</span>
+                            <span className="text-sm font-medium">{value}</span>
                           )}
                         />
                       </PieChart>

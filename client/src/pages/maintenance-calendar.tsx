@@ -2,7 +2,7 @@ import { useState } from "react";
 import { SidebarNav } from "@/components/sidebar-nav";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Calendar, dateFnsLocalizer, Views } from "react-big-calendar";
-import { format, parse, startOfWeek, getDay, addDays, addWeeks, addMonths } from "date-fns";
+import { format, parse, startOfWeek, getDay, addDays, addWeeks, addMonths, isFuture, isPast, isToday, differenceInDays } from "date-fns";
 import { enUS } from "date-fns/locale";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import {
@@ -58,11 +58,14 @@ const localizer = dateFnsLocalizer({
 const generateRecurringEvents = (schedule: MaintenanceSchedule, assetName: string, completions: MaintenanceCompletion[]) => {
   const events = [];
   const start = new Date(schedule.startDate);
-  start.setHours(0, 0, 0, 0); // Set to start of day
+  start.setHours(0, 0, 0, 0);
   const end = schedule.endDate ? new Date(schedule.endDate) : addMonths(new Date(), 3);
-  end.setHours(23, 59, 59, 999); // Set to end of day
+  end.setHours(23, 59, 59, 999);
 
   let currentDate = new Date(start);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
   while (currentDate <= end) {
     const isCompleted = completions.some(
       completion =>
@@ -70,9 +73,13 @@ const generateRecurringEvents = (schedule: MaintenanceSchedule, assetName: strin
         format(new Date(completion.completedDate), 'yyyy-MM-dd') === format(currentDate, 'yyyy-MM-dd')
     );
 
-    if (!isCompleted) {
+    // Only include if not completed and is today or past due
+    if (!isCompleted && (isPast(currentDate) || isToday(currentDate))) {
       const eventDate = new Date(currentDate);
-      eventDate.setHours(0, 0, 0, 0); // Set to start of day
+      eventDate.setHours(0, 0, 0, 0);
+
+      const daysOverdue = differenceInDays(today, eventDate);
+      const status = daysOverdue > 0 ? `Overdue by ${daysOverdue} days` : 'Due today';
 
       events.push({
         id: `${schedule.id}-${eventDate.toISOString()}`,
@@ -83,6 +90,8 @@ const generateRecurringEvents = (schedule: MaintenanceSchedule, assetName: strin
           ...schedule,
           assetName,
           date: eventDate,
+          status,
+          isOverdue: daysOverdue > 0,
         },
         allDay: true,
       });
@@ -113,15 +122,18 @@ const generateRecurringEvents = (schedule: MaintenanceSchedule, assetName: strin
 };
 
 const CustomAgenda = ({ event }: { event: any }) => (
-  <div className="flex items-center gap-4 p-2 hover:bg-accent rounded-md">
+  <div className={`flex items-center gap-4 p-2 hover:bg-accent rounded-md ${event.resource.isOverdue ? 'bg-destructive/10' : ''}`}>
     <div className="w-24 text-sm text-muted-foreground">
       {format(event.start, 'MMM dd, yyyy')}
     </div>
-    <div>
+    <div className="flex-1">
       <div className="font-medium">{event.title}</div>
       <div className="text-sm text-muted-foreground">
         Frequency: {event.resource.frequency}
       </div>
+    </div>
+    <div className={`text-sm ${event.resource.isOverdue ? 'text-destructive font-medium' : 'text-primary'}`}>
+      {event.resource.status}
     </div>
   </div>
 );

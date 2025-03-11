@@ -126,7 +126,7 @@ export default function MaintenanceAnalytics() {
 
   // Prepare work order priority distribution
   const priorityData = filteredWorkOrders.reduce((acc: any[], wo) => {
-    const priority = wo.priority || 'UNSPECIFIED';
+    const priority = wo.priority?.toUpperCase() || 'UNSPECIFIED';
     const existing = acc.find(item => item.name === priority);
     if (existing) {
       existing.value++;

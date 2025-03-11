@@ -11,18 +11,42 @@
   "infoColor": "hsl(199 89% 48%)",
   "background": {
     "light": "hsl(0 0% 100%)",
-    "dark": "hsl(224 71% 4%)"
+    "dark": "hsl(222 47% 11%)"
   },
   "foreground": {
-    "light": "hsl(222 47% 11%)",
+    "light": "hsl(224 71% 4%)",
     "dark": "hsl(213 31% 91%)"
   },
   "muted": {
-    "light": "hsl(210 40% 96%)",
-    "dark": "hsl(223 47% 11%)"
+    "light": "hsl(220 14% 96%)",
+    "dark": "hsl(223 27% 20%)"
   },
   "mutedForeground": {
-    "light": "hsl(215.4 16.3% 46.9%)",
-    "dark": "hsl(215.4 13.3% 73.9%)"
+    "light": "hsl(220 9% 46%)",
+    "dark": "hsl(215 20% 65%)"
+  },
+  "card": {
+    "light": "hsl(0 0% 100%)",
+    "dark": "hsl(222 47% 13%)"
+  },
+  "cardForeground": {
+    "light": "hsl(224 71% 4%)",
+    "dark": "hsl(213 31% 91%)"
+  },
+  "border": {
+    "light": "hsl(220 13% 91%)",
+    "dark": "hsl(223 27% 20%)"
+  },
+  "input": {
+    "light": "hsl(220 13% 91%)",
+    "dark": "hsl(223 27% 20%)"
+  },
+  "accent": {
+    "light": "hsl(220 14% 96%)",
+    "dark": "hsl(223 27% 18%)"
+  },
+  "accentForeground": {
+    "light": "hsl(224 71% 4%)",
+    "dark": "hsl(213 31% 91%)"
   }
 }

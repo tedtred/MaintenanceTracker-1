@@ -1,3 +1,4 @@
+
 # Use Node.js LTS
 FROM node:18-alpine
 
@@ -16,8 +17,11 @@ RUN npm install
 # Bundle app source
 COPY . .
 
+# Build the application
+RUN npm run build
+
 # Expose port
 EXPOSE 5000
 
-# Start command
-CMD ["npm", "run", "dev"]
+# Start command for production
+CMD ["npm", "run", "start"]

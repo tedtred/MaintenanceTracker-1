@@ -1,0 +1,62 @@
+| 6:19:45 PM [express] serving on port 5000
+app_1  |
+app_1  | file:///usr/src/app/node_modules/@neondatabase/serverless/index.mjs:1345
+app_1  | o?t(o):n(u)},"cb"),s=new r(function(o,u){n=o,t=u}).catch(o=>{throw Error.captureStackTrace(
+app_1  |                                                                          ^
+app_1  | ErrorEvent {
+app_1  |   [Symbol(kTarget)]: WebSocket {
+app_1  |     _events: [Object: null prototype] {
+app_1  |       error: [Function: onError] {
+app_1  |         [Symbol(kIsForOnEventAttribute)]: false,
+app_1  |         [Symbol(kListener)]: [Function (anonymous)]
+app_1  |       },
+app_1  |       message: [Function: onMessage] {
+app_1  |         [Symbol(kIsForOnEventAttribute)]: false,
+app_1  |         [Symbol(kListener)]: [Function (anonymous)]
+app_1  |       },
+app_1  |       close: [Function: onClose] {
+app_1  |         [Symbol(kIsForOnEventAttribute)]: false,
+app_1  |         [Symbol(kListener)]: [Function (anonymous)]
+app_1  |       },
+app_1  |       open: [Function: onOpen] {
+app_1  |         [Symbol(kIsForOnEventAttribute)]: false,
+app_1  |         [Symbol(kListener)]: [Function: handleWebSocketOpen]
+app_1  |       }
+app_1  |     },
+app_1  |     _eventsCount: 4,
+app_1  |     _maxListeners: undefined,
+app_1  |     _binaryType: 'arraybuffer',
+app_1  |     _closeCode: 1006,
+app_1  |     _closeFrameReceived: false,
+app_1  |     _closeFrameSent: false,
+app_1  |     _closeMessage: Buffer(0) [Uint8Array] [],
+app_1  |     _closeTimer: null,
+app_1  |     _errorEmitted: true,
+app_1  |     _extensions: {},
+app_1  |     _paused: false,
+app_1  |     _protocol: '',
+app_1  |     _readyState: 3,
+app_1  |     _receiver: null,
+app_1  |     _sender: null,
+app_1  |     _socket: null,
+app_1  |     _bufferedAmount: 0,
+app_1  |     _isServer: false,
+app_1  |     _redirects: 0,
+app_1  |     _autoPong: true,
+app_1  |     _url: 'wss://db/v2',
+app_1  |     _req: null,
+app_1  |     [Symbol(kCapture)]: false
+app_1  |   },
+app_1  |   [Symbol(kType)]: 'error',
+app_1  |   [Symbol(kError)]: Error: connect ECONNREFUSED 172.27.0.2:443
+app_1  |       at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1555:16) {
+app_1  |     errno: -111,
+app_1  |     code: 'ECONNREFUSED',
+app_1  |     syscall: 'connect',
+app_1  |     address: '172.27.0.2',
+app_1  |     port: 443
+app_1  |   },
+app_1  |   [Symbol(kMessage)]: 'connect ECONNREFUSED 172.27.0.2:443'
+app_1  | }
+app_1  |
+app_1  | Node.js v18.20.7

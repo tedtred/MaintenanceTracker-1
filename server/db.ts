@@ -1,5 +1,6 @@
 
-import { Pool } from 'pg';
+import pkg from 'pg';
+const { Pool } = pkg;
 import { drizzle } from 'drizzle-orm/pg-core';
 import { neonConfig } from '@neondatabase/serverless';
 import ws from "ws";

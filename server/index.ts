@@ -149,4 +149,4 @@ import { runMigrations } from './migrate';
     console.error('Error running migrations:', error);
     // Continue server startup even if migrations fail
   }
-})(); };
+})();

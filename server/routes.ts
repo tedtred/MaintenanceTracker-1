@@ -187,7 +187,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Add the import route for assets
+  // Add import route for assets
   app.post("/api/assets/import", upload.single('file'), async (req, res, next) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
@@ -200,16 +200,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // If the import was successful, create the assets and their schedules
       if (importResult.success) {
         for (const assetData of importResult.importedAssets) {
-          const asset = await storage.createAsset(assetData);
+          try {
+            // Create the asset first
+            const asset = await storage.createAsset(assetData);
 
-          // Create maintenance schedules if they exist
-          if (assetData.maintenanceSchedules?.length > 0) {
-            for (const scheduleData of assetData.maintenanceSchedules) {
+            // Find and create associated maintenance schedules
+            const assetSchedules = importResult.importedSchedules.filter(
+              schedule => schedule.assetId === assetData.id
+            );
+
+            // Create maintenance schedules for this asset
+            for (const scheduleData of assetSchedules) {
               await storage.createMaintenanceSchedule({
                 ...scheduleData,
                 assetId: asset.id
               });
             }
+          } catch (error) {
+            console.error('Error creating asset or schedules:', error);
+            importResult.errors.push({
+              row: 0,
+              error: `Failed to create asset: ${error.message}`,
+              data: assetData
+            });
           }
         }
       }

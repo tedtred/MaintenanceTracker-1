@@ -4,7 +4,7 @@ import path from "path";
 import fs from "fs";
 import { parse } from 'csv-parse';
 import { stringify } from 'csv-stringify/sync';
-import { Asset, AssetCategory, AssetStatus, insertAssetSchema, MaintenanceSchedule } from "@shared/schema";
+import { Asset, AssetCategory, AssetStatus, insertAssetSchema, MaintenanceSchedule, insertMaintenanceScheduleSchema } from "@shared/schema";
 
 // Create uploads directory if it doesn't exist
 const uploadsDir = path.join(process.cwd(), "uploads");
@@ -28,23 +28,11 @@ export const upload = multer({
     fileSize: 10 * 1024 * 1024, // 10MB limit
   },
   fileFilter: (req, file, cb) => {
-    // Allow common file types including CSV
-    const allowedTypes = [
-      'image/jpeg',
-      'image/png',
-      'image/gif',
-      'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'text/csv',
-      'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    ];
-
-    if (allowedTypes.includes(file.mimetype)) {
+    // Only allow CSV files for import
+    if (file.mimetype === 'text/csv') {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file type'));
+      cb(new Error('Only CSV files are allowed'));
     }
   }
 });
@@ -59,14 +47,13 @@ export interface ImportResult {
     error: string;
     data?: Record<string, any>;
   }>;
-  importedAssets: Asset[];
-  importedSchedules: MaintenanceSchedule[];
+  importedAssets: Array<Omit<Asset, 'id'>>;
+  importedSchedules: Array<Omit<MaintenanceSchedule, 'id'>>;
 }
 
 export async function handleFileUpload(file: Express.Multer.File) {
   try {
     const fileUrl = `/uploads/${file.filename}`;
-
     return {
       fileName: file.originalname,
       fileUrl,
@@ -96,7 +83,6 @@ export async function processCSVImport(filePath: string): Promise<ImportResult> 
       trim: true
     });
 
-    const records: any[] = [];
     let rowNumber = 1;
 
     parser.on('readable', () => {
@@ -121,16 +107,25 @@ export async function processCSVImport(filePath: string): Promise<ImportResult> 
           };
 
           // Validate against schema
-          const validatedData = insertAssetSchema.parse(assetData);
-          result.importedAssets.push(validatedData);
+          const validatedAsset = insertAssetSchema.parse(assetData);
+          result.importedAssets.push(validatedAsset);
 
           // Parse maintenance schedules if present
           if (record.maintenanceSchedules) {
             try {
               const schedules = JSON.parse(record.maintenanceSchedules);
-              result.importedSchedules.push(...schedules);
+              if (Array.isArray(schedules)) {
+                for (const schedule of schedules) {
+                  const validatedSchedule = insertMaintenanceScheduleSchema.parse({
+                    ...schedule,
+                    startDate: new Date(schedule.startDate),
+                    endDate: schedule.endDate ? new Date(schedule.endDate) : null
+                  });
+                  result.importedSchedules.push(validatedSchedule);
+                }
+              }
             } catch (error) {
-              console.warn(`Failed to parse maintenance schedules for asset: ${record.name}`);
+              console.warn(`Failed to parse maintenance schedules for asset: ${record.name}`, error);
             }
           }
 

@@ -16,7 +16,18 @@ export async function setupDevServer(app: Express, server: Server) {
     configFile: false,
     server: {
       middlewareMode: true,
-      hmr: { server },
+      hmr: {
+        server,
+        port: 443,
+        clientPort: 443,
+        protocol: 'wss'
+      },
+      host: true,
+      strictPort: true,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+      },
+      allowedHosts: 'all'
     },
     appType: "custom",
   });

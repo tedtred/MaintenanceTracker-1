@@ -27,7 +27,7 @@ export async function setupDevServer(app: Express, server: Server) {
       headers: {
         "Access-Control-Allow-Origin": "*",
       },
-      allowedHosts: 'all'
+      allowedHosts: true
     },
     appType: "custom",
   });

@@ -28,7 +28,6 @@ RUN npm ci --production
 
 # Copy built assets from builder
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/client/public ./client/public
 
 # Add postgresql-client for database operations
 RUN apk add --no-cache postgresql-client

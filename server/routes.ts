@@ -4,7 +4,7 @@ import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { insertWorkOrderSchema, insertAssetSchema, insertMaintenanceScheduleSchema, insertMaintenanceCompletionSchema } from "@shared/schema";
 import { ZodError } from "zod";
-import { upload, handleFileUpload, processCSVImport } from "./services/file-storage";
+import { upload, handleFileUpload, processCSVImport, generateCSVExport } from "./services/file-storage";
 import path from "path";
 import express from "express";
 import fs from 'fs'; //Import fs module

@@ -1,3 +1,4 @@
+
 # Computerized Maintenance Management System (CMMS)
 
 A comprehensive platform designed to streamline asset tracking, work order management, and preventive maintenance workflows with advanced scheduling capabilities.
@@ -10,6 +11,8 @@ A comprehensive platform designed to streamline asset tracking, work order manag
 - Secure user authentication system
 - User registration and login functionality
 - Protected routes for authenticated users only
+- Administrator role for system management
+- Default admin account for initial setup
 
 #### Asset Management
 - Complete asset tracking and management
@@ -30,12 +33,19 @@ A comprehensive platform designed to streamline asset tracking, work order manag
 - Remove recurring maintenance schedules
 - Notes and documentation for completed maintenance
 
+#### Maintenance Analytics
+- Work order performance metrics
+- Time-range based analysis
+- Visualization of maintenance trends
+- Average completion time tracking
+
 #### User Interface
 - Modern, responsive design
 - Dark/Light mode theme support
 - Bubbly and vibrant visual theme
 - Intuitive navigation sidebar
 - Mobile-friendly layout
+- Dashboard with at-a-glance metrics
 
 ### Technical Stack
 
@@ -53,6 +63,14 @@ A comprehensive platform designed to streamline asset tracking, work order manag
 - RESTful API architecture
 - File upload functionality
 - Session-based authentication
+- Automatic database migrations
+
+#### Deployment
+- Docker containerization
+- Docker Compose for multi-container deployment
+- Production-ready Dockerfile
+- Automatic database schema migration
+- Environment variable configuration
 
 ## Project Status
 
@@ -64,6 +82,9 @@ A comprehensive platform designed to streamline asset tracking, work order manag
 ✅ File attachments
 ✅ Theme switching
 ✅ Responsive design
+✅ Maintenance analytics
+✅ Dockerized deployment
+✅ Automatic database migrations
 
 ### Planned Features
 🔄 Real-time updates with WebSockets
@@ -95,6 +116,11 @@ docker-compose up -d
 ```
 
 The application will be available at `http://localhost:5000`
+
+The system comes with a default admin account:
+- Username: admin
+- Password: admin123
+- **Important**: Change this password immediately after first login!
 
 To stop the application:
 ```bash
@@ -154,6 +180,12 @@ The application will be available at `http://localhost:3000`
 2. Add new assets with detailed information
 3. Track maintenance history
 4. Monitor asset status
+
+### Analytics
+1. Visit the Maintenance Analytics page
+2. Select time range for analysis
+3. View performance metrics
+4. Track average completion time
 
 ## Contact
 

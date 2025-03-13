@@ -75,7 +75,7 @@ export default function WorkOrders() {
         ...data,
         assignedTo: null,
         assetId: null,
-        reportedDate: new Date().toISOString(),
+        reportedDate: data.reportedDate.toISOString(),
         completedDate: null,
       };
 
@@ -155,7 +155,7 @@ export default function WorkOrders() {
       description: "",
       status: WorkOrderStatus.OPEN,
       priority: WorkOrderPriority.MEDIUM,
-      reportedDate: new Date().toISOString(),
+      reportedDate: new Date(),
       completedDate: null,
       assignedTo: null,
       assetId: null,
@@ -163,13 +163,17 @@ export default function WorkOrders() {
   });
 
   const detailsForm = useForm<WorkOrder>({
-    defaultValues: selectedWorkOrder || {
+    defaultValues: selectedWorkOrder ? {
+      ...selectedWorkOrder,
+      reportedDate: new Date(selectedWorkOrder.reportedDate),
+      completedDate: selectedWorkOrder.completedDate ? new Date(selectedWorkOrder.completedDate) : null,
+    } : {
       id: 0,
       title: "",
       description: "",
       status: WorkOrderStatus.OPEN,
       priority: WorkOrderPriority.MEDIUM,
-      reportedDate: new Date().toISOString(),
+      reportedDate: new Date(),
       completedDate: null,
       assignedTo: null,
       assetId: null,

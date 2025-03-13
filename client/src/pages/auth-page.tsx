@@ -61,11 +61,10 @@ export default function AuthPage() {
 
   const handleRegister = async (data: RegistrationData) => {
     try {
-      const result = await registerMutation.mutateAsync(data);
-      if (result.message) {
-        setRegistrationSuccess(true);
-        registerForm.reset();
-      }
+      await registerMutation.mutateAsync(data);
+      // Since we know the mutation succeeded, we can show the success message
+      setRegistrationSuccess(true);
+      registerForm.reset();
     } catch (error) {
       // Error handling is done by the mutation
       console.error("Registration error:", error);
@@ -142,8 +141,9 @@ export default function AuthPage() {
                 {registrationSuccess ? (
                   <Alert className="mb-4">
                     <AlertDescription>
-                      Registration successful! Your account is pending admin approval.
-                      You will be able to login once an administrator approves your account.
+                      Registration successful! Your account is pending admin
+                      approval. You will be able to login once an administrator
+                      approves your account.
                     </AlertDescription>
                   </Alert>
                 ) : (

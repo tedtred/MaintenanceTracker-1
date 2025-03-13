@@ -1,11 +1,14 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+import path from "path";
+import { log } from "./vite";
+import fs from "fs";
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Logging middleware
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -39,31 +42,69 @@ app.use((req, res, next) => {
 (async () => {
   const server = await registerRoutes(app);
 
+  // Global error handler
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
-
     res.status(status).json({ message });
-    throw err;
+    console.error("Error:", err); // Log the full error
   });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
-  if (app.get("env") === "development") {
-    await setupVite(app, server);
+  // In production, serve static files first
+  if (process.env.NODE_ENV === "production") {
+    console.log("Running in production mode");
+    const distPath = path.resolve(process.cwd(), "dist", "public");
+    console.log("Serving static files from:", distPath);
+
+    // Check if the dist directory exists
+    if (!fs.existsSync(distPath)) {
+      console.error(`Error: Build directory ${distPath} does not exist!`);
+      process.exit(1);
+    }
+
+    // Check if index.html exists
+    const indexPath = path.join(distPath, "index.html");
+    if (!fs.existsSync(indexPath)) {
+      console.error(`Error: ${indexPath} does not exist!`);
+      process.exit(1);
+    }
+
+    console.log("Found required static files");
+
+    app.use(express.static(distPath));
+
+    // Serve index.html for all non-API routes in production
+    app.get("*", (req, res, next) => {
+      if (!req.path.startsWith("/api")) {
+        console.log(`Serving index.html for path: ${req.path}`);
+        res.sendFile(indexPath);
+      } else {
+        next();
+      }
+    });
+
+    // Log environment configuration
+    console.log("Environment Configuration:");
+    console.log("- NODE_ENV:", process.env.NODE_ENV);
+    console.log("- PORT:", process.env.PORT);
+    console.log("- HOST:", process.env.HOST);
+    console.log("- DATABASE_URL exists:", !!process.env.DATABASE_URL);
   } else {
-    serveStatic(app);
+    console.log("Running in development mode");
+    // In development, use Vite's dev server
+    const { setupVite } = await import("./vite");
+    await setupVite(app, server);
   }
 
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client
+  // ALWAYS serve on port 5000
   const port = 5000;
   server.listen({
     port,
     host: "0.0.0.0",
-    reusePort: true,
   }, () => {
-    log(`serving on port ${port}`);
+    log(`Server started successfully and is serving on port ${port}`);
   });
-})();
+})().catch((error) => {
+  console.error("Failed to start server:", error);
+  process.exit(1);
+});

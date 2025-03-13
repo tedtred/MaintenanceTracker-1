@@ -7,11 +7,14 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci
+# Install ALL dependencies (including dev dependencies)
+RUN npm install
 
 # Copy source code
 COPY . .
+
+# Set production environment for build
+ENV NODE_ENV=production
 
 # Build the application
 RUN npm run build
@@ -22,9 +25,11 @@ FROM node:18-alpine AS runner
 # Set working directory
 WORKDIR /app
 
-# Install production dependencies only
+# Copy package files
 COPY package*.json ./
-RUN npm ci --production
+
+# Install ONLY production dependencies
+RUN npm ci --omit=dev
 
 # Copy built assets from builder
 COPY --from=builder /app/dist ./dist
@@ -54,5 +59,5 @@ EXPOSE 5000
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:5000/api/health || exit 1
 
-# Start command
+# Start command (use node directly to run the built server)
 CMD ["node", "dist/index.js"]

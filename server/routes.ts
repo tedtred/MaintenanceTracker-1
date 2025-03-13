@@ -187,7 +187,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Add import route for assets
+  // Import route for assets
   app.post("/api/assets/import", upload.single('file'), async (req, res, next) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
@@ -205,9 +205,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const asset = await storage.createAsset(assetData);
 
             // Find and create associated maintenance schedules
-            const assetSchedules = importResult.importedSchedules.filter(
-              schedule => schedule.assetId === assetData.id
-            );
+            const assetSchedules = importResult.importedSchedules;
 
             // Create maintenance schedules for this asset
             for (const scheduleData of assetSchedules) {

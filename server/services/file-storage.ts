@@ -4,7 +4,7 @@ import path from "path";
 import fs from "fs";
 import { parse } from 'csv-parse';
 import { stringify } from 'csv-stringify/sync';
-import { Asset, AssetCategory, AssetStatus, insertAssetSchema, MaintenanceSchedule, insertMaintenanceScheduleSchema } from "@shared/schema";
+import { Asset, AssetCategory, AssetStatus, insertAssetSchema, MaintenanceSchedule, insertMaintenanceScheduleSchema, MaintenanceFrequency, MaintenanceStatus } from "@shared/schema";
 
 // Create uploads directory if it doesn't exist
 const uploadsDir = path.join(process.cwd(), "uploads");
@@ -48,7 +48,7 @@ export interface ImportResult {
     data?: Record<string, any>;
   }>;
   importedAssets: Array<Omit<Asset, 'id'>>;
-  importedSchedules: Array<Omit<MaintenanceSchedule, 'id'>>;
+  importedSchedules: Array<Omit<MaintenanceSchedule, 'id' | 'assetId'>>;
 }
 
 export async function handleFileUpload(file: Express.Multer.File) {
@@ -99,9 +99,9 @@ export async function processCSVImport(filePath: string): Promise<ImportResult> 
             location: record.location || '',
             status: record.status || AssetStatus.OPERATIONAL,
             category: record.category || AssetCategory.MACHINERY,
-            manufacturer: record.manufacturer || undefined,
-            modelNumber: record.modelNumber || undefined,
-            serialNumber: record.serialNumber || undefined,
+            manufacturer: record.manufacturer || null,
+            modelNumber: record.modelNumber || null,
+            serialNumber: record.serialNumber || null,
             commissionedDate: record.commissionedDate ? new Date(record.commissionedDate) : null,
             lastMaintenance: record.lastMaintenance ? new Date(record.lastMaintenance) : null
           };
@@ -116,11 +116,17 @@ export async function processCSVImport(filePath: string): Promise<ImportResult> 
               const schedules = JSON.parse(record.maintenanceSchedules);
               if (Array.isArray(schedules)) {
                 for (const schedule of schedules) {
-                  const validatedSchedule = insertMaintenanceScheduleSchema.parse({
-                    ...schedule,
+                  const scheduleData = {
+                    title: schedule.title,
+                    description: schedule.description || '',
+                    status: schedule.status || MaintenanceStatus.SCHEDULED,
+                    frequency: schedule.frequency || MaintenanceFrequency.MONTHLY,
                     startDate: new Date(schedule.startDate),
-                    endDate: schedule.endDate ? new Date(schedule.endDate) : null
-                  });
+                    endDate: schedule.endDate ? new Date(schedule.endDate) : null,
+                    lastCompleted: schedule.lastCompleted ? new Date(schedule.lastCompleted) : null
+                  };
+
+                  const validatedSchedule = insertMaintenanceScheduleSchema.omit({ assetId: true }).parse(scheduleData);
                   result.importedSchedules.push(validatedSchedule);
                 }
               }
@@ -161,9 +167,17 @@ export function generateCSVExport(assets: Asset[], schedules: MaintenanceSchedul
     if (!acc[schedule.assetId]) {
       acc[schedule.assetId] = [];
     }
-    acc[schedule.assetId].push(schedule);
+    acc[schedule.assetId].push({
+      title: schedule.title,
+      description: schedule.description,
+      status: schedule.status,
+      frequency: schedule.frequency,
+      startDate: schedule.startDate.toISOString(),
+      endDate: schedule.endDate?.toISOString() || null,
+      lastCompleted: schedule.lastCompleted?.toISOString() || null
+    });
     return acc;
-  }, {} as Record<number, MaintenanceSchedule[]>);
+  }, {} as Record<number, Array<Omit<MaintenanceSchedule, 'id' | 'assetId'>>>);
 
   // Prepare data for CSV export
   const exportData = assets.map(asset => ({

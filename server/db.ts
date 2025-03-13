@@ -1,13 +1,16 @@
 
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
+import { Pool } from 'pg';
+import { drizzle } from 'drizzle-orm/pg-core';
+import { neonConfig } from '@neondatabase/serverless';
 import ws from "ws";
 import * as schema from "@shared/schema";
 
-// Only use WebSockets for Neon DB connections outside Docker
+// Check if we're in Docker environment
 const isDockerEnvironment = process.env.NODE_ENV === 'production';
 
+// Only use Neon DB with WebSockets outside Docker
 if (!isDockerEnvironment) {
+  // For development environment (using Neon with WebSockets)
   neonConfig.webSocketConstructor = ws;
 }
 
@@ -17,5 +20,8 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
+// Create the appropriate pool based on environment
 export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-export const db = drizzle({ client: pool, schema });
+
+// Use the appropriate ORM client
+export const db = drizzle(pool, { schema });

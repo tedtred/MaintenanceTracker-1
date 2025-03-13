@@ -125,11 +125,11 @@ export async function runMigrations() {
       const salt = crypto.randomBytes(16).toString('hex');
       const hashedPassword = crypto.scryptSync('admin123', salt, 64).toString('hex') + '.' + salt;
 
-      await db.execute({
-        text: `INSERT INTO users (username, password, role, approved)
-        VALUES ('admin', $1, 'ADMIN', true)`,
-        values: [hashedPassword]
-      });
+      // Use direct SQL execution instead of parameterized query
+      await pool.query(`
+        INSERT INTO users (username, password, role, approved)
+        VALUES ('admin', $1, 'ADMIN', true)
+      `, [hashedPassword]);
 
       console.log("Default admin user created. Username: admin, Password: admin123");
       console.log("IMPORTANT: Change this password immediately after first login!");

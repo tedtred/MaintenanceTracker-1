@@ -137,16 +137,3 @@ app.use((req, res, next) => {
   console.error("Failed to start server:", error);
   process.exit(1);
 });
-
-import { runMigrations } from './migrate';
-
-// Run database migrations on server startup
-(async () => {
-  try {
-    await runMigrations();
-    console.log('Database migrations completed successfully');
-  } catch (error) {
-    console.error('Error running migrations:', error);
-    // Continue server startup even if migrations fail
-  }
-})();

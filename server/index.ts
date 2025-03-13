@@ -3,6 +3,11 @@ import { registerRoutes } from "./routes";
 import path from "path";
 import fs from "fs";
 import { log, isProduction } from "./utils";
+import { createServer } from 'http'; // Added createServer import
+
+// Import migrations - Added this line
+import { runMigrations } from './migrate.js';
+
 
 const app = express();
 app.use(express.json());
@@ -49,6 +54,17 @@ app.use((req, res, next) => {
     res.status(status).json({ message });
     console.error("Error:", err); // Log the full error
   });
+
+  // Run migrations before server start in production - Added this block
+  if (isProduction) {
+    try {
+      await runMigrations();
+    } catch (error) {
+      console.error("Failed to run migrations:", error);
+      // Continue anyway, as the tables might already exist
+    }
+  }
+
 
   // In production, serve static files first
   if (isProduction) {
@@ -121,3 +137,10 @@ app.use((req, res, next) => {
   console.error("Failed to start server:", error);
   process.exit(1);
 });
+
+// Placeholder migrate.js file
+// Create a file named migrate.js in the same directory with this content:
+// export const runMigrations = async () => {
+//   // Add your database migration logic here.  This is a placeholder.
+//   console.log('Migrations executed (placeholder)');
+// };

@@ -27,9 +27,13 @@ WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
+COPY drizzle.config.ts ./
 
-# Install production dependencies and specific dev dependencies needed for the build
-RUN npm ci --omit=dev && npm install --no-save vite
+# Install production dependencies and required for migrations
+RUN npm ci --omit=dev && npm install --no-save vite drizzle-orm drizzle-kit pg dotenv
+
+# Copy schema and migrations
+COPY shared ./shared
 
 # Copy built assets from builder
 COPY --from=builder /app/dist ./dist
@@ -58,6 +62,9 @@ EXPOSE 5000
 # Health check
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:5000/api/health || exit 1
+
+# Run database migrations
+RUN if [ -n "$DATABASE_URL" ]; then npx drizzle-kit push:pg --yes; fi
 
 # Start command (use node directly to run the production server)
 CMD ["node", "dist/index.js"]

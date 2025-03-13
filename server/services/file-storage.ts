@@ -99,9 +99,9 @@ export async function processCSVImport(filePath: string): Promise<ImportResult> 
             location: record.location || '',
             status: record.status || AssetStatus.OPERATIONAL,
             category: record.category || AssetCategory.MACHINERY,
-            manufacturer: record.manufacturer || null,
-            modelNumber: record.modelNumber || null,
-            serialNumber: record.serialNumber || null,
+            manufacturer: record.manufacturer === '' ? undefined : record.manufacturer,
+            modelNumber: record.modelNumber === '' ? undefined : record.modelNumber,
+            serialNumber: record.serialNumber === '' ? undefined : record.serialNumber,
             commissionedDate: record.commissionedDate ? new Date(record.commissionedDate) : null,
             lastMaintenance: record.lastMaintenance ? new Date(record.lastMaintenance) : null
           };
@@ -186,11 +186,11 @@ export function generateCSVExport(assets: Asset[], schedules: MaintenanceSchedul
     location: asset.location,
     status: asset.status,
     category: asset.category,
-    manufacturer: asset.manufacturer,
-    modelNumber: asset.modelNumber,
-    serialNumber: asset.serialNumber,
-    commissionedDate: asset.commissionedDate?.toISOString(),
-    lastMaintenance: asset.lastMaintenance?.toISOString(),
+    manufacturer: asset.manufacturer || '',
+    modelNumber: asset.modelNumber || '',
+    serialNumber: asset.serialNumber || '',
+    commissionedDate: asset.commissionedDate?.toISOString() || '',
+    lastMaintenance: asset.lastMaintenance?.toISOString() || '',
     maintenanceSchedules: JSON.stringify(assetSchedules[asset.id] || [])
   }));
 

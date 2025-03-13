@@ -138,9 +138,15 @@ app.use((req, res, next) => {
   process.exit(1);
 });
 
-// Placeholder migrate.js file
-// Create a file named migrate.js in the same directory with this content:
-// export const runMigrations = async () => {
-//   // Add your database migration logic here.  This is a placeholder.
-//   console.log('Migrations executed (placeholder)');
-// };
+import { runMigrations } from './migrate';
+
+// Run database migrations on server startup
+(async () => {
+  try {
+    await runMigrations();
+    console.log('Database migrations completed successfully');
+  } catch (error) {
+    console.error('Error running migrations:', error);
+    // Continue server startup even if migrations fail
+  }
+})(); };

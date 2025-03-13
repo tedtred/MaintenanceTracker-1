@@ -110,6 +110,32 @@ export async function runMigrations() {
     
     console.log("Database migration completed successfully");
     
+    // Create default admin user if none exists
+    console.log("Checking for existing admin user...");
+    const adminCheck = await db.execute(`
+      SELECT COUNT(*) FROM users WHERE role = 'ADMIN'
+    `);
+    
+    const adminCount = parseInt(adminCheck.rows[0].count);
+    
+    if (adminCount === 0) {
+      console.log("Creating default admin user...");
+      // Create a default admin with username 'admin' and password 'admin123'
+      // Password will be hashed properly
+      const salt = require('crypto').randomBytes(16).toString('hex');
+      const hashedPassword = require('crypto').scryptSync('admin123', salt, 64).toString('hex') + '.' + salt;
+      
+      await db.execute(`
+        INSERT INTO users (username, password, role, approved)
+        VALUES ('admin', $1, 'ADMIN', true)
+      `, [hashedPassword]);
+      
+      console.log("Default admin user created. Username: admin, Password: admin123");
+      console.log("IMPORTANT: Change this password immediately after first login!");
+    } else {
+      console.log("Admin user already exists, skipping default admin creation");
+    }
+    
   } catch (error) {
     console.error("Migration error:", error);
     throw error;

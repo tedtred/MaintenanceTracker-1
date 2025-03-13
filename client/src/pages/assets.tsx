@@ -47,7 +47,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Calendar, Wrench, Car, Monitor, Box, Search, Upload } from "lucide-react";
+import { Calendar, Wrench, Car, Monitor, Box, Search, Upload, Download } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -322,6 +322,37 @@ export default function Assets() {
     }
   };
 
+  const handleExport = async () => {
+    try {
+      const response = await fetch('/api/assets/export', {
+        credentials: 'include'
+      });
+
+      if (!response.ok) throw new Error('Failed to export assets');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'assets-export.csv';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Success",
+        description: "Assets exported successfully",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
 
   return (
     <div className="flex h-screen">
@@ -362,6 +393,11 @@ export default function Assets() {
                   ))}
                 </SelectContent>
               </Select>
+
+              <Button onClick={handleExport} variant="outline">
+                <Download className="h-4 w-4 mr-2" />
+                Export CSV
+              </Button>
 
               <Button onClick={() => setIsImportDialogOpen(true)} variant="outline">
                 <Upload className="h-4 w-4 mr-2" />
@@ -871,93 +907,94 @@ export default function Assets() {
       </Dialog>
 
       <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>Import Assets from CSV</DialogTitle>
-                <DialogDescription>
-                  Upload a CSV file with the following columns: name, description, location, status,
-                  category, manufacturer, modelNumber, serialNumber, commissionedDate, lastMaintenance
-                </DialogDescription>
-              </DialogHeader>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Import Assets from CSV</DialogTitle>
+            <DialogDescription>
+              Upload a CSV file with the following columns: name, description, location, status,
+              category, manufacturer, modelNumber, serialNumber, commissionedDate, lastMaintenance, maintenanceSchedules.
+              The maintenanceSchedules column should contain JSON array of maintenance schedule objects.
+            </DialogDescription>
+          </DialogHeader>
 
-              <div className="space-y-4">
-                <div className="flex items-center justify-center w-full">
-                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-muted/5 hover:bg-muted/10">
-                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                      <Upload className="w-8 h-8 mb-3 text-muted-foreground" />
-                      <p className="mb-2 text-sm text-muted-foreground">
-                        <span className="font-semibold">Click to upload</span> or drag and drop
-                      </p>
-                      <p className="text-xs text-muted-foreground/75">
-                        CSV files only
-                      </p>
-                    </div>
-                    <input
-                      type="file"
-                      className="hidden"
-                      accept=".csv"
-                      onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-                    />
-                  </label>
+          <div className="space-y-4">
+            <div className="flex items-center justify-center w-full">
+              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-muted/5 hover:bg-muted/10">
+                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                  <Upload className="w-8 h-8 mb-3 text-muted-foreground" />
+                  <p className="mb-2 text-sm text-muted-foreground">
+                    <span className="font-semibold">Click to upload</span> or drag and drop
+                  </p>
+                  <p className="text-xs text-muted-foreground/75">
+                    CSV files only
+                  </p>
                 </div>
+                <input
+                  type="file"
+                  className="hidden"
+                  accept=".csv"
+                  onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                />
+              </label>
+            </div>
 
-                {selectedFile && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="font-medium">{selectedFile.name}</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setSelectedFile(null)}
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                )}
-
-                {importResult && (
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span>Total Rows:</span>
-                      <span>{importResult.totalRows}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Successfully Imported:</span>
-                      <span className="text-green-600">{importResult.successfulImports}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Failed Imports:</span>
-                      <span className="text-red-600">{importResult.failedImports}</span>
-                    </div>
-
-                    {importResult.errors.length > 0 && (
-                      <div className="mt-4">
-                        <h4 className="font-medium mb-2">Errors:</h4>
-                        <div className="max-h-32 overflow-y-auto space-y-2">
-                          {importResult.errors.map((error, index) => (
-                            <div key={index} className="text-xs text-red-600">
-                              Row {error.row}: {error.error}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
+            {selectedFile && (
+              <div className="flex items-center gap-2 text-sm">
+                <span className="font-medium">{selectedFile.name}</span>
                 <Button
-                  className="w-full"
-                  disabled={!selectedFile || importMutation.isPending}
-                  onClick={() => {
-                    if (selectedFile) {
-                      importMutation.mutate(selectedFile);
-                    }
-                  }}
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedFile(null)}
                 >
-                  {importMutation.isPending ? "Importing..." : "Import"}
+                  Remove
                 </Button>
               </div>
-            </DialogContent>
-          </Dialog>
+            )}
+
+            {importResult && (
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span>Total Rows:</span>
+                  <span>{importResult.totalRows}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Successfully Imported:</span>
+                  <span className="text-green-600">{importResult.successfulImports}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Failed Imports:</span>
+                  <span className="text-red-600">{importResult.failedImports}</span>
+                </div>
+
+                {importResult.errors.length > 0 && (
+                  <div className="mt-4">
+                    <h4 className="font-medium mb-2">Errors:</h4>
+                    <div className="max-h-32 overflow-y-auto space-y-2">
+                      {importResult.errors.map((error, index) => (
+                        <div key={index} className="text-xs text-red-600">
+                          Row {error.row}: {error.error}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <Button
+              className="w-full"
+              disabled={!selectedFile || importMutation.isPending}
+              onClick={() => {
+                if (selectedFile) {
+                  importMutation.mutate(selectedFile);
+                }
+              }}
+            >
+              {importMutation.isPending ? "Importing..." : "Import"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

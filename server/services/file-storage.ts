@@ -3,7 +3,8 @@ import { randomBytes } from "crypto";
 import path from "path";
 import fs from "fs";
 import { parse } from 'csv-parse';
-import { Asset, AssetCategory, AssetStatus, insertAssetSchema } from "@shared/schema";
+import { stringify } from 'csv-stringify/sync';
+import { Asset, AssetCategory, AssetStatus, insertAssetSchema, MaintenanceSchedule } from "@shared/schema";
 
 // Create uploads directory if it doesn't exist
 const uploadsDir = path.join(process.cwd(), "uploads");
@@ -59,6 +60,7 @@ export interface ImportResult {
     data?: Record<string, any>;
   }>;
   importedAssets: Asset[];
+  importedSchedules: MaintenanceSchedule[];
 }
 
 export async function handleFileUpload(file: Express.Multer.File) {
@@ -83,7 +85,8 @@ export async function processCSVImport(filePath: string): Promise<ImportResult> 
     successfulImports: 0,
     failedImports: 0,
     errors: [],
-    importedAssets: []
+    importedAssets: [],
+    importedSchedules: []
   };
 
   return new Promise((resolve, reject) => {
@@ -110,16 +113,27 @@ export async function processCSVImport(filePath: string): Promise<ImportResult> 
             location: record.location || '',
             status: record.status || AssetStatus.OPERATIONAL,
             category: record.category || AssetCategory.MACHINERY,
-            manufacturer: record.manufacturer || null,
-            modelNumber: record.modelNumber || null,
-            serialNumber: record.serialNumber || null,
+            manufacturer: record.manufacturer || undefined,
+            modelNumber: record.modelNumber || undefined,
+            serialNumber: record.serialNumber || undefined,
             commissionedDate: record.commissionedDate ? new Date(record.commissionedDate) : null,
             lastMaintenance: record.lastMaintenance ? new Date(record.lastMaintenance) : null
           };
 
           // Validate against schema
           const validatedData = insertAssetSchema.parse(assetData);
-          records.push(validatedData);
+          result.importedAssets.push(validatedData);
+
+          // Parse maintenance schedules if present
+          if (record.maintenanceSchedules) {
+            try {
+              const schedules = JSON.parse(record.maintenanceSchedules);
+              result.importedSchedules.push(...schedules);
+            } catch (error) {
+              console.warn(`Failed to parse maintenance schedules for asset: ${record.name}`);
+            }
+          }
+
           result.successfulImports++;
         } catch (error: any) {
           result.failedImports++;
@@ -143,5 +157,49 @@ export async function processCSVImport(filePath: string): Promise<ImportResult> 
 
     // Read the file and pipe it to the parser
     fs.createReadStream(filePath).pipe(parser);
+  });
+}
+
+export function generateCSVExport(assets: Asset[], schedules: MaintenanceSchedule[]): string {
+  // Create a map of asset IDs to their maintenance schedules
+  const assetSchedules = schedules.reduce((acc, schedule) => {
+    if (!acc[schedule.assetId]) {
+      acc[schedule.assetId] = [];
+    }
+    acc[schedule.assetId].push(schedule);
+    return acc;
+  }, {} as Record<number, MaintenanceSchedule[]>);
+
+  // Prepare data for CSV export
+  const exportData = assets.map(asset => ({
+    name: asset.name,
+    description: asset.description,
+    location: asset.location,
+    status: asset.status,
+    category: asset.category,
+    manufacturer: asset.manufacturer,
+    modelNumber: asset.modelNumber,
+    serialNumber: asset.serialNumber,
+    commissionedDate: asset.commissionedDate?.toISOString(),
+    lastMaintenance: asset.lastMaintenance?.toISOString(),
+    maintenanceSchedules: JSON.stringify(assetSchedules[asset.id] || [])
+  }));
+
+  // Generate CSV string
+  return stringify(exportData, {
+    header: true,
+    columns: [
+      'name',
+      'description',
+      'location',
+      'status',
+      'category',
+      'manufacturer',
+      'modelNumber',
+      'serialNumber',
+      'commissionedDate',
+      'lastMaintenance',
+      'maintenanceSchedules'
+    ]
   });
 }

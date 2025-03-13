@@ -197,10 +197,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const importResult = await processCSVImport(req.file.path);
 
-      // If the import was successful, create the assets
+      // If the import was successful, create the assets and their schedules
       if (importResult.success) {
-        for (const assetData of importResult.records) {
-          await storage.createAsset(assetData);
+        for (const assetData of importResult.importedAssets) {
+          const asset = await storage.createAsset(assetData);
+
+          // Create maintenance schedules if they exist
+          if (assetData.maintenanceSchedules?.length > 0) {
+            for (const scheduleData of assetData.maintenanceSchedules) {
+              await storage.createMaintenanceSchedule({
+                ...scheduleData,
+                assetId: asset.id
+              });
+            }
+          }
         }
       }
 
@@ -217,6 +227,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (err) console.error('Error deleting temporary file:', err);
         });
       }
+      next(error);
+    }
+  });
+
+  // Add export route
+  app.get("/api/assets/export", async (req, res, next) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const assets = await storage.getAssets();
+      const schedules = await storage.getMaintenanceSchedules();
+
+      const csvContent = generateCSVExport(assets, schedules);
+
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename=assets-export.csv');
+      res.send(csvContent);
+    } catch (error) {
       next(error);
     }
   });

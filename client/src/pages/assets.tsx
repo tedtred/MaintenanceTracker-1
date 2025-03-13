@@ -254,11 +254,16 @@ export default function Assets() {
       const formData = new FormData();
       formData.append('file', file);
 
-      const res = await apiRequest("POST", "/api/assets/import", formData, {
-        headers: {
-          'Content-Type': undefined,
-        },
+      const res = await fetch('/api/assets/import', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData
       });
+
+      if (!res.ok) {
+        throw new Error('Failed to import assets');
+      }
+
       return res.json();
     },
     onSuccess: (data: ImportResult) => {

@@ -1,8 +1,8 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import path from "path";
-import { log } from "./vite";
 import fs from "fs";
+import { log, isProduction } from "./utils";
 
 const app = express();
 app.use(express.json());
@@ -51,7 +51,7 @@ app.use((req, res, next) => {
   });
 
   // In production, serve static files first
-  if (process.env.NODE_ENV === "production") {
+  if (isProduction) {
     console.log("Running in production mode");
     const distPath = path.resolve(process.cwd(), "dist", "public");
     console.log("Serving static files from:", distPath);
@@ -77,7 +77,7 @@ app.use((req, res, next) => {
     app.get("*", (req, res, next) => {
       if (!req.path.startsWith("/api")) {
         console.log(`Serving index.html for path: ${req.path}`);
-        res.sendFile(indexPath);
+        res.sendFile(path.join(distPath, "index.html"));
       } else {
         next();
       }
@@ -91,9 +91,15 @@ app.use((req, res, next) => {
     console.log("- DATABASE_URL exists:", !!process.env.DATABASE_URL);
   } else {
     console.log("Running in development mode");
-    // In development, use Vite's dev server
-    const { setupVite } = await import("./vite");
-    await setupVite(app, server);
+    // In development, import and setup Vite dynamically
+    try {
+      // @ts-ignore - Dynamic import
+      const viteModule = await import("./dev-server.js");
+      await viteModule.setupDevServer(app, server);
+    } catch (error) {
+      console.error("Failed to setup development server:", error);
+      process.exit(1);
+    }
   }
 
   // ALWAYS serve on port 5000

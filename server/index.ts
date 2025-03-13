@@ -93,12 +93,19 @@ app.use((req, res, next) => {
     console.log("Running in development mode");
     // In development, import and setup Vite dynamically
     try {
+      // Use dynamic import with explicit file path to avoid issues
       // @ts-ignore - Dynamic import
       const viteModule = await import("./dev-server.js");
       await viteModule.setupDevServer(app, server);
     } catch (error) {
       console.error("Failed to setup development server:", error);
-      process.exit(1);
+      if (isProduction) {
+        // In production, continue without Vite if there's an error
+        console.log("Continuing without development server in production mode");
+      } else {
+        // Only exit in development if Vite is required
+        process.exit(1);
+      }
     }
   }
 

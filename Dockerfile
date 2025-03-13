@@ -28,8 +28,8 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install ONLY production dependencies
-RUN npm ci --omit=dev
+# Install production dependencies and specific dev dependencies needed for the build
+RUN npm ci --omit=dev && npm install --no-save vite
 
 # Copy built assets from builder
 COPY --from=builder /app/dist ./dist

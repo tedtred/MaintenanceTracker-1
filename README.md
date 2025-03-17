@@ -116,6 +116,12 @@ docker-compose up -d
 ```
 
 The application will be available at `http://localhost:5000`
+The PostgreSQL database will be accessible at:
+- Host: localhost (or your machine's IP)
+- Port: 5432
+- Username: postgres
+- Password: postgres
+- Database: cmms
 
 The system comes with a default admin account:
 - Username: admin

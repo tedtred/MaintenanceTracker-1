@@ -123,6 +123,11 @@ The PostgreSQL database will be accessible at:
 - Password: postgres
 - Database: cmms
 
+pgAdmin4 (Database Management):
+- URL: http://localhost:8080
+- Email: admin@admin.com
+- Password: admin
+
 The system comes with a default admin account:
 - Username: admin
 - Password: admin123

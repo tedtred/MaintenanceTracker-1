@@ -1,3 +1,4 @@
+
 version: '3.8'
 
 services:
@@ -43,10 +44,6 @@ services:
       retries: 10
       start_period: 10s
 
-volumes:
-  postgres_data:
-
-services:
   pgadmin:
     image: dpage/pgadmin4
     environment:
@@ -58,6 +55,9 @@ services:
       - db
     networks:
       - cmms-network
+
+volumes:
+  postgres_data:
 
 networks:
   cmms-network:

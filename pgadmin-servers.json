@@ -1,0 +1,15 @@
+
+{
+    "Servers": {
+        "1": {
+            "Name": "CMMS Database",
+            "Group": "Servers",
+            "Host": "db",
+            "Port": 5432,
+            "MaintenanceDB": "cmms",
+            "Username": "postgres",
+            "Password": "postgres",
+            "SSLMode": "prefer"
+        }
+    }
+}

@@ -46,7 +46,8 @@ services:
 volumes:
   postgres_data:
 
-phpmyadmin:
+services:
+  pgadmin:
     image: dpage/pgadmin4
     environment:
       - PGADMIN_DEFAULT_EMAIL=admin@admin.com

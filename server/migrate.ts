@@ -17,11 +17,17 @@ export async function runMigrations() {
   // Create PostgreSQL connection pool
   const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
+    // Connection retry options
     max: 1,
     connectionTimeoutMillis: 10000
   });
 
   try {
+    // Test the connection
+    const client = await pool.connect();
+    client.release();
+    console.log("Successfully connected to database");
+
     // Create drizzle instance
     const db = drizzle(pool, { schema });
 
@@ -105,6 +111,18 @@ export async function runMigrations() {
         completed_date TIMESTAMP NOT NULL,
         notes TEXT
       );
+
+      CREATE TABLE IF NOT EXISTS settings (
+        id SERIAL PRIMARY KEY,
+        work_week_start INTEGER NOT NULL DEFAULT 1,
+        work_week_end INTEGER NOT NULL DEFAULT 5,
+        work_day_start TEXT NOT NULL DEFAULT '09:00',
+        work_day_end TEXT NOT NULL DEFAULT '17:00',
+        time_zone TEXT NOT NULL DEFAULT 'UTC',
+        date_format TEXT NOT NULL DEFAULT 'MM/DD/YYYY',
+        time_format TEXT NOT NULL DEFAULT 'HH:mm',
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
     `);
 
     // Add foreign key constraints
@@ -123,6 +141,7 @@ export async function runMigrations() {
     console.log("Database migration completed successfully");
 
     // Create default admin user if none exists
+    console.log("Checking for existing admin user...");
     const adminCheck = await db.execute(`
       SELECT COUNT(*) FROM users WHERE role = 'ADMIN'
     `);
@@ -131,6 +150,8 @@ export async function runMigrations() {
 
     if (adminCount === 0) {
       console.log("Creating default admin user...");
+      // Create a default admin with username 'admin' and password 'admin123'
+      // Password will be hashed properly
       const salt = crypto.randomBytes(16).toString('hex');
       const hashedPassword = crypto.scryptSync('admin123', salt, 64).toString('hex') + '.' + salt;
 
@@ -140,17 +161,21 @@ export async function runMigrations() {
       `, [hashedPassword]);
 
       console.log("Default admin user created. Username: admin, Password: admin123");
+      console.log("IMPORTANT: Change this password immediately after first login!");
+    } else {
+      console.log("Admin user already exists, skipping default admin creation");
     }
 
   } catch (error) {
     console.error("Migration error:", error);
     throw error;
   } finally {
+    // Close the pool
     await pool.end();
   }
 }
 
-// Run migrations if this file is executed directly
+// If this module is run directly
 if (import.meta.url === new URL(import.meta.url).href) {
   runMigrations()
     .then(() => {

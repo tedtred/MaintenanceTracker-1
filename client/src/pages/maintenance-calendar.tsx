@@ -75,20 +75,21 @@ const generateRecurringEvents = (schedule: MaintenanceSchedule, assetName: strin
 
     // Only include if not completed and is today or past due
     if (!isCompleted && (isPast(currentDate) || isToday(currentDate))) {
-      const eventDate = new Date(currentDate);
+      const eventDate = new Date(today); // Use today's date for overdue items
       eventDate.setHours(0, 0, 0, 0);
 
-      const daysOverdue = differenceInDays(today, eventDate);
+      const daysOverdue = differenceInDays(today, currentDate);
       const status = daysOverdue > 0 ? `Overdue by ${daysOverdue} days` : 'Due today';
 
       events.push({
-        id: `${schedule.id}-${eventDate.toISOString()}`,
+        id: `${schedule.id}-${currentDate.toISOString()}`,
         title: `${schedule.title} - ${assetName}`,
-        start: eventDate,
+        start: eventDate, // Show on today's date
         end: eventDate,
         resource: {
           ...schedule,
           assetName,
+          originalDate: currentDate, // Keep track of original date
           date: eventDate,
           status,
           isOverdue: daysOverdue > 0,

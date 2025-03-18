@@ -73,8 +73,8 @@ const generateRecurringEvents = (schedule: MaintenanceSchedule, assetName: strin
         format(new Date(completion.completedDate), 'yyyy-MM-dd') === format(currentDate, 'yyyy-MM-dd')
     );
 
-    // Only include if not completed and is today or past due
-    if (!isCompleted && (isPast(currentDate) || isToday(currentDate))) {
+    // Include all non-completed events
+    if (!isCompleted) {
       const eventDate = new Date(today); // Use today's date for overdue items
       eventDate.setHours(0, 0, 0, 0);
 
@@ -259,11 +259,7 @@ export default function MaintenanceCalendar() {
               <h2 className="text-lg font-semibold mb-4">Monthly View</h2>
               <Calendar
                 localizer={localizer}
-                events={events.map(event => ({
-                  ...event,
-                  start: event.resource.originalDate || event.start,
-                  end: event.resource.originalDate || event.end
-                }))}
+                events={events}
                 startAccessor="start"
                 endAccessor="end"
                 style={{ height: "600px" }}

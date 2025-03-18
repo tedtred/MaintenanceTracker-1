@@ -75,7 +75,7 @@ const generateRecurringEvents = (schedule: MaintenanceSchedule, assetName: strin
 
     // Include all non-completed events
     if (!isCompleted) {
-      const eventDate = new Date(today); // Use today's date for overdue items
+      const eventDate = isPast(currentDate) ? new Date(today) : new Date(currentDate);
       eventDate.setHours(0, 0, 0, 0);
 
       const daysOverdue = differenceInDays(today, currentDate);
@@ -259,19 +259,18 @@ export default function MaintenanceCalendar() {
               <h2 className="text-lg font-semibold mb-4">Monthly View</h2>
               <Calendar
                 localizer={localizer}
-                events={events}
+                events={events.map(event => ({
+                  ...event,
+                  start: event.resource.originalDate || event.start,
+                  end: event.resource.originalDate || event.end
+                }))}
                 startAccessor="start"
                 endAccessor="end"
                 style={{ height: "600px" }}
+                views={{ month: true }}
                 defaultView="month"
-                views={["month"]}
-              views={{
-                month: true,
-                agenda: true,
-              }}
-              defaultView="month"
-              tooltipAccessor={(event) =>
-                `${event.title}\nFrequency: ${event.resource.frequency}`
+                tooltipAccessor={(event) =>
+                  `${event.title}\nFrequency: ${event.resource.frequency}`
               }
               className=" [&_.rbc-month-view]:!rounded-lg [&_.rbc-month-view]:!border-border [&_.rbc-month-view]:!shadow-sm [&_.rbc-header]:!py-3 [&_.rbc-header]:!font-medium [&_.rbc-header]:!border-border [&_.rbc-month-row]:!border-border [&_.rbc-day-bg]:!border-border [&_.rbc-off-range-bg]:!bg-muted/50 [&_.rbc-today]:!bg-accent/20 [&_.rbc-event]:!px-2 [&_.rbc-event]:!py-1 [&_.rbc-event]:!rounded-md [&_.rbc-event]:!font-medium [&_.rbc-event]:!transition-colors [&_.rbc-event]:hover:!bg-primary/90 [&_.rbc-agenda-view]:!rounded-lg [&_.rbc-agenda-view]:!border-border [&_.rbc-agenda-view]:!shadow-sm [&_.rbc-agenda-view_table]:!border-border [&_.rbc-agenda-view_thead]:!border-border [&_.rbc-agenda-view_tbody]:!border-border [&_.rbc-agenda-view_tr]:!border-border [&_.rbc-agenda-view_td]:!border-border [&_.rbc-agenda-view_td]:!py-3 [&_.rbc-agenda-view_td]:!px-4 [&_.rbc-agenda-empty]:!text-muted-foreground [&_.rbc-agenda-date-cell]:!font-medium [&_.rbc-agenda-time-cell]:!text-muted-foreground [&_.rbc-button-link]:!text-sm [&_.rbc-toolbar-label]:!text-xl [&_.rbc-toolbar-label]:!font-semibold [&_.rbc-toolbar]:!mb-4 [&_.rbc-btn-group]:!gap-1 [&_.rbc-btn-group_button]:!rounded-md [&_.rbc-btn-group_button]:!px-3 [&_.rbc-btn-group_button]:!py-1.5 [&_.rbc-btn-group_button]:!text-sm [&_.rbc-btn-group_button]:!font-medium [&_.rbc-btn-group_button]:!bg-background [&_.rbc-btn-group_button]:!border-border [&_.rbc-btn-group_button]:!text-foreground [&_.rbc-btn-group_button.rbc-active]:!bg-primary [&_.rbc-btn-group_button.rbc-active]:!text-primary-foreground [&_.rbc-event]:!bg-primary/90 [&_.rbc-event]:!text-primary-foreground [&_.rbc-event]:hover:!bg-primary [&_.rbc-event]:!border-none [&_.rbc-today]:!bg-accent/10 [&_.rbc-off-range-bg]:!bg-muted/30 [&_.rbc-show-more]:!text-primary [&_.rbc-show-more]:hover:!text-primary/90"
               eventPropGetter={(event) => ({

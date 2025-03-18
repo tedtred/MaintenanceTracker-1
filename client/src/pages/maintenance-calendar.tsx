@@ -143,7 +143,6 @@ export default function MaintenanceCalendar() {
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [isCompleteDialogOpen, setIsCompleteDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<Views>("month"); // Added state for view
   const { toast } = useToast();
 
   const { data: schedules = [] } = useQuery<MaintenanceSchedule[]>({
@@ -243,10 +242,6 @@ export default function MaintenanceCalendar() {
     setIsCompleteDialogOpen(true);
   };
 
-  const overdueEvents = events.filter(event => event.resource.isOverdue);
-  const monthlyEvents = events.filter(event => !event.resource.isOverdue);
-
-
   return (
     <div className="flex h-screen">
       <SidebarNav />
@@ -260,13 +255,9 @@ export default function MaintenanceCalendar() {
           </div>
 
           <Card className="p-6">
-            <div className="mb-4">
-              <Button onClick={() => setCurrentView("month")}>Monthly View</Button>
-              <Button onClick={() => setCurrentView("agenda")}>Overdue View</Button>
-            </div> {/*Added buttons to switch views*/}
             <Calendar
               localizer={localizer}
-              events={currentView === "month" ? monthlyEvents : overdueEvents}
+              events={events}
               startAccessor="start"
               endAccessor="end"
               style={{ height: "700px" }}
@@ -274,7 +265,7 @@ export default function MaintenanceCalendar() {
                 month: true,
                 agenda: true,
               }}
-              defaultView={currentView}
+              defaultView="month"
               tooltipAccessor={(event) =>
                 `${event.title}\nFrequency: ${event.resource.frequency}`
               }

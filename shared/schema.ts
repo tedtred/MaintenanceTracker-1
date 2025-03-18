@@ -220,3 +220,43 @@ export const AssetCategory = {
   COMPUTER: "COMPUTER",
   OTHER: "OTHER",
 } as const;
+
+// Add Settings schema
+export const settings = pgTable("settings", {
+  id: serial("id").primaryKey(),
+  workWeekStart: integer("work_week_start").notNull().default(1), // 1 = Monday
+  workWeekEnd: integer("work_week_end").notNull().default(5),     // 5 = Friday
+  workDayStart: text("work_day_start").notNull().default("09:00"),
+  workDayEnd: text("work_day_end").notNull().default("17:00"),
+  timeZone: text("time_zone").notNull().default("UTC"),
+  dateFormat: text("date_format").notNull().default("MM/DD/YYYY"),
+  timeFormat: text("time_format").notNull().default("HH:mm"),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertSettingsSchema = createInsertSchema(settings)
+  .omit({ id: true })
+  .extend({
+    workWeekStart: z.number().min(0).max(6),
+    workWeekEnd: z.number().min(0).max(6),
+    workDayStart: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/),
+    workDayEnd: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/),
+    timeZone: z.string(),
+    dateFormat: z.string(),
+    timeFormat: z.string(),
+  });
+
+// Add new types
+export type Settings = typeof settings.$inferSelect;
+export type InsertSettings = z.infer<typeof insertSettingsSchema>;
+
+// Add WeekDay enum for better type safety
+export const WeekDay = {
+  SUNDAY: 0,
+  MONDAY: 1,
+  TUESDAY: 2,
+  WEDNESDAY: 3,
+  THURSDAY: 4,
+  FRIDAY: 5,
+  SATURDAY: 6,
+} as const;

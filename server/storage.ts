@@ -1,10 +1,11 @@
 import { User, WorkOrder, Asset, MaintenanceSchedule, InsertUser, InsertWorkOrder, InsertAsset, InsertMaintenanceSchedule, WorkOrderAttachment, InsertWorkOrderAttachment, MaintenanceCompletion, InsertMaintenanceCompletion } from "@shared/schema";
 import { users, workOrders, assets, maintenanceSchedules, workOrderAttachments, maintenanceCompletions } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, lte, gte } from "drizzle-orm";
+import { eq, and, lte, gte, desc } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
+import { Settings, InsertSettings, settings } from "@shared/schema";
 
 const PostgresSessionStore = connectPg(session);
 
@@ -61,6 +62,10 @@ export interface IStorage {
   createMaintenanceCompletion(completion: InsertMaintenanceCompletion): Promise<MaintenanceCompletion>;
   deleteMaintenanceSchedule(id: number): Promise<void>;
   checkAndArchiveCompletedWorkOrders(): Promise<void>;
+
+  // Settings
+  getSettings(): Promise<Settings>;
+  updateSettings(settings: Partial<Settings>): Promise<Settings>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -323,6 +328,42 @@ export class DatabaseStorage implements IStorage {
 
   async deleteUser(userId: number): Promise<void> {
     await db.delete(users).where(eq(users.id, userId));
+  }
+
+  // Settings Methods
+  async getSettings(): Promise<Settings> {
+    const [settings] = await db
+      .select()
+      .from(settings)
+      .orderBy(desc(settings.updatedAt))
+      .limit(1);
+
+    if (!settings) {
+      // Create default settings if none exist
+      return this.updateSettings({
+        workWeekStart: 1,
+        workWeekEnd: 5,
+        workDayStart: "09:00",
+        workDayEnd: "17:00",
+        timeZone: "UTC",
+        dateFormat: "MM/DD/YYYY",
+        timeFormat: "HH:mm"
+      });
+    }
+
+    return settings;
+  }
+
+  async updateSettings(updates: Partial<Settings>): Promise<Settings> {
+    const [updatedSettings] = await db
+      .insert(settings)
+      .values({
+        ...updates,
+        updatedAt: new Date()
+      })
+      .returning();
+
+    return updatedSettings;
   }
 }
 

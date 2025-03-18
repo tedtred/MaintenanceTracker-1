@@ -15,6 +15,7 @@ import Assets from "@/pages/assets";
 import MaintenanceCalendar from "@/pages/maintenance-calendar";
 import MaintenanceAnalytics from "@/pages/maintenance-analytics";
 import AdminPage from "@/pages/admin";
+import Settings from "@/pages/Settings"; // Add Settings import
 
 function Router() {
   return (
@@ -27,6 +28,7 @@ function Router() {
       <ProtectedRoute path="/maintenance-calendar" component={MaintenanceCalendar} />
       <ProtectedRoute path="/maintenance-analytics" component={MaintenanceAnalytics} />
       <ProtectedRoute path="/admin" component={AdminPage} />
+      <ProtectedRoute path="/settings" component={Settings} /> {/* Add Settings route */}
       <Route component={NotFound} />
     </Switch>
   );

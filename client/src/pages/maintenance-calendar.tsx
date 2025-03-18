@@ -254,13 +254,21 @@ export default function MaintenanceCalendar() {
             </p>
           </div>
 
-          <Card className="p-6">
-            <Calendar
-              localizer={localizer}
-              events={events}
-              startAccessor="start"
-              endAccessor="end"
-              style={{ height: "700px" }}
+          <div className="grid grid-cols-2 gap-4">
+            <Card className="p-6">
+              <h2 className="text-lg font-semibold mb-4">Monthly View</h2>
+              <Calendar
+                localizer={localizer}
+                events={events.map(event => ({
+                  ...event,
+                  start: event.resource.originalDate || event.start,
+                  end: event.resource.originalDate || event.end
+                }))}
+                startAccessor="start"
+                endAccessor="end"
+                style={{ height: "600px" }}
+                defaultView="month"
+                views={["month"]}
               views={{
                 month: true,
                 agenda: true,
@@ -281,10 +289,34 @@ export default function MaintenanceCalendar() {
                 },
               }}
               messages={{
-                agenda: 'Daily List',
+                month: 'Monthly Schedule',
               }}
             />
-          </Card>
+            </Card>
+            <Card className="p-6">
+              <h2 className="text-lg font-semibold mb-4">Today & Overdue</h2>
+              <Calendar
+                localizer={localizer}
+                events={events.filter(event => 
+                  event.resource.isOverdue || 
+                  isToday(new Date(event.start))
+                )}
+                startAccessor="start"
+                endAccessor="end"
+                style={{ height: "600px" }}
+                defaultView="agenda"
+                views={["agenda"]}
+                messages={{
+                  agenda: 'Tasks',
+                }}
+                components={{
+                  agenda: {
+                    event: CustomAgenda,
+                  },
+                }}
+              />
+            </Card>
+          </div>
 
           <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
             <DialogContent className="max-w-2xl">

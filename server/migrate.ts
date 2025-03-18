@@ -1,5 +1,24 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
+
+    // Add Asset_NO column if it doesn't exist
+    await db.execute(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'assets' AND column_name = 'asset_no'
+        ) THEN
+          ALTER TABLE assets ADD COLUMN Asset_NO TEXT;
+          -- Update existing rows with a default value
+          UPDATE assets SET Asset_NO = 'A-' || id::text;
+          -- Make the column not null after setting default values
+          ALTER TABLE assets ALTER COLUMN Asset_NO SET NOT NULL;
+        END IF;
+      END $$;
+    `);
+
+
 import pkg from 'pg';
 const { Pool } = pkg;
 import crypto from "crypto"; // Import crypto at the top level

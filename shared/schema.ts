@@ -200,7 +200,9 @@ export const MaintenanceFrequency = {
   WEEKLY: "WEEKLY",
   MONTHLY: "MONTHLY",
   QUARTERLY: "QUARTERLY",
+  BIANNUAL: "BIANNUAL",
   YEARLY: "YEARLY",
+  TWO_YEAR: "TWO_YEAR",
 } as const;
 
 export const MaintenanceStatus = {

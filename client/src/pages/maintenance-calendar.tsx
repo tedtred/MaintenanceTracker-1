@@ -122,8 +122,11 @@ const generateRecurringEvents = (schedule: MaintenanceSchedule, assetName: strin
   return events;
 };
 
-const CustomAgenda = ({ event }: { event: any }) => (
-  <div className={`flex items-center gap-4 p-2 hover:bg-accent rounded-md ${event.resource.isOverdue ? 'bg-destructive/10' : ''}`}>
+const CustomAgenda = ({ event, onSelectEvent }: { event: any, onSelectEvent: (event: any) => void }) => (
+  <div 
+    onClick={() => onSelectEvent(event)}
+    className={`flex items-center gap-4 p-2 hover:bg-accent rounded-md cursor-pointer ${event.resource.isOverdue ? 'bg-destructive/10' : ''}`}
+  >
     <div className="w-24 text-sm text-muted-foreground">
       {format(event.start, 'MMM dd, yyyy')}
     </div>
@@ -306,7 +309,7 @@ export default function MaintenanceCalendar() {
                 }}
                 components={{
                   agenda: {
-                    event: CustomAgenda,
+                    event: (props: any) => <CustomAgenda {...props} onSelectEvent={handleSelectEvent} />,
                   },
                 }}
               />

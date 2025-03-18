@@ -1,5 +1,29 @@
+
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
+import pkg from 'pg';
+const { Pool } = pkg;
+import crypto from "crypto";
+import * as schema from "../shared/schema";
+
+// Function to run migrations
+export async function runMigrations() {
+  console.log("Running database migrations...");
+
+  if (!process.env.DATABASE_URL) {
+    throw new Error("DATABASE_URL environment variable is not set");
+  }
+
+  // Create PostgreSQL connection pool
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    max: 1,
+    connectionTimeoutMillis: 10000
+  });
+
+  try {
+    // Create drizzle instance
+    const db = drizzle(pool, { schema });
 
     // Add Asset_NO column if it doesn't exist
     await db.execute(`
@@ -18,38 +42,7 @@ import { migrate } from 'drizzle-orm/node-postgres/migrator';
       END $$;
     `);
 
-
-import pkg from 'pg';
-const { Pool } = pkg;
-import crypto from "crypto"; // Import crypto at the top level
-
-// Function to run migrations
-export async function runMigrations() {
-  console.log("Running database migrations...");
-
-  if (!process.env.DATABASE_URL) {
-    throw new Error("DATABASE_URL environment variable is not set");
-  }
-
-  // Create PostgreSQL connection pool
-  const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    // Connection retry options
-    max: 1,
-    connectionTimeoutMillis: 10000
-  });
-
-  try {
-    // Test the connection
-    const client = await pool.connect();
-    client.release();
-    console.log("Successfully connected to database");
-
-    // Create drizzle instance
-    const db = drizzle(pool);
-
-    // Run SQL from schema
-    console.log("Applying schema...");
+    // Run base schema migrations
     await db.execute(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
@@ -114,7 +107,7 @@ export async function runMigrations() {
       );
     `);
 
-    // Add foreign key constraint for assets table in work_orders after both tables exist
+    // Add foreign key constraints
     await db.execute(`
       DO $$
       BEGIN
@@ -130,7 +123,6 @@ export async function runMigrations() {
     console.log("Database migration completed successfully");
 
     // Create default admin user if none exists
-    console.log("Checking for existing admin user...");
     const adminCheck = await db.execute(`
       SELECT COUNT(*) FROM users WHERE role = 'ADMIN'
     `);
@@ -139,34 +131,27 @@ export async function runMigrations() {
 
     if (adminCount === 0) {
       console.log("Creating default admin user...");
-      // Create a default admin with username 'admin' and password 'admin123'
-      // Password will be hashed properly
       const salt = crypto.randomBytes(16).toString('hex');
       const hashedPassword = crypto.scryptSync('admin123', salt, 64).toString('hex') + '.' + salt;
 
-      // Use direct SQL execution instead of parameterized query
       await pool.query(`
         INSERT INTO users (username, password, role, approved)
         VALUES ('admin', $1, 'ADMIN', true)
       `, [hashedPassword]);
 
       console.log("Default admin user created. Username: admin, Password: admin123");
-      console.log("IMPORTANT: Change this password immediately after first login!");
-    } else {
-      console.log("Admin user already exists, skipping default admin creation");
     }
 
   } catch (error) {
     console.error("Migration error:", error);
     throw error;
   } finally {
-    // Close the pool
     await pool.end();
   }
 }
 
-// If this module is run directly
-if (process.argv[1] === process.argv[2]) {
+// Run migrations if this file is executed directly
+if (import.meta.url === new URL(import.meta.url).href) {
   runMigrations()
     .then(() => {
       console.log("Migration script completed");

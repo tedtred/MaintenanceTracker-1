@@ -7,6 +7,7 @@ import * as schema from "../shared/schema";
 
 // Function to run migrations
 export async function runMigrations() {
+  let pool;
   try {
     console.log("\n=== Starting Migration Process ===");
     console.log("[Debug] Current timestamp:", new Date().toISOString());
@@ -21,15 +22,13 @@ export async function runMigrations() {
     console.log("[Success] Database URL configured correctly");
     console.log("[Debug] Database URL pattern matches:", !!process.env.DATABASE_URL.match(/postgres(ql)?:\/\/.+/));
 
-  // Create PostgreSQL connection pool
-  const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    // Connection retry options
-    max: 1,
-    connectionTimeoutMillis: 10000
-  });
-
-  try {
+    // Create PostgreSQL connection pool
+    pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      // Connection retry options
+      max: 1,
+      connectionTimeoutMillis: 10000
+    });
     // Test the connection
     const client = await pool.connect();
     console.log("[Debug] Pool configuration:", {

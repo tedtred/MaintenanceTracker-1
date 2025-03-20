@@ -24,10 +24,14 @@ export async function setupDevServer(app: Express, server: Server) {
         clientPort: 443,
         protocol: 'wss'
       },
-      host: true,
+      host: '0.0.0.0',
+      port: 5000,
       strictPort: true,
       headers: {
         "Access-Control-Allow-Origin": "*",
+      },
+      watch: {
+        usePolling: true,
       },
       allowedHosts: true
     },

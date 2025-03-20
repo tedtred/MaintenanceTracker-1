@@ -1,3 +1,4 @@
+
 import { type Express } from "express";
 import { type Server } from "http";
 import { createServer as createViteServer } from "vite";
@@ -19,15 +20,17 @@ export async function setupDevServer(app: Express, server: Server) {
       hmr: {
         server,
         port: 5000,
+        clientPort: 5000,
         host: '0.0.0.0',
       },
       host: '0.0.0.0',
       port: 5000,
-      strictPort: true,
+      watch: {
+        usePolling: true
+      },
       headers: {
         "Access-Control-Allow-Origin": "*",
-      },
-      allowedHosts: true
+      }
     },
     appType: "custom",
   });
@@ -36,6 +39,10 @@ export async function setupDevServer(app: Express, server: Server) {
 
   app.use("*", async (req, res, next) => {
     const url = req.originalUrl;
+    if (url.startsWith('/api')) {
+      next();
+      return;
+    }
 
     try {
       const clientTemplate = path.resolve(

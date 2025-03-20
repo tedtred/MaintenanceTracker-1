@@ -22,6 +22,7 @@ function handleZodError(error: ZodError) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  console.log("[Debug] Starting route registration");
   setupAuth(app);
 
   // Serve uploaded files
@@ -381,5 +382,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
+  console.log("[Debug] HTTP server created");
   return httpServer;
 }

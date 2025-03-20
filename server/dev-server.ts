@@ -11,6 +11,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export async function setupDevServer(app: Express, server: Server) {
+  console.log("[Debug] Setting up Vite development server");
+  console.log("[Debug] Current working directory:", process.cwd());
   const vite = await createViteServer({
     ...viteConfig,
     configFile: false,

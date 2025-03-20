@@ -1,4 +1,3 @@
-
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import pkg from 'pg';
@@ -38,7 +37,7 @@ export async function runMigrations() {
       connectionTimeoutMillis: pool.options.connectionTimeoutMillis,
       idleTimeoutMillis: pool.options.idleTimeoutMillis,
     });
-    
+
     client.release();
     console.log("[Success] Successfully connected to database");
     console.log("[Debug] Current pool total count:", pool.totalCount);

@@ -127,10 +127,7 @@ app.use((req, res, next) => {
 
   // ALWAYS serve on port 5000
   const port = 5000;
-  server.listen({
-    port,
-    host: "0.0.0.0",
-  }, () => {
+  server.listen(port, "0.0.0.0", () => {
     log(`Server started successfully and is serving on port ${port}`);
   });
 })().catch((error) => {

@@ -8,11 +8,14 @@ import * as schema from "../shared/schema";
 
 // Function to run migrations
 export async function runMigrations() {
+  console.log("=== Starting Migration Process ===");
   console.log("Running database migrations...");
 
   if (!process.env.DATABASE_URL) {
+    console.error("Error: DATABASE_URL is not set");
     throw new Error("DATABASE_URL environment variable is not set");
   }
+  console.log("Database URL configured correctly");
 
   // Create PostgreSQL connection pool
   const pool = new Pool({
@@ -28,10 +31,11 @@ export async function runMigrations() {
     client.release();
     console.log("Successfully connected to database");
 
-    // Create drizzle instance
+    console.log("Creating drizzle instance...");
     const db = drizzle(pool, { schema });
+    console.log("Drizzle instance created successfully");
 
-    // Add Asset_NO column if it doesn't exist
+    console.log("Checking and adding Asset_NO column...");
     await db.execute(`
       DO $$
       BEGIN
@@ -167,9 +171,14 @@ export async function runMigrations() {
     }
 
   } catch (error) {
-    console.error("Migration error:", error);
+    console.error("=== Migration Error Details ===");
+    console.error("Error type:", error.constructor.name);
+    console.error("Error message:", error.message);
+    console.error("Stack trace:", error.stack);
+    console.error("=== End Error Details ===");
     throw error;
   } finally {
+    console.log("Cleaning up database connections...");
     // Close the pool
     await pool.end();
   }

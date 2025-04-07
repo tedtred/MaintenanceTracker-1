@@ -1,3 +1,4 @@
+
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import pkg from 'pg';
@@ -7,47 +8,30 @@ import * as schema from "../shared/schema";
 
 // Function to run migrations
 export async function runMigrations() {
-  let pool;
+  console.log("Running database migrations...");
+
+  if (!process.env.DATABASE_URL) {
+    throw new Error("DATABASE_URL environment variable is not set");
+  }
+
+  // Create PostgreSQL connection pool
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    // Connection retry options
+    max: 1,
+    connectionTimeoutMillis: 10000
+  });
+
   try {
-    console.log("\n=== Starting Migration Process ===");
-    console.log("[Debug] Current timestamp:", new Date().toISOString());
-    console.log("[Debug] Node version:", process.version);
-    console.log("[Debug] Environment:", process.env.NODE_ENV || 'development');
-    console.log("Running database migrations...");
-
-    if (!process.env.DATABASE_URL) {
-      console.error("[Error] DATABASE_URL is not set");
-      throw new Error("DATABASE_URL environment variable is not set");
-    }
-    console.log("[Success] Database URL configured correctly");
-    console.log("[Debug] Database URL pattern matches:", !!process.env.DATABASE_URL.match(/postgres(ql)?:\/\/.+/));
-
-    // Create PostgreSQL connection pool
-    pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      // Connection retry options
-      max: 1,
-      connectionTimeoutMillis: 10000
-    });
     // Test the connection
     const client = await pool.connect();
-    console.log("[Debug] Pool configuration:", {
-      max: pool.options.max,
-      connectionTimeoutMillis: pool.options.connectionTimeoutMillis,
-      idleTimeoutMillis: pool.options.idleTimeoutMillis,
-    });
-
     client.release();
-    console.log("[Success] Successfully connected to database");
-    console.log("[Debug] Current pool total count:", pool.totalCount);
-    console.log("[Debug] Current pool idle count:", pool.idleCount);
-    console.log("[Debug] Current pool waiting count:", pool.waitingCount);
+    console.log("Successfully connected to database");
 
-    console.log("[Status] Creating drizzle instance...");
+    // Create drizzle instance
     const db = drizzle(pool, { schema });
-    console.log("Drizzle instance created successfully");
 
-    console.log("Checking and adding Asset_NO column...");
+    // Add Asset_NO column if it doesn't exist
     await db.execute(`
       DO $$
       BEGIN
@@ -183,21 +167,9 @@ export async function runMigrations() {
     }
 
   } catch (error) {
-    console.error("\n=== Migration Error Details ===");
-    console.error("[Error] Type:", error.constructor.name);
-    console.error("[Error] Message:", error.message);
-    console.error("[Error] Stack trace:", error.stack);
-    console.error("[Error] Timestamp:", new Date().toISOString());
-    if (error.code) console.error("[Error] Database error code:", error.code);
-    if (error.detail) console.error("[Error] Database error detail:", error.detail);
-    if (error.schema) console.error("[Error] Schema:", error.schema);
-    if (error.table) console.error("[Error] Table:", error.table);
-    if (error.constraint) console.error("[Error] Constraint:", error.constraint);
-    console.error("=== End Error Details ===\n");
+    console.error("Migration error:", error);
     throw error;
   } finally {
-    console.log("[Status] Cleaning up database connections...");
-    console.log("[Debug] Final pool stats - Total:", pool.totalCount, "Idle:", pool.idleCount, "Waiting:", pool.waitingCount);
     // Close the pool
     await pool.end();
   }

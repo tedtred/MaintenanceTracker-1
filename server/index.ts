@@ -58,16 +58,12 @@ app.use((req, res, next) => {
   // Run migrations before server start in production - Added this block
   if (isProduction) {
     try {
-      console.log("[Debug] Starting migrations in production mode");
       await runMigrations();
-      console.log("[Debug] Migrations completed successfully in production");
     } catch (error) {
       console.error("Failed to run migrations:", error);
       // Continue anyway, as the tables might already exist
     }
   }
-
-  console.log("[Debug] Proceeding with server setup");
 
 
   // In production, serve static files first
@@ -110,13 +106,11 @@ app.use((req, res, next) => {
     console.log("- HOST:", process.env.HOST);
     console.log("- DATABASE_URL exists:", !!process.env.DATABASE_URL);
   } else {
-    console.log("[Debug] Running in development mode");
-    console.log("[Debug] Attempting to setup Vite development server");
+    console.log("Running in development mode");
     // In development, import and setup Vite dynamically
     try {
       // Use dynamic import with explicit file path to avoid issues
       // @ts-ignore - Dynamic import
-      console.log("[Debug] Importing dev-server module");
       const viteModule = await import("./dev-server.js");
       await viteModule.setupDevServer(app, server);
     } catch (error) {
@@ -133,13 +127,8 @@ app.use((req, res, next) => {
 
   // ALWAYS serve on port 5000
   const port = 5000;
-  console.log("[Debug] Attempting to start server on port", port);
-  server.listen({
-    port,
-    host: "0.0.0.0",
-  }, () => {
+  server.listen(port, "0.0.0.0", () => {
     log(`Server started successfully and is serving on port ${port}`);
-    console.log("[Debug] Server is now listening for requests");
   });
 })().catch((error) => {
   console.error("Failed to start server:", error);

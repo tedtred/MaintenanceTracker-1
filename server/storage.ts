@@ -1,13 +1,11 @@
 import { User, WorkOrder, Asset, MaintenanceSchedule, InsertUser, InsertWorkOrder, InsertAsset, InsertMaintenanceSchedule, WorkOrderAttachment, InsertWorkOrderAttachment, MaintenanceCompletion, InsertMaintenanceCompletion } from "@shared/schema";
 import { users, workOrders, assets, maintenanceSchedules, workOrderAttachments, maintenanceCompletions } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, lte, gte, desc } from "drizzle-orm";
+import { eq, and, lte, gte } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
-import { Settings, InsertSettings, settings as settingsTable } from "@shared/schema";
 
-// Initialize PostgresSessionStore properly
 const PostgresSessionStore = connectPg(session);
 
 // Added WorkOrderStatus enum for type safety
@@ -63,10 +61,6 @@ export interface IStorage {
   createMaintenanceCompletion(completion: InsertMaintenanceCompletion): Promise<MaintenanceCompletion>;
   deleteMaintenanceSchedule(id: number): Promise<void>;
   checkAndArchiveCompletedWorkOrders(): Promise<void>;
-
-  // Settings
-  getSettings(): Promise<Settings>;
-  updateSettings(settings: Partial<Settings>): Promise<Settings>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -132,6 +126,7 @@ export class DatabaseStorage implements IStorage {
     }
     return updatedUser;
   }
+
 
   // Work Order Methods
   async createWorkOrder(workOrder: InsertWorkOrder): Promise<WorkOrder> {
@@ -328,42 +323,6 @@ export class DatabaseStorage implements IStorage {
 
   async deleteUser(userId: number): Promise<void> {
     await db.delete(users).where(eq(users.id, userId));
-  }
-
-  // Settings Methods
-  async getSettings(): Promise<Settings> {
-    const [currentSettings] = await db
-      .select()
-      .from(settingsTable)
-      .orderBy(desc(settingsTable.updatedAt))
-      .limit(1);
-
-    if (!currentSettings) {
-      // Create default settings if none exist
-      return this.updateSettings({
-        workWeekStart: 1,
-        workWeekEnd: 5,
-        workDayStart: "09:00",
-        workDayEnd: "17:00",
-        timeZone: "UTC",
-        dateFormat: "MM/DD/YYYY",
-        timeFormat: "HH:mm"
-      });
-    }
-
-    return currentSettings;
-  }
-
-  async updateSettings(updates: Partial<Settings>): Promise<Settings> {
-    const [updatedSettings] = await db
-      .insert(settingsTable)
-      .values({
-        ...updates,
-        updatedAt: new Date()
-      })
-      .returning();
-
-    return updatedSettings;
   }
 }
 

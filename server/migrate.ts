@@ -1,8 +1,10 @@
+
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import pkg from 'pg';
 const { Pool } = pkg;
-import crypto from "crypto"; // Import crypto at the top level
+import crypto from "crypto";
+import * as schema from "../shared/schema";
 
 // Function to run migrations
 export async function runMigrations() {
@@ -27,10 +29,26 @@ export async function runMigrations() {
     console.log("Successfully connected to database");
 
     // Create drizzle instance
-    const db = drizzle(pool);
+    const db = drizzle(pool, { schema });
 
-    // Run SQL from schema
-    console.log("Applying schema...");
+    // Add Asset_NO column if it doesn't exist
+    await db.execute(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'assets' AND column_name = 'asset_no'
+        ) THEN
+          ALTER TABLE assets ADD COLUMN Asset_NO TEXT;
+          -- Update existing rows with a default value
+          UPDATE assets SET Asset_NO = 'A-' || id::text;
+          -- Make the column not null after setting default values
+          ALTER TABLE assets ALTER COLUMN Asset_NO SET NOT NULL;
+        END IF;
+      END $$;
+    `);
+
+    // Run base schema migrations
     await db.execute(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
@@ -93,9 +111,21 @@ export async function runMigrations() {
         completed_date TIMESTAMP NOT NULL,
         notes TEXT
       );
+
+      CREATE TABLE IF NOT EXISTS settings (
+        id SERIAL PRIMARY KEY,
+        work_week_start INTEGER NOT NULL DEFAULT 1,
+        work_week_end INTEGER NOT NULL DEFAULT 5,
+        work_day_start TEXT NOT NULL DEFAULT '09:00',
+        work_day_end TEXT NOT NULL DEFAULT '17:00',
+        time_zone TEXT NOT NULL DEFAULT 'UTC',
+        date_format TEXT NOT NULL DEFAULT 'MM/DD/YYYY',
+        time_format TEXT NOT NULL DEFAULT 'HH:mm',
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
     `);
 
-    // Add foreign key constraint for assets table in work_orders after both tables exist
+    // Add foreign key constraints
     await db.execute(`
       DO $$
       BEGIN
@@ -125,7 +155,6 @@ export async function runMigrations() {
       const salt = crypto.randomBytes(16).toString('hex');
       const hashedPassword = crypto.scryptSync('admin123', salt, 64).toString('hex') + '.' + salt;
 
-      // Use direct SQL execution instead of parameterized query
       await pool.query(`
         INSERT INTO users (username, password, role, approved)
         VALUES ('admin', $1, 'ADMIN', true)
@@ -147,7 +176,7 @@ export async function runMigrations() {
 }
 
 // If this module is run directly
-if (process.argv[1] === process.argv[2]) {
+if (import.meta.url === new URL(import.meta.url).href) {
   runMigrations()
     .then(() => {
       console.log("Migration script completed");

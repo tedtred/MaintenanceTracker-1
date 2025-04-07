@@ -359,6 +359,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Settings routes
+  app.get("/api/settings", async (req, res, next) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const settings = await storage.getSettings();
+      res.json(settings);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.patch("/api/settings", async (req, res, next) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const settings = await storage.updateSettings(req.body);
+      res.json(settings);
+    } catch (error) {
+      next(error);
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

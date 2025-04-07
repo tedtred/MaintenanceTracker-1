@@ -11,7 +11,8 @@ import {
   Calendar,
   LogOut,
   Users,
-  BarChart, // Added BarChart icon for analytics
+  BarChart,
+  Settings, // Add Settings icon
 } from "lucide-react";
 import { UserRole } from "@shared/schema";
 
@@ -40,6 +41,11 @@ const items = [
     title: "Analytics",
     icon: BarChart,
     href: "/maintenance-analytics",
+  },
+  {
+    title: "Settings",
+    icon: Settings,
+    href: "/settings",
   },
 ];
 

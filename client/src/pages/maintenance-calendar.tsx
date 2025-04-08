@@ -46,6 +46,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const localizer = dateFnsLocalizer({
@@ -165,6 +172,8 @@ export default function MaintenanceCalendar() {
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [currentView, setCurrentView] = useState<string>("month");
   const [unifiedView, setUnifiedView] = useState<boolean>(false);
+  const [selectedAsset, setSelectedAsset] = useState<string>("all");
+  const [selectedFrequency, setSelectedFrequency] = useState<string>("all");
   const isMobile = useIsMobile();
   const { toast } = useToast();
 
@@ -240,7 +249,22 @@ export default function MaintenanceCalendar() {
     return asset ? asset.name : 'Unknown Asset';
   };
 
-  const events = schedules.flatMap((schedule) =>
+  // Filter schedules based on selected asset and frequency
+  const filteredSchedules = schedules.filter(schedule => {
+    // Filter by asset
+    if (selectedAsset !== 'all' && schedule.assetId.toString() !== selectedAsset) {
+      return false;
+    }
+    
+    // Filter by frequency
+    if (selectedFrequency !== 'all' && schedule.frequency !== selectedFrequency) {
+      return false;
+    }
+    
+    return true;
+  });
+
+  const events = filteredSchedules.flatMap((schedule) =>
     generateRecurringEvents(schedule, getAssetName(schedule.assetId), completions)
   );
 
@@ -363,41 +387,112 @@ export default function MaintenanceCalendar() {
 
           {unifiedView ? (
             <Card className="p-6">
-              <Calendar
-                localizer={localizer}
-                events={events.map(event => ({
-                  ...event,
-                  start: event.resource.originalDate || event.start,
-                  end: event.resource.originalDate || event.end
-                }))}
-                startAccessor="start"
-                endAccessor="end"
-                style={{ height: "700px" }}
-                views={calendarViews}
-                view={currentView as any}
-                onView={(view) => setCurrentView(view)}
-                tooltipAccessor={(event) =>
-                  `${event.title}\nFrequency: ${event.resource.frequency}`
-                }
-                className="[&_.rbc-month-view]:!rounded-lg [&_.rbc-month-view]:!border-border [&_.rbc-month-view]:!shadow-sm [&_.rbc-header]:!py-3 [&_.rbc-header]:!font-medium [&_.rbc-header]:!border-border [&_.rbc-month-row]:!border-border [&_.rbc-day-bg]:!border-border [&_.rbc-off-range-bg]:!bg-muted/50 [&_.rbc-today]:!bg-accent/20 [&_.rbc-event]:!px-2 [&_.rbc-event]:!py-1 [&_.rbc-event]:!rounded-md [&_.rbc-event]:!font-medium [&_.rbc-event]:!transition-colors [&_.rbc-event]:hover:!bg-primary/90 [&_.rbc-agenda-view]:!rounded-lg [&_.rbc-agenda-view]:!border-border [&_.rbc-agenda-view]:!shadow-sm [&_.rbc-agenda-view_table]:!border-border [&_.rbc-agenda-view_thead]:!border-border [&_.rbc-agenda-view_tbody]:!border-border [&_.rbc-agenda-view_tr]:!border-border [&_.rbc-agenda-view_td]:!border-border [&_.rbc-agenda-view_td]:!py-3 [&_.rbc-agenda-view_td]:!px-4 [&_.rbc-agenda-empty]:!text-muted-foreground [&_.rbc-agenda-date-cell]:!font-medium [&_.rbc-agenda-time-cell]:!text-muted-foreground [&_.rbc-button-link]:!text-sm [&_.rbc-toolbar-label]:!text-xl [&_.rbc-toolbar-label]:!font-semibold [&_.rbc-toolbar]:!mb-4 [&_.rbc-btn-group]:!gap-1 [&_.rbc-btn-group_button]:!rounded-md [&_.rbc-btn-group_button]:!px-3 [&_.rbc-btn-group_button]:!py-1.5 [&_.rbc-btn-group_button]:!text-sm [&_.rbc-btn-group_button]:!font-medium [&_.rbc-btn-group_button]:!bg-background [&_.rbc-btn-group_button]:!border-border [&_.rbc-btn-group_button]:!text-foreground [&_.rbc-btn-group_button.rbc-active]:!bg-primary [&_.rbc-btn-group_button.rbc-active]:!text-primary-foreground [&_.rbc-event]:!bg-primary/90 [&_.rbc-event]:!text-primary-foreground [&_.rbc-event]:hover:!bg-primary [&_.rbc-event]:!border-none [&_.rbc-today]:!bg-accent/10 [&_.rbc-off-range-bg]:!bg-muted/30 [&_.rbc-show-more]:!text-primary [&_.rbc-show-more]:hover:!text-primary/90 [&_.rbc-day-slot]:!border-border [&_.rbc-time-slot]:!border-border [&_.rbc-time-header]:!border-border [&_.rbc-time-content]:!border-border [&_.rbc-time-gutter]:!text-muted-foreground [&_.rbc-time-view]:!border-border [&_.rbc-time-view]:!rounded-lg"
-                eventPropGetter={(event) => ({
-                  className: `${event.resource.isOverdue ? 'bg-destructive/80 hover:bg-destructive/90' : 'bg-primary hover:bg-primary/90'} cursor-pointer`,
-                })}
-                onSelectEvent={handleSelectEvent}
-                components={{
-                  agenda: {
-                    event: (props: any) => <CustomAgenda {...props} onSelectEvent={handleSelectEvent} />,
-                  },
-                }}
-                messages={customMessages}
-                formats={{
-                  dateFormat: (date) => formatDate(date),
-                  dayFormat: (date) => format(date, 'EEE dd'),
-                  timeGutterFormat: (date) => settings?.timeFormat === 'HH:mm' 
-                    ? format(date, 'HH:mm') 
-                    : format(date, 'h:mm a'),
-                }}
-              />
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <div className="flex gap-2">
+                    <Select
+                      value={selectedAsset}
+                      onValueChange={setSelectedAsset}
+                    >
+                      <SelectTrigger className="w-[180px]">
+                        <span>{selectedAsset === 'all' ? 'All Assets' : getAssetName(parseInt(selectedAsset))}</span>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Assets</SelectItem>
+                        {assets.map(asset => (
+                          <SelectItem key={asset.id} value={asset.id.toString()}>{asset.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select
+                      value={selectedFrequency}
+                      onValueChange={setSelectedFrequency}
+                    >
+                      <SelectTrigger className="w-[180px]">
+                        <span>
+                          {selectedFrequency === 'all' 
+                            ? 'All Frequencies' 
+                            : selectedFrequency === 'DAILY' ? 'Daily'
+                            : selectedFrequency === 'WEEKLY' ? 'Weekly'
+                            : selectedFrequency === 'MONTHLY' ? 'Monthly'
+                            : selectedFrequency === 'QUARTERLY' ? 'Quarterly'
+                            : selectedFrequency === 'SEMI_ANNUALLY' ? 'Semi-Annually'
+                            : 'Annually'
+                          }
+                        </span>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Frequencies</SelectItem>
+                        <SelectItem value="DAILY">Daily</SelectItem>
+                        <SelectItem value="WEEKLY">Weekly</SelectItem>
+                        <SelectItem value="MONTHLY">Monthly</SelectItem>
+                        <SelectItem value="QUARTERLY">Quarterly</SelectItem>
+                        <SelectItem value="SEMI_ANNUALLY">Semi-Annually</SelectItem>
+                        <SelectItem value="ANNUALLY">Annually</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="flex items-center text-sm text-muted-foreground gap-2">
+                    <div className="flex items-center gap-1">
+                      <div className="w-3 h-3 rounded-full bg-primary"></div>
+                      <span>Upcoming</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className="w-3 h-3 rounded-full bg-destructive"></div>
+                      <span>Overdue</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <Calendar
+                  localizer={localizer}
+                  events={events.map(event => ({
+                    ...event,
+                    start: event.resource.originalDate || event.start,
+                    end: event.resource.originalDate || event.end,
+                    title: `${event.title.length > 20 ? event.title.substring(0, 20) + '...' : event.title}`
+                  }))}
+                  startAccessor="start"
+                  endAccessor="end"
+                  style={{ height: "650px" }}
+                  views={calendarViews}
+                  view={currentView as any}
+                  onView={(view) => setCurrentView(view)}
+                  tooltipAccessor={(event) =>
+                    `${event.resource.title}\nAsset: ${event.resource.assetName}\nFrequency: ${event.resource.frequency}${event.resource.isOverdue ? '\nStatus: OVERDUE' : ''}`
+                  }
+                  className="[&_.rbc-month-view]:!rounded-lg [&_.rbc-month-view]:!border-border [&_.rbc-month-view]:!shadow-sm [&_.rbc-header]:!py-3 [&_.rbc-header]:!font-medium [&_.rbc-header]:!border-border [&_.rbc-month-row]:!border-border [&_.rbc-day-bg]:!border-border [&_.rbc-off-range-bg]:!bg-muted/50 [&_.rbc-today]:!bg-accent/20 [&_.rbc-event]:!px-2 [&_.rbc-event]:!py-1 [&_.rbc-event]:!rounded-md [&_.rbc-event]:!font-medium [&_.rbc-event]:!transition-colors [&_.rbc-event]:hover:!bg-primary/90 [&_.rbc-agenda-view]:!rounded-lg [&_.rbc-agenda-view]:!border-border [&_.rbc-agenda-view]:!shadow-sm [&_.rbc-agenda-view_table]:!border-border [&_.rbc-agenda-view_thead]:!border-border [&_.rbc-agenda-view_tbody]:!border-border [&_.rbc-agenda-view_tr]:!border-border [&_.rbc-agenda-view_td]:!border-border [&_.rbc-agenda-view_td]:!py-3 [&_.rbc-agenda-view_td]:!px-4 [&_.rbc-agenda-empty]:!text-muted-foreground [&_.rbc-agenda-date-cell]:!font-medium [&_.rbc-agenda-time-cell]:!text-muted-foreground [&_.rbc-button-link]:!text-sm [&_.rbc-toolbar-label]:!text-xl [&_.rbc-toolbar-label]:!font-semibold [&_.rbc-toolbar]:!mb-4 [&_.rbc-btn-group]:!gap-1 [&_.rbc-btn-group_button]:!rounded-md [&_.rbc-btn-group_button]:!px-3 [&_.rbc-btn-group_button]:!py-1.5 [&_.rbc-btn-group_button]:!text-sm [&_.rbc-btn-group_button]:!font-medium [&_.rbc-btn-group_button]:!bg-background [&_.rbc-btn-group_button]:!border-border [&_.rbc-btn-group_button]:!text-foreground [&_.rbc-btn-group_button.rbc-active]:!bg-primary [&_.rbc-btn-group_button.rbc-active]:!text-primary-foreground [&_.rbc-event]:!text-primary-foreground [&_.rbc-event]:hover:!bg-primary [&_.rbc-event]:!border-none [&_.rbc-today]:!bg-accent/10 [&_.rbc-off-range-bg]:!bg-muted/30 [&_.rbc-show-more]:!text-primary [&_.rbc-show-more]:hover:!text-primary/90 [&_.rbc-day-slot]:!border-border [&_.rbc-time-slot]:!border-border [&_.rbc-time-header]:!border-border [&_.rbc-time-content]:!border-border [&_.rbc-time-gutter]:!text-muted-foreground [&_.rbc-time-view]:!border-border [&_.rbc-time-view]:!rounded-lg [&_.rbc-now-indicator]:!border-destructive"
+                  eventPropGetter={(event) => ({
+                    className: `${event.resource.isOverdue ? 'bg-destructive/90 hover:bg-destructive' : 'bg-primary/90 hover:bg-primary'} cursor-pointer`,
+                    style: {
+                      border: event.resource.isOverdue ? '1px solid rgba(var(--destructive-rgb), 0.8)' : 'none',
+                    }
+                  })}
+                  onSelectEvent={handleSelectEvent}
+                  components={{
+                    agenda: {
+                      event: (props: any) => <CustomAgenda {...props} onSelectEvent={handleSelectEvent} />,
+                    },
+                    event: (props: any) => (
+                      <div 
+                        className="h-full w-full flex items-center" 
+                        onClick={() => props.onClick && props.onClick()}
+                      >
+                        <div className="truncate text-xs text-primary-foreground">{props.title}</div>
+                      </div>
+                    ),
+                  }}
+                  messages={customMessages}
+                  formats={{
+                    dateFormat: (date) => formatDate(date),
+                    dayFormat: (date) => format(date, 'EEE dd'),
+                    timeGutterFormat: (date) => settings?.timeFormat === 'HH:mm' 
+                      ? format(date, 'HH:mm') 
+                      : format(date, 'h:mm a'),
+                  }}
+                />
+              </div>
             </Card>
           ) : (
             <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2'} gap-6`}>

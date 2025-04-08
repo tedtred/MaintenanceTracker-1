@@ -332,13 +332,13 @@ export class DatabaseStorage implements IStorage {
 
   // Settings Methods
   async getSettings(): Promise<Settings> {
-    const [settings] = await db
+    const [settingsResult] = await db
       .select()
       .from(settings)
       .orderBy(desc(settings.updatedAt))
       .limit(1);
 
-    if (!settings) {
+    if (!settingsResult) {
       // Create default settings if none exist
       return this.updateSettings({
         workWeekStart: 1,
@@ -351,7 +351,7 @@ export class DatabaseStorage implements IStorage {
       });
     }
 
-    return settings;
+    return settingsResult;
   }
 
   async updateSettings(updates: Partial<Settings>): Promise<Settings> {

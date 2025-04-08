@@ -497,58 +497,136 @@ export default function MaintenanceCalendar() {
           ) : (
             <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2'} gap-6`}>
               <Card className="p-6">
-                <h2 className="text-lg font-semibold mb-4">Monthly View</h2>
-                <Calendar
-                  localizer={localizer}
-                  events={events.map(event => ({
-                    ...event,
-                    start: event.resource.originalDate || event.start,
-                    end: event.resource.originalDate || event.end
-                  }))}
-                  startAccessor="start"
-                  endAccessor="end"
-                  style={{ height: "600px" }}
-                  views={{ month: true }}
-                  defaultView="month"
-                  tooltipAccessor={(event) =>
-                    `${event.title}\nFrequency: ${event.resource.frequency}`
-                  }
-                  className="[&_.rbc-month-view]:!rounded-lg [&_.rbc-month-view]:!border-border [&_.rbc-month-view]:!shadow-sm [&_.rbc-header]:!py-3 [&_.rbc-header]:!font-medium [&_.rbc-header]:!border-border [&_.rbc-month-row]:!border-border [&_.rbc-day-bg]:!border-border [&_.rbc-off-range-bg]:!bg-muted/50 [&_.rbc-today]:!bg-accent/20 [&_.rbc-event]:!px-2 [&_.rbc-event]:!py-1 [&_.rbc-event]:!rounded-md [&_.rbc-event]:!font-medium [&_.rbc-event]:!transition-colors [&_.rbc-event]:hover:!bg-primary/90 [&_.rbc-agenda-view]:!rounded-lg [&_.rbc-agenda-view]:!border-border [&_.rbc-agenda-view]:!shadow-sm [&_.rbc-agenda-view_table]:!border-border [&_.rbc-agenda-view_thead]:!border-border [&_.rbc-agenda-view_tbody]:!border-border [&_.rbc-agenda-view_tr]:!border-border [&_.rbc-agenda-view_td]:!border-border [&_.rbc-agenda-view_td]:!py-3 [&_.rbc-agenda-view_td]:!px-4 [&_.rbc-agenda-empty]:!text-muted-foreground [&_.rbc-agenda-date-cell]:!font-medium [&_.rbc-agenda-time-cell]:!text-muted-foreground [&_.rbc-button-link]:!text-sm [&_.rbc-toolbar-label]:!text-xl [&_.rbc-toolbar-label]:!font-semibold [&_.rbc-toolbar]:!mb-4 [&_.rbc-btn-group]:!gap-1 [&_.rbc-btn-group_button]:!rounded-md [&_.rbc-btn-group_button]:!px-3 [&_.rbc-btn-group_button]:!py-1.5 [&_.rbc-btn-group_button]:!text-sm [&_.rbc-btn-group_button]:!font-medium [&_.rbc-btn-group_button]:!bg-background [&_.rbc-btn-group_button]:!border-border [&_.rbc-btn-group_button]:!text-foreground [&_.rbc-btn-group_button.rbc-active]:!bg-primary [&_.rbc-btn-group_button.rbc-active]:!text-primary-foreground [&_.rbc-event]:!bg-primary/90 [&_.rbc-event]:!text-primary-foreground [&_.rbc-event]:hover:!bg-primary [&_.rbc-event]:!border-none [&_.rbc-today]:!bg-accent/10 [&_.rbc-off-range-bg]:!bg-muted/30 [&_.rbc-show-more]:!text-primary [&_.rbc-show-more]:hover:!text-primary/90"
-                  eventPropGetter={(event) => ({
-                    className: 'bg-primary hover:bg-primary/90 cursor-pointer',
-                  })}
-                  onSelectEvent={handleSelectEvent}
-                  formats={{
-                    dateFormat: (date) => formatDate(date),
-                    dayFormat: (date) => format(date, 'EEE dd'),
-                  }}
-                />
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-lg font-semibold">Monthly View</h2>
+                    
+                    <div className="flex items-center text-sm text-muted-foreground gap-2">
+                      <div className="flex items-center gap-1">
+                        <div className="w-3 h-3 rounded-full bg-primary"></div>
+                        <span>Upcoming</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <div className="w-3 h-3 rounded-full bg-destructive"></div>
+                        <span>Overdue</span>
+                      </div>
+                    </div>
+                  </div>
+                
+                  <Calendar
+                    localizer={localizer}
+                    events={events.map(event => ({
+                      ...event,
+                      start: event.resource.originalDate || event.start,
+                      end: event.resource.originalDate || event.end,
+                      title: `${event.title.length > 15 ? event.title.substring(0, 15) + '...' : event.title}`
+                    }))}
+                    startAccessor="start"
+                    endAccessor="end"
+                    style={{ height: "560px" }}
+                    views={{ month: true }}
+                    defaultView="month"
+                    tooltipAccessor={(event) =>
+                      `${event.resource.title}\nAsset: ${event.resource.assetName}\nFrequency: ${event.resource.frequency}${event.resource.isOverdue ? '\nStatus: OVERDUE' : ''}`
+                    }
+                    className="[&_.rbc-month-view]:!rounded-lg [&_.rbc-month-view]:!border-border [&_.rbc-month-view]:!shadow-sm [&_.rbc-header]:!py-3 [&_.rbc-header]:!font-medium [&_.rbc-header]:!border-border [&_.rbc-month-row]:!border-border [&_.rbc-day-bg]:!border-border [&_.rbc-off-range-bg]:!bg-muted/50 [&_.rbc-today]:!bg-accent/20 [&_.rbc-event]:!px-2 [&_.rbc-event]:!py-1 [&_.rbc-event]:!rounded-md [&_.rbc-event]:!font-medium [&_.rbc-event]:!transition-colors [&_.rbc-event]:hover:!bg-primary/90 [&_.rbc-agenda-view]:!rounded-lg [&_.rbc-agenda-view]:!border-border [&_.rbc-agenda-view]:!shadow-sm [&_.rbc-agenda-view_table]:!border-border [&_.rbc-agenda-view_thead]:!border-border [&_.rbc-agenda-view_tbody]:!border-border [&_.rbc-agenda-view_tr]:!border-border [&_.rbc-agenda-view_td]:!border-border [&_.rbc-agenda-view_td]:!py-3 [&_.rbc-agenda-view_td]:!px-4 [&_.rbc-agenda-empty]:!text-muted-foreground [&_.rbc-agenda-date-cell]:!font-medium [&_.rbc-agenda-time-cell]:!text-muted-foreground [&_.rbc-button-link]:!text-sm [&_.rbc-toolbar-label]:!text-xl [&_.rbc-toolbar-label]:!font-semibold [&_.rbc-toolbar]:!mb-4 [&_.rbc-btn-group]:!gap-1 [&_.rbc-btn-group_button]:!rounded-md [&_.rbc-btn-group_button]:!px-3 [&_.rbc-btn-group_button]:!py-1.5 [&_.rbc-btn-group_button]:!text-sm [&_.rbc-btn-group_button]:!font-medium [&_.rbc-btn-group_button]:!bg-background [&_.rbc-btn-group_button]:!border-border [&_.rbc-btn-group_button]:!text-foreground [&_.rbc-btn-group_button.rbc-active]:!bg-primary [&_.rbc-btn-group_button.rbc-active]:!text-primary-foreground [&_.rbc-event]:!text-primary-foreground [&_.rbc-event]:hover:!bg-primary [&_.rbc-event]:!border-none [&_.rbc-today]:!bg-accent/10 [&_.rbc-off-range-bg]:!bg-muted/30 [&_.rbc-show-more]:!text-primary [&_.rbc-show-more]:hover:!text-primary/90"
+                    eventPropGetter={(event) => ({
+                      className: `${event.resource.isOverdue ? 'bg-destructive/90 hover:bg-destructive' : 'bg-primary/90 hover:bg-primary'} cursor-pointer`,
+                      style: {
+                        border: event.resource.isOverdue ? '1px solid rgba(var(--destructive-rgb), 0.8)' : 'none',
+                      }
+                    })}
+                    onSelectEvent={handleSelectEvent}
+                    components={{
+                      event: (props: any) => (
+                        <div 
+                          className="h-full w-full flex items-center" 
+                          onClick={() => props.onClick && props.onClick()}
+                        >
+                          <div className="truncate text-xs text-primary-foreground">{props.title}</div>
+                        </div>
+                      ),
+                    }}
+                    formats={{
+                      dateFormat: (date) => formatDate(date),
+                      dayFormat: (date) => format(date, 'EEE dd'),
+                    }}
+                  />
+                </div>
               </Card>
               <Card className="p-6">
-                <h2 className="text-lg font-semibold mb-4">Attention Required</h2>
-                <Calendar
-                  localizer={localizer}
-                  events={events.filter(event => 
-                    event.resource.isOverdue || 
-                    isToday(new Date(event.start))
-                  )}
-                  startAccessor="start"
-                  endAccessor="end"
-                  style={{ height: "600px" }}
-                  defaultView="agenda"
-                  views={["agenda"]}
-                  messages={{
-                    agenda: 'Tasks',
-                  }}
-                  components={{
-                    agenda: {
-                      event: (props: any) => <CustomAgenda {...props} onSelectEvent={handleSelectEvent} />,
-                    },
-                  }}
-                  formats={{
-                    agendaDateFormat: (date) => formatDate(date),
-                  }}
-                />
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-lg font-semibold">Attention Required</h2>
+                    
+                    <div className="flex gap-2">
+                      <Select
+                        value={selectedAsset}
+                        onValueChange={setSelectedAsset}
+                      >
+                        <SelectTrigger className="w-[150px]">
+                          <span>{selectedAsset === 'all' ? 'All Assets' : getAssetName(parseInt(selectedAsset))}</span>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Assets</SelectItem>
+                          {assets.map(asset => (
+                            <SelectItem key={asset.id} value={asset.id.toString()}>{asset.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Select
+                        value={selectedFrequency}
+                        onValueChange={setSelectedFrequency}
+                      >
+                        <SelectTrigger className="w-[150px]">
+                          <span>
+                            {selectedFrequency === 'all' 
+                              ? 'All Frequencies' 
+                              : selectedFrequency === 'DAILY' ? 'Daily'
+                              : selectedFrequency === 'WEEKLY' ? 'Weekly'
+                              : selectedFrequency === 'MONTHLY' ? 'Monthly'
+                              : selectedFrequency === 'QUARTERLY' ? 'Quarterly'
+                              : selectedFrequency === 'SEMI_ANNUALLY' ? 'Semi-Annually'
+                              : 'Annually'
+                            }
+                          </span>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Frequencies</SelectItem>
+                          <SelectItem value="DAILY">Daily</SelectItem>
+                          <SelectItem value="WEEKLY">Weekly</SelectItem>
+                          <SelectItem value="MONTHLY">Monthly</SelectItem>
+                          <SelectItem value="QUARTERLY">Quarterly</SelectItem>
+                          <SelectItem value="SEMI_ANNUALLY">Semi-Annually</SelectItem>
+                          <SelectItem value="ANNUALLY">Annually</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                
+                  <Calendar
+                    localizer={localizer}
+                    events={events.filter(event => 
+                      (event.resource.isOverdue || isToday(new Date(event.start)))
+                    )}
+                    startAccessor="start"
+                    endAccessor="end"
+                    style={{ height: "600px" }}
+                    defaultView="agenda"
+                    views={["agenda"]}
+                    messages={{
+                      agenda: 'Tasks',
+                    }}
+                    components={{
+                      agenda: {
+                        event: (props: any) => <CustomAgenda {...props} onSelectEvent={handleSelectEvent} />,
+                      },
+                    }}
+                    formats={{
+                      agendaDateFormat: (date) => formatDate(date),
+                    }}
+                  />
+                </div>
               </Card>
             </div>
           )}

@@ -1,6 +1,6 @@
 import { SidebarNav } from "@/components/sidebar-nav";
 import { StatsCard } from "@/components/stats-card";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { 
   WorkOrder, 
   Asset, 
@@ -8,7 +8,8 @@ import {
   AssetStatus, 
   MaintenanceSchedule, 
   MaintenanceCompletion,
-  Settings 
+  Settings,
+  InsertMaintenanceCompletion 
 } from "@shared/schema";
 import { Card } from "@/components/ui/card";
 import { CardContent } from "@/components/ui/card";
@@ -19,6 +20,31 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   ClipboardList,
   Wrench,
@@ -34,10 +60,17 @@ import { useState } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { format, differenceInDays, isPast, isToday } from "date-fns";
 import { Link } from "wouter";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Dashboard() {
   const [selectedTab, setSelectedTab] = useState<string>("today");
+  const [selectedSchedule, setSelectedSchedule] = useState<MaintenanceSchedule | null>(null);
+  const [selectedTask, setSelectedTask] = useState<any | null>(null);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [isCompleteDialogOpen, setIsCompleteDialogOpen] = useState(false);
   const isMobile = useIsMobile();
+  const { toast } = useToast();
 
   const { data: workOrders = [] } = useQuery<WorkOrder[]>({
     queryKey: ["/api/work-orders"],
@@ -82,6 +115,60 @@ export default function Dashboard() {
   const getAssetName = (assetId: number) => {
     const asset = assets.find(a => a.id === assetId);
     return asset ? asset.name : 'Unknown Asset';
+  };
+  
+  const getAssetDetails = (assetId: number) => {
+    return assets.find(a => a.id === assetId);
+  };
+  
+  const getCompletionHistory = (scheduleId: number) => {
+    return completions
+      .filter(c => c.scheduleId === scheduleId)
+      .sort((a, b) => new Date(b.completedDate).getTime() - new Date(a.completedDate).getTime());
+  };
+  
+  const form = useForm({
+    defaultValues: {
+      notes: "",
+    },
+  });
+  
+  const completeMaintenanceMutation = useMutation({
+    mutationFn: async (data: InsertMaintenanceCompletion) => {
+      const res = await apiRequest("POST", "/api/maintenance-completions", data);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/maintenance-completions"] });
+      setIsCompleteDialogOpen(false);
+      setIsDetailsDialogOpen(false);
+      form.reset();
+      toast({
+        title: "Success",
+        description: "Maintenance item marked as completed",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+  
+  const handleCompleteClick = () => {
+    setIsDetailsDialogOpen(false);
+    setIsCompleteDialogOpen(true);
+  };
+  
+  const openDetailsDialog = (task: any) => {
+    const schedule = schedules.find(s => s.id === task.scheduleId);
+    if (schedule) {
+      setSelectedSchedule(schedule);
+      setSelectedTask(task);
+      setIsDetailsDialogOpen(true);
+    }
   };
   
   // Create maintenance tasks for today, upcoming, and overdue
@@ -242,42 +329,38 @@ export default function Dashboard() {
                   <div className="space-y-3">
                     {filteredTasks.length > 0 ? (
                       filteredTasks.map(task => (
-                        <Link 
-                          href={`/maintenance-calendar?scheduleId=${task.scheduleId}`} 
+                        <div 
                           key={task.id}
-                          className="block"
+                          onClick={() => openDetailsDialog(task)}
+                          className={`p-3 border rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
+                            task.isOverdue ? 'bg-destructive/5 border-destructive/30 hover:bg-destructive/10' : 'bg-card hover:bg-accent/50'
+                          }`}
                         >
-                          <div
-                            className={`p-3 border rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
-                              task.isOverdue ? 'bg-destructive/5 border-destructive/30 hover:bg-destructive/10' : 'bg-card hover:bg-accent/50'
-                            }`}
-                          >
-                            <div className="overflow-hidden">
-                              <div className="flex items-center gap-2">
-                                <div className={`w-1 h-8 rounded-full ${task.isOverdue ? 'bg-destructive' : 'bg-primary'}`}></div>
-                                <div>
-                                  <div className="font-medium truncate">{task.title}</div>
-                                  <div className="text-xs text-muted-foreground truncate">
-                                    Asset: {task.assetName}
-                                  </div>
+                          <div className="overflow-hidden">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-1 h-8 rounded-full ${task.isOverdue ? 'bg-destructive' : 'bg-primary'}`}></div>
+                              <div>
+                                <div className="font-medium truncate">{task.title}</div>
+                                <div className="text-xs text-muted-foreground truncate">
+                                  Asset: {task.assetName}
                                 </div>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                              {task.isOverdue && (
-                                <Badge variant="destructive" className="text-xs">
-                                  {task.daysOverdue} {task.daysOverdue === 1 ? 'day' : 'days'} overdue
-                                </Badge>
-                              )}
-                              <div className="text-xs text-muted-foreground whitespace-nowrap">
-                                {format(task.date, 'MMM dd')}
-                              </div>
-                              <div className="h-6 w-6 flex items-center justify-center">
-                                <Info className="h-3.5 w-3.5" />
-                              </div>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            {task.isOverdue && (
+                              <Badge variant="destructive" className="text-xs">
+                                {task.daysOverdue} {task.daysOverdue === 1 ? 'day' : 'days'} overdue
+                              </Badge>
+                            )}
+                            <div className="text-xs text-muted-foreground whitespace-nowrap">
+                              {format(task.date, 'MMM dd')}
+                            </div>
+                            <div className="h-6 w-6 flex items-center justify-center">
+                              <Info className="h-3.5 w-3.5" />
                             </div>
                           </div>
-                        </Link>
+                        </div>
                       ))
                     ) : (
                       <div className="flex items-center justify-center h-32 text-muted-foreground">
@@ -357,6 +440,186 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+      
+      {/* Maintenance Schedule Details Dialog */}
+      <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span>Maintenance Schedule Details</span>
+              <Button
+                onClick={handleCompleteClick}
+                variant="default"
+                className="gap-2"
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                Mark Complete
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+          {selectedSchedule && (
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <h3 className="font-medium">Schedule Information</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-muted-foreground">Title</p>
+                    <p>{selectedSchedule.title}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Frequency</p>
+                    <p>{selectedSchedule.frequency}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Start Date</p>
+                    <p>{format(new Date(selectedSchedule.startDate), 'PPP')}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">End Date</p>
+                    <p>
+                      {selectedSchedule.endDate
+                        ? format(new Date(selectedSchedule.endDate), 'PPP')
+                        : 'Ongoing'}
+                    </p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-muted-foreground">Description</p>
+                    <p className="whitespace-pre-wrap">{selectedSchedule.description}</p>
+                  </div>
+                </div>
+              </div>
+
+              {selectedSchedule.assetId && (
+                <div className="space-y-2">
+                  <h3 className="font-medium">Asset Information</h3>
+                  {(() => {
+                    const asset = getAssetDetails(selectedSchedule.assetId);
+                    return asset ? (
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <p className="text-muted-foreground">Name</p>
+                          <p>{asset.name}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Category</p>
+                          <p>{asset.category}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Location</p>
+                          <p>{asset.location}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Status</p>
+                          <p>{asset.status}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">Asset information not available</p>
+                    );
+                  })()}
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-medium">Completion History</h3>
+                  <span className="text-sm text-muted-foreground">
+                    Latest completions
+                  </span>
+                </div>
+                <ScrollArea className="h-[200px] rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Notes</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {getCompletionHistory(selectedSchedule.id).map((completion) => (
+                        <TableRow key={completion.id}>
+                          <TableCell>
+                            {format(new Date(completion.completedDate), 'PPP')}
+                          </TableCell>
+                          <TableCell>{completion.notes || 'No notes'}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </ScrollArea>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Complete Maintenance Dialog */}
+      <Dialog open={isCompleteDialogOpen} onOpenChange={setIsCompleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Complete Maintenance Task</DialogTitle>
+          </DialogHeader>
+          {selectedSchedule && (
+            <Form {...form}>
+              <form
+                onSubmit={form.handleSubmit((data) => {
+                  if (selectedTask && selectedSchedule) {
+                    completeMaintenanceMutation.mutate({
+                      scheduleId: selectedSchedule.id,
+                      completedDate: selectedTask.date,
+                      notes: data.notes,
+                    });
+                  }
+                })}
+                className="space-y-4"
+              >
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">
+                    Task: {selectedSchedule.title}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Asset: {getAssetName(selectedSchedule.assetId)}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Date: {selectedTask ? format(selectedTask.date, 'PPPP') : ''}
+                  </p>
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Notes</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          {...field}
+                          placeholder="Add any notes about the completed maintenance..."
+                          rows={4}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <DialogFooter>
+                  <Button
+                    type="submit"
+                    disabled={completeMaintenanceMutation.isPending}
+                  >
+                    {completeMaintenanceMutation.isPending ? (
+                      "Saving..."
+                    ) : (
+                      "Mark as Completed"
+                    )}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

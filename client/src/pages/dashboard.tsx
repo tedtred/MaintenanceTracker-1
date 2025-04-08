@@ -242,43 +242,42 @@ export default function Dashboard() {
                   <div className="space-y-3">
                     {filteredTasks.length > 0 ? (
                       filteredTasks.map(task => (
-                        <div 
+                        <Link 
+                          href={`/maintenance-calendar?scheduleId=${task.scheduleId}`} 
                           key={task.id}
-                          className={`p-3 border rounded-lg flex items-center justify-between transition-colors ${
-                            task.isOverdue ? 'bg-destructive/5 border-destructive/30' : 'bg-card hover:bg-accent/50'
-                          }`}
+                          className="block"
                         >
-                          <div className="overflow-hidden">
-                            <div className="flex items-center gap-2">
-                              <div className={`w-1 h-8 rounded-full ${task.isOverdue ? 'bg-destructive' : 'bg-primary'}`}></div>
-                              <div>
-                                <div className="font-medium truncate">{task.title}</div>
-                                <div className="text-xs text-muted-foreground truncate">
-                                  Asset: {task.assetName}
+                          <div
+                            className={`p-3 border rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
+                              task.isOverdue ? 'bg-destructive/5 border-destructive/30 hover:bg-destructive/10' : 'bg-card hover:bg-accent/50'
+                            }`}
+                          >
+                            <div className="overflow-hidden">
+                              <div className="flex items-center gap-2">
+                                <div className={`w-1 h-8 rounded-full ${task.isOverdue ? 'bg-destructive' : 'bg-primary'}`}></div>
+                                <div>
+                                  <div className="font-medium truncate">{task.title}</div>
+                                  <div className="text-xs text-muted-foreground truncate">
+                                    Asset: {task.assetName}
+                                  </div>
                                 </div>
                               </div>
                             </div>
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            {task.isOverdue && (
-                              <Badge variant="destructive" className="text-xs">
-                                {task.daysOverdue} {task.daysOverdue === 1 ? 'day' : 'days'} overdue
-                              </Badge>
-                            )}
-                            <div className="text-xs text-muted-foreground whitespace-nowrap">
-                              {format(task.date, 'MMM dd')}
-                            </div>
-                            <Link href={`/maintenance-calendar`}>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-6 w-6"
-                              >
+                            <div className="flex items-center gap-2 shrink-0">
+                              {task.isOverdue && (
+                                <Badge variant="destructive" className="text-xs">
+                                  {task.daysOverdue} {task.daysOverdue === 1 ? 'day' : 'days'} overdue
+                                </Badge>
+                              )}
+                              <div className="text-xs text-muted-foreground whitespace-nowrap">
+                                {format(task.date, 'MMM dd')}
+                              </div>
+                              <div className="h-6 w-6 flex items-center justify-center">
                                 <Info className="h-3.5 w-3.5" />
-                              </Button>
-                            </Link>
+                              </div>
+                            </div>
                           </div>
-                        </div>
+                        </Link>
                       ))
                     ) : (
                       <div className="flex items-center justify-center h-32 text-muted-foreground">
@@ -307,35 +306,44 @@ export default function Dashboard() {
                   <div className="space-y-3">
                     {activeWorkOrders.length > 0 ? (
                       activeWorkOrders.slice(0, 10).map((wo) => (
-                        <div
+                        <Link 
+                          href={`/work-order-details/${wo.id}`}
                           key={wo.id}
-                          className={`p-3 border rounded-lg flex items-center justify-between ${
-                            wo.status === WorkOrderStatus.OPEN 
-                              ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/30' 
-                              : wo.status === WorkOrderStatus.IN_PROGRESS
-                                ? 'bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900/30'
-                                : 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900/30'
-                          } transition-colors`}
+                          className="block"
                         >
-                          <div className="overflow-hidden">
-                            <div className="font-medium truncate">{wo.title}</div>
-                            <div className="text-xs text-muted-foreground">
-                              Priority: {wo.priority} | Reported: {format(new Date(wo.reportedDate), 'MMM dd')}
+                          <div
+                            className={`p-3 border rounded-lg flex items-center justify-between cursor-pointer transition-colors ${
+                              wo.status === WorkOrderStatus.OPEN 
+                                ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/30 hover:bg-amber-100 dark:hover:bg-amber-950/30' 
+                                : wo.status === WorkOrderStatus.IN_PROGRESS
+                                  ? 'bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-950/30'
+                                  : 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900/30 hover:bg-green-100 dark:hover:bg-green-950/30'
+                            }`}
+                          >
+                            <div className="overflow-hidden">
+                              <div className="font-medium truncate">{wo.title}</div>
+                              <div className="text-xs text-muted-foreground">
+                                Priority: {wo.priority} | Reported: {format(new Date(wo.reportedDate), 'MMM dd')}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge 
+                                variant={
+                                  wo.status === WorkOrderStatus.OPEN 
+                                    ? 'outline' 
+                                    : wo.status === WorkOrderStatus.IN_PROGRESS
+                                      ? 'secondary'
+                                      : 'default'
+                                }
+                              >
+                                {wo.status}
+                              </Badge>
+                              <div className="h-6 w-6 flex items-center justify-center">
+                                <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                              </div>
                             </div>
                           </div>
-                          <Badge 
-                            variant={
-                              wo.status === WorkOrderStatus.OPEN 
-                                ? 'outline' 
-                                : wo.status === WorkOrderStatus.IN_PROGRESS
-                                  ? 'secondary'
-                                  : 'default'
-                            }
-                            className="ml-2"
-                          >
-                            {wo.status}
-                          </Badge>
-                        </div>
+                        </Link>
                       ))
                     ) : (
                       <div className="flex items-center justify-center h-32 text-muted-foreground">

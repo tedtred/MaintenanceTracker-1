@@ -220,8 +220,8 @@ export default function Dashboard() {
             />
           </div>
 
-          <div className="space-y-6">
-            <Card>
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card className="col-span-2 md:col-span-1">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center justify-between">
                   Maintenance Agenda
@@ -238,83 +238,48 @@ export default function Dashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <ScrollArea className="h-[400px] pr-4">
-                  <div className="space-y-4">
+                <ScrollArea className="h-[360px] pr-4">
+                  <div className="space-y-3">
                     {filteredTasks.length > 0 ? (
-                      filteredTasks.map(task => {
-                        // Get schedule details once
-                        const schedule = schedules.find(s => s.id === task.scheduleId);
-                        
-                        return (
-                          <div 
-                            key={task.id}
-                            className={`p-4 border rounded-lg transition-colors ${
-                              task.isOverdue ? 'bg-destructive/5 border-destructive/30' : 'bg-card hover:bg-accent/50'
-                            }`}
-                          >
-                            <div className="flex items-start justify-between mb-3">
-                              <div className="flex items-center gap-2">
-                                <div className={`w-1 h-8 rounded-full ${task.isOverdue ? 'bg-destructive' : 'bg-primary'}`}></div>
-                                <div>
-                                  <div className="font-semibold text-base">{task.title}</div>
-                                  <div className="text-sm">
-                                    Asset: <span className="font-medium">{task.assetName}</span>
-                                  </div>
+                      filteredTasks.map(task => (
+                        <div 
+                          key={task.id}
+                          className={`p-3 border rounded-lg flex items-center justify-between transition-colors ${
+                            task.isOverdue ? 'bg-destructive/5 border-destructive/30' : 'bg-card hover:bg-accent/50'
+                          }`}
+                        >
+                          <div className="overflow-hidden">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-1 h-8 rounded-full ${task.isOverdue ? 'bg-destructive' : 'bg-primary'}`}></div>
+                              <div>
+                                <div className="font-medium truncate">{task.title}</div>
+                                <div className="text-xs text-muted-foreground truncate">
+                                  Asset: {task.assetName}
                                 </div>
                               </div>
-                              <div className="flex items-center gap-2">
-                                {task.isOverdue && (
-                                  <Badge variant="destructive" className="text-xs">
-                                    {task.daysOverdue} {task.daysOverdue === 1 ? 'day' : 'days'} overdue
-                                  </Badge>
-                                )}
-                                <div className="text-sm font-medium whitespace-nowrap">
-                                  {format(task.date, 'MMM dd, yyyy')}
-                                </div>
-                              </div>
-                            </div>
-                            
-                            <div className="grid grid-cols-2 gap-3 text-sm border-t pt-3">
-                              <div>
-                                <span className="font-medium text-muted-foreground">Status:</span>{' '}
-                                {schedule?.status || 'Active'}
-                              </div>
-                              <div>
-                                <span className="font-medium text-muted-foreground">Frequency:</span>{' '}
-                                {schedule?.frequency.replace('_', ' ').toLowerCase() || 'N/A'}
-                              </div>
-                              <div>
-                                <span className="font-medium text-muted-foreground">Started:</span>{' '}
-                                {schedule ? format(new Date(schedule.startDate), 'MMM dd, yyyy') : 'N/A'}
-                              </div>
-                              <div>
-                                <span className="font-medium text-muted-foreground">Task Status:</span>{' '}
-                                <span className={task.isOverdue ? 'text-destructive font-medium' : 'text-primary font-medium'}>
-                                  {task.isOverdue ? 'Overdue' : 'Due Today'}
-                                </span>
-                              </div>
-                            </div>
-                            
-                            <div className="mt-3 text-sm">
-                              <span className="font-medium text-muted-foreground">Description:</span>{' '}
-                              <span className="text-sm">{schedule?.description || 'No description provided.'}</span>
-                            </div>
-                            
-                            <div className="mt-3 flex justify-end">
-                              <Link href={`/maintenance-calendar`}>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm" 
-                                  className="text-xs"
-                                >
-                                  <CalendarIcon className="h-3.5 w-3.5 mr-1" />
-                                  View in Calendar
-                                </Button>
-                              </Link>
                             </div>
                           </div>
-                        );
-                      })
+                          <div className="flex items-center gap-2 shrink-0">
+                            {task.isOverdue && (
+                              <Badge variant="destructive" className="text-xs">
+                                {task.daysOverdue} {task.daysOverdue === 1 ? 'day' : 'days'} overdue
+                              </Badge>
+                            )}
+                            <div className="text-xs text-muted-foreground whitespace-nowrap">
+                              {format(task.date, 'MMM dd')}
+                            </div>
+                            <Link href={`/maintenance-calendar`}>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-6 w-6"
+                              >
+                                <Info className="h-3.5 w-3.5" />
+                              </Button>
+                            </Link>
+                          </div>
+                        </div>
+                      ))
                     ) : (
                       <div className="flex items-center justify-center h-32 text-muted-foreground">
                         No maintenance tasks to display
@@ -325,7 +290,7 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="col-span-2 md:col-span-1">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center justify-between">
                   Recent Work Orders
@@ -338,10 +303,10 @@ export default function Dashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <ScrollArea className="h-[300px] pr-4">
+                <ScrollArea className="h-[360px] pr-4">
                   <div className="space-y-3">
                     {activeWorkOrders.length > 0 ? (
-                      activeWorkOrders.slice(0, 6).map((wo) => (
+                      activeWorkOrders.slice(0, 10).map((wo) => (
                         <div
                           key={wo.id}
                           className={`p-3 border rounded-lg flex items-center justify-between ${

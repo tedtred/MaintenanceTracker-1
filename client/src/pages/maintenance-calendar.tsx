@@ -129,19 +129,32 @@ const generateRecurringEvents = (schedule: MaintenanceSchedule, assetName: strin
 const CustomAgenda = ({ event, onSelectEvent }: { event: any; onSelectEvent?: (event: any) => void }) => (
   <div 
     onClick={() => onSelectEvent && onSelectEvent(event)}
-    className={`flex items-center gap-4 p-2 hover:bg-accent rounded-md cursor-pointer ${event.resource.isOverdue ? 'bg-destructive/10' : ''}`}
+    className={`flex items-center justify-between p-1.5 hover:bg-accent rounded-md cursor-pointer transition-colors ${event.resource.isOverdue ? 'bg-destructive/10' : ''}`}
   >
-    <div className="w-24 text-sm text-muted-foreground">
-      {format(event.start, 'MMM dd, yyyy')}
-    </div>
-    <div className="flex-1">
-      <div className="font-medium">{event.title}</div>
-      <div className="text-sm text-muted-foreground">
-        Frequency: {event.resource.frequency}
+    <div className="flex items-center gap-2 overflow-hidden flex-1">
+      <div className={`w-1 h-10 rounded-full ${event.resource.isOverdue ? 'bg-destructive' : 'bg-primary'}`}></div>
+      <div className="overflow-hidden">
+        <div className="font-medium truncate">{event.title}</div>
+        <div className="text-xs text-muted-foreground truncate">
+          {event.resource.assetName}
+        </div>
       </div>
     </div>
-    <div className={`text-sm ${event.resource.isOverdue ? 'text-destructive font-medium' : 'text-primary'}`}>
-      {event.resource.status}
+    <div className="flex items-center gap-2 shrink-0">
+      <div className="text-xs text-muted-foreground whitespace-nowrap">
+        {format(event.start, 'MMM dd')}
+      </div>
+      <Button 
+        variant="ghost" 
+        size="icon" 
+        className="h-6 w-6" 
+        onClick={(e) => {
+          e.stopPropagation();
+          onSelectEvent && onSelectEvent(event);
+        }}
+      >
+        <Info className="h-3.5 w-3.5" />
+      </Button>
     </div>
   </div>
 );
@@ -260,8 +273,11 @@ export default function MaintenanceCalendar() {
   useEffect(() => {
     if (settings) {
       // Update the localizer with the user's preferred start of week
+      const weekStartsOn = settings.workWeekStart as 0 | 1 | 2 | 3 | 4 | 5 | 6;
+      // For react-big-calendar, we need to return a function that returns the first day of week
       localizer.startOfWeek = () => {
-        return startOfWeek(new Date(), { weekStartsOn: settings.workWeekStart as 0 | 1 | 2 | 3 | 4 | 5 | 6 });
+        const sdow = startOfWeek(new Date(), { weekStartsOn });
+        return sdow.getDay() as any;
       };
     }
   }, [settings]);
@@ -414,7 +430,7 @@ export default function MaintenanceCalendar() {
                 />
               </Card>
               <Card className="p-6">
-                <h2 className="text-lg font-semibold mb-4">Today & Overdue</h2>
+                <h2 className="text-lg font-semibold mb-4">Attention Required</h2>
                 <Calendar
                   localizer={localizer}
                   events={events.filter(event => 

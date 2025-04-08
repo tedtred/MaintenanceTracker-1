@@ -58,7 +58,6 @@ export const insertWorkOrderSchema = createInsertSchema(workOrders)
 // Assets schema
 export const assets = pgTable("assets", {
   id: serial("id").primaryKey(),
-  Asset_NO: text("Asset_NO").notNull(),
   name: text("name").notNull(),
   description: text("description").notNull(),
   location: text("location").notNull(),

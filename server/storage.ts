@@ -5,9 +5,8 @@ import { eq, and, lte, gte, desc } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
-import { Settings, InsertSettings, settings as settingsTable } from "@shared/schema";
+import { Settings, InsertSettings, settings } from "@shared/schema";
 
-// Initialize PostgresSessionStore properly
 const PostgresSessionStore = connectPg(session);
 
 // Added WorkOrderStatus enum for type safety
@@ -132,6 +131,7 @@ export class DatabaseStorage implements IStorage {
     }
     return updatedUser;
   }
+
 
   // Work Order Methods
   async createWorkOrder(workOrder: InsertWorkOrder): Promise<WorkOrder> {
@@ -332,13 +332,13 @@ export class DatabaseStorage implements IStorage {
 
   // Settings Methods
   async getSettings(): Promise<Settings> {
-    const [currentSettings] = await db
+    const [settings] = await db
       .select()
-      .from(settingsTable)
-      .orderBy(desc(settingsTable.updatedAt))
+      .from(settings)
+      .orderBy(desc(settings.updatedAt))
       .limit(1);
 
-    if (!currentSettings) {
+    if (!settings) {
       // Create default settings if none exist
       return this.updateSettings({
         workWeekStart: 1,
@@ -351,12 +351,12 @@ export class DatabaseStorage implements IStorage {
       });
     }
 
-    return currentSettings;
+    return settings;
   }
 
   async updateSettings(updates: Partial<Settings>): Promise<Settings> {
     const [updatedSettings] = await db
-      .insert(settingsTable)
+      .insert(settings)
       .values({
         ...updates,
         updatedAt: new Date()

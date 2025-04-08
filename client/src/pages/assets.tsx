@@ -609,19 +609,6 @@ export default function Assets() {
             >
               <FormField
                 control={form.control}
-                name="Asset_NO"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Asset Number</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
                 name="name"
                 render={({ field }) => (
                   <FormItem>

@@ -128,6 +128,7 @@ export default function ProblemTracking() {
     defaultValues: {
       notes: "",
       locationName: "",
+      assetId: undefined,
     },
   });
   
@@ -507,7 +508,9 @@ export default function ProblemTracking() {
                       <FormItem>
                         <FormLabel className="text-base">Related Asset</FormLabel>
                         <Select
-                          onValueChange={(value) => field.onChange(parseInt(value) || undefined)}
+                          onValueChange={(value) => {
+                            field.onChange(value === "0" ? undefined : parseInt(value))
+                          }}
                           defaultValue={field.value?.toString() || "0"}
                         >
                           <FormControl>
@@ -601,7 +604,9 @@ export default function ProblemTracking() {
                         <FormItem>
                           <FormLabel>Related Asset</FormLabel>
                           <Select
-                            onValueChange={(value) => field.onChange(parseInt(value) || undefined)}
+                            onValueChange={(value) => {
+                              field.onChange(value === "0" ? undefined : parseInt(value))
+                            }}
                             defaultValue={field.value?.toString() || "0"}
                           >
                             <FormControl>

@@ -4,10 +4,10 @@ import { useAuth } from "@/hooks/use-auth";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { SidebarNav } from "@/components/sidebar-nav";
-import { ProblemButton } from "@shared/schema";
+import { ProblemButton, WorkOrderPriority, Asset, User } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { HexColorPicker } from "react-colorful";
@@ -15,10 +15,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { AlertTriangle, Wrench, BarChart2, AlertCircle, Trash2, Plus, ArrowUp, ArrowDown, PencilIcon, Save, X } from "lucide-react";
+import { AlertTriangle, Wrench, BarChart2, AlertCircle, Trash2, Plus, ArrowUp, ArrowDown, PencilIcon, Save, X, ClipboardList } from "lucide-react";
 
 // Define form schema
 const buttonFormSchema = z.object({
@@ -26,6 +27,14 @@ const buttonFormSchema = z.object({
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Must be a valid hex color"),
   icon: z.string().optional(),
   active: z.boolean().default(true),
+  // Work order template fields
+  createWorkOrder: z.boolean().default(false),
+  workOrderTitle: z.string().optional(),
+  workOrderDescription: z.string().optional(),
+  workOrderPriority: z.enum(["LOW", "MEDIUM", "HIGH"]).optional(),
+  defaultAssetId: z.number().optional(),
+  defaultAssignedTo: z.number().optional(),
+  notifyMaintenance: z.boolean().default(false),
 });
 
 type ButtonFormData = z.infer<typeof buttonFormSchema>;
@@ -179,6 +188,12 @@ export default function ProblemTrackingAdmin() {
       label: "",
       color: "#6b7280",
       active: true,
+      // Work order fields
+      createWorkOrder: false,
+      workOrderTitle: "",
+      workOrderDescription: "",
+      workOrderPriority: "HIGH",
+      notifyMaintenance: false,
     },
   });
   
@@ -189,6 +204,12 @@ export default function ProblemTrackingAdmin() {
       label: "",
       color: "#6b7280",
       active: true,
+      // Work order fields
+      createWorkOrder: false,
+      workOrderTitle: "",
+      workOrderDescription: "",
+      workOrderPriority: "HIGH",
+      notifyMaintenance: false,
     },
   });
   
@@ -215,6 +236,14 @@ export default function ProblemTrackingAdmin() {
       color: button.color,
       icon: button.icon || undefined,
       active: button.active,
+      // Work order fields
+      createWorkOrder: button.createWorkOrder || false,
+      workOrderTitle: button.workOrderTitle || "",
+      workOrderDescription: button.workOrderDescription || "",
+      workOrderPriority: button.workOrderPriority as any || "HIGH",
+      defaultAssetId: button.defaultAssetId || undefined,
+      defaultAssignedTo: button.defaultAssignedTo || undefined,
+      notifyMaintenance: button.notifyMaintenance || false,
     });
     setIsEditOpen(true);
   };
@@ -283,6 +312,12 @@ export default function ProblemTrackingAdmin() {
                               <div>Color: {button.color}</div>
                               {button.icon && <div>Icon: {button.icon}</div>}
                               <div>Status: {button.active ? 'Active' : 'Inactive'}</div>
+                              {button.createWorkOrder && (
+                                <div className="flex items-center">
+                                  <ClipboardList className="h-4 w-4 mr-1" />
+                                  Creates Work Order
+                                </div>
+                              )}
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
@@ -423,6 +458,123 @@ export default function ProblemTrackingAdmin() {
                   </FormItem>
                 )}
               />
+              
+              <div className="mt-6">
+                <h3 className="text-lg font-medium">Work Order Settings</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Configure this button to automatically create a work order when pressed
+                </p>
+              </div>
+              
+              <FormField
+                control={createForm.control}
+                name="createWorkOrder"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                    <div className="space-y-0.5">
+                      <FormLabel>Create Work Order</FormLabel>
+                      <FormDescription>
+                        Automatically create a work order when this button is pressed
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              
+              {createForm.watch('createWorkOrder') && (
+                <>
+                  <FormField
+                    control={createForm.control}
+                    name="workOrderTitle"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Work Order Title Template</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., Equipment Failure: [asset]" {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          Use [asset] to include the asset name if selected
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={createForm.control}
+                    name="workOrderDescription"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Work Order Description Template</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="e.g., Equipment failure reported at [location]. Requires immediate attention." 
+                            className="min-h-[100px]"
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Use [location] to include the location and [notes] to include any notes
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={createForm.control}
+                    name="workOrderPriority"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Default Priority</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select priority" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="LOW">Low</SelectItem>
+                            <SelectItem value="MEDIUM">Medium</SelectItem>
+                            <SelectItem value="HIGH">High</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={createForm.control}
+                    name="notifyMaintenance"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                        <div className="space-y-0.5">
+                          <FormLabel>Notify Maintenance Team</FormLabel>
+                          <FormDescription>
+                            Send notification to maintenance team when this button is pressed
+                          </FormDescription>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
             </form>
           </Form>
           <DialogFooter>
@@ -533,6 +685,123 @@ export default function ProblemTrackingAdmin() {
                   </FormItem>
                 )}
               />
+              
+              <div className="mt-6">
+                <h3 className="text-lg font-medium">Work Order Settings</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Configure this button to automatically create a work order when pressed
+                </p>
+              </div>
+              
+              <FormField
+                control={editForm.control}
+                name="createWorkOrder"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                    <div className="space-y-0.5">
+                      <FormLabel>Create Work Order</FormLabel>
+                      <FormDescription>
+                        Automatically create a work order when this button is pressed
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              
+              {editForm.watch('createWorkOrder') && (
+                <>
+                  <FormField
+                    control={editForm.control}
+                    name="workOrderTitle"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Work Order Title Template</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., Equipment Failure: [asset]" {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          Use [asset] to include the asset name if selected
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={editForm.control}
+                    name="workOrderDescription"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Work Order Description Template</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="e.g., Equipment failure reported at [location]. Requires immediate attention." 
+                            className="min-h-[100px]"
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Use [location] to include the location and [notes] to include any notes
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={editForm.control}
+                    name="workOrderPriority"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Default Priority</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select priority" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="LOW">Low</SelectItem>
+                            <SelectItem value="MEDIUM">Medium</SelectItem>
+                            <SelectItem value="HIGH">High</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={editForm.control}
+                    name="notifyMaintenance"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                        <div className="space-y-0.5">
+                          <FormLabel>Notify Maintenance Team</FormLabel>
+                          <FormDescription>
+                            Send notification to maintenance team when this button is pressed
+                          </FormDescription>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
             </form>
           </Form>
           <DialogFooter>

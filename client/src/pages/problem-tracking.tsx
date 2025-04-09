@@ -140,7 +140,27 @@ export default function ProblemTracking() {
   
   // Handle form submit
   const onSubmit = (data: ProblemReportData) => {
-    reportMutation.mutate(data);
+    const button = buttons.find(b => b.id === data.buttonId);
+    
+    // Check if we should create a work order alongside the problem event
+    const workOrderData = button?.createWorkOrder ? {
+      // Include work order creation data with the problem report
+      createWorkOrder: true,
+      workOrderTitle: button.workOrderTitle || '',
+      workOrderDescription: button.workOrderDescription || '',
+      workOrderPriority: button.workOrderPriority || 'MEDIUM',
+      defaultAssetId: data.assetId || button.defaultAssetId,
+      notifyMaintenance: button.notifyMaintenance || false,
+      // Add context details that will be used for template variables
+      locationName: data.locationName,
+      notes: data.notes,
+    } : {};
+    
+    // Combine the problem report with the work order data if needed
+    reportMutation.mutate({
+      ...data,
+      ...workOrderData
+    });
   };
   
   // Status counts for stats

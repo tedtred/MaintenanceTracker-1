@@ -49,9 +49,13 @@ export const workOrders = pgTable("work_orders", {
   assignedTo: integer("assigned_to").references(() => users.id),
   assetId: integer("asset_id").references(() => assets.id),
   reportedDate: timestamp("reported_date").notNull().defaultNow(),
+  dueDate: timestamp("due_date"),
   completedDate: timestamp("completed_date"),
   affectsAssetStatus: boolean("affects_asset_status").default(false).notNull(), // New field
   partsRequired: text("parts_required"), // New field for parts tracking
+  createdBy: integer("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 export const insertWorkOrderSchema = createInsertSchema(workOrders)
@@ -63,6 +67,9 @@ export const insertWorkOrderSchema = createInsertSchema(workOrders)
     priority: z.string().min(1, "Priority is required"),
     assignedTo: z.number().nullable(),
     assetId: z.number().nullable(),
+    dueDate: z.string().or(z.date()).nullable().transform((val) =>
+      val ? (typeof val === 'string' ? new Date(val) : val) : null
+    ),
     reportedDate: z.string().or(z.date()).transform((val) =>
       typeof val === 'string' ? new Date(val) : val
     ),
@@ -71,6 +78,9 @@ export const insertWorkOrderSchema = createInsertSchema(workOrders)
     ),
     affectsAssetStatus: z.boolean().default(false),
     partsRequired: z.string().optional(),
+    createdBy: z.number().optional(),
+    createdAt: z.string().or(z.date()).optional(),
+    updatedAt: z.string().or(z.date()).optional(),
   });
 
 // Assets schema
@@ -331,6 +341,14 @@ export const problemButtons = pgTable("problem_buttons", {
   icon: text("icon"), // Icon name from lucide-react
   order: integer("order").notNull().default(0),
   active: boolean("active").notNull().default(true),
+  // Work order template fields
+  createWorkOrder: boolean("create_work_order").notNull().default(false),
+  workOrderTitle: text("work_order_title"),
+  workOrderDescription: text("work_order_description"),
+  workOrderPriority: text("work_order_priority").default(WorkOrderPriority.HIGH),
+  defaultAssetId: integer("default_asset_id").references(() => assets.id),
+  defaultAssignedTo: integer("default_assigned_to").references(() => users.id),
+  notifyMaintenance: boolean("notify_maintenance").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -343,6 +361,18 @@ export const insertProblemButtonSchema = createInsertSchema(problemButtons)
     icon: z.string().optional(),
     order: z.number().int().nonnegative(),
     active: z.boolean().default(true),
+    // Work order template fields
+    createWorkOrder: z.boolean().default(false),
+    workOrderTitle: z.string().optional(),
+    workOrderDescription: z.string().optional(),
+    workOrderPriority: z.enum([
+      WorkOrderPriority.LOW,
+      WorkOrderPriority.MEDIUM,
+      WorkOrderPriority.HIGH
+    ]).default(WorkOrderPriority.HIGH).optional(),
+    defaultAssetId: z.number().int().positive().optional(),
+    defaultAssignedTo: z.number().int().positive().optional(),
+    notifyMaintenance: z.boolean().default(false),
   });
 
 // Problem Events schema to track reported problems

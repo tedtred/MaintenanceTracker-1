@@ -2,7 +2,12 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
-import { insertWorkOrderSchema, insertAssetSchema, insertMaintenanceScheduleSchema, insertMaintenanceCompletionSchema, insertProblemButtonSchema, insertProblemEventSchema } from "@shared/schema";
+import { 
+  insertWorkOrderSchema, insertAssetSchema, 
+  insertMaintenanceScheduleSchema, insertMaintenanceCompletionSchema, 
+  insertProblemButtonSchema, insertProblemEventSchema,
+  WorkOrderStatus, WorkOrderPriority
+} from "@shared/schema";
 import { ZodError } from "zod";
 import { upload, handleFileUpload, processCSVImport, generateCSVExport } from "./services/file-storage";
 import path from "path";
@@ -513,8 +518,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get the current user's ID from the session
       const userId = req.user!.id;
       
-      // Combine request body with user ID
-      const eventData = { ...req.body, userId };
+      // Extract work order creation data if present
+      const { 
+        createWorkOrder, 
+        workOrderTitle, 
+        workOrderDescription, 
+        workOrderPriority,
+        defaultAssetId,
+        notifyMaintenance,
+        ...problemData 
+      } = req.body;
+      
+      // Combine request body with user ID for problem event
+      const eventData = { ...problemData, userId };
       
       const parsed = insertProblemEventSchema.safeParse(eventData);
       if (!parsed.success) {
@@ -524,7 +540,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // First create the problem event
       const event = await storage.createProblemEvent(parsed.data);
+      
+      // If createWorkOrder flag is set, create a work order
+      if (createWorkOrder) {
+        try {
+          // Get the button to access template data
+          const button = await storage.getProblemButton(event.buttonId);
+          
+          if (!button) {
+            console.error(`Button ${event.buttonId} not found for work order creation`);
+          } else {
+            // Process template variables in title and description
+            let title = workOrderTitle || button.workOrderTitle || `Problem: ${button.label}`;
+            let description = workOrderDescription || button.workOrderDescription || '';
+            
+            // Replace template variables
+            const asset = event.assetId ? await storage.getAsset(event.assetId) : null;
+            if (asset) {
+              title = title.replace(/\[asset\]/g, asset.name);
+              description = description.replace(/\[asset\]/g, asset.name);
+            }
+            
+            if (event.locationName) {
+              description = description.replace(/\[location\]/g, event.locationName);
+            }
+            
+            if (event.notes) {
+              description = description.replace(/\[notes\]/g, event.notes);
+            }
+            
+            // Create the work order
+            const workOrder = await storage.createWorkOrder({
+              title,
+              description,
+              status: WorkOrderStatus.OPEN,
+              priority: workOrderPriority || button.workOrderPriority || WorkOrderPriority.HIGH,
+              dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // Default due date: tomorrow
+              assetId: event.assetId || defaultAssetId || button.defaultAssetId,
+              assignedTo: button.defaultAssignedTo,
+              reportedDate: new Date(),
+              completedDate: null,
+              affectsAssetStatus: false,
+              createdBy: userId,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            });
+            
+            // Update the problem event with the work order ID
+            await storage.updateProblemEvent(event.id, {
+              workOrderId: workOrder.id
+            });
+            
+            // Include the work order in the response
+            event.workOrderId = workOrder.id;
+            
+            // TODO: If notification is enabled, send notification to maintenance team
+            if (notifyMaintenance || button.notifyMaintenance) {
+              // This would call a notification service in a real implementation
+              console.log(`Notification should be sent for work order ${workOrder.id}`);
+            }
+          }
+        } catch (workOrderError) {
+          console.error('Failed to create work order:', workOrderError);
+          // Still return the event, even if work order creation failed
+        }
+      }
+      
       res.status(201).json(event);
     } catch (error) {
       next(error);

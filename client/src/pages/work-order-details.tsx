@@ -83,7 +83,9 @@ export default function WorkOrderDetails() {
         status: data.status,
         priority: data.priority,
         affectsAssetStatus: data.affectsAssetStatus,
-        partsRequired: data.partsRequired
+        partsRequired: data.partsRequired,
+        problemDetails: data.problemDetails,
+        solutionNotes: data.solutionNotes
       };
 
       // If status is "WAITING_ON_PARTS" and affectsAssetStatus is true,
@@ -125,6 +127,8 @@ export default function WorkOrderDetails() {
       priority: workOrder?.priority || WorkOrderPriority.MEDIUM,
       affectsAssetStatus: workOrder?.affectsAssetStatus || false,
       partsRequired: workOrder?.partsRequired || "",
+      problemDetails: workOrder?.problemDetails || "",
+      solutionNotes: workOrder?.solutionNotes || "",
     },
   });
 
@@ -306,9 +310,56 @@ export default function WorkOrderDetails() {
                     />
                   )}
                   
+                  {/* Problem details & solution section */}
+                  <div className="border-t pt-4 mt-4">
+                    <h3 className="font-medium mb-4">Problem Details & Resolution</h3>
+                    
+                    <FormField
+                      control={form.control}
+                      name="problemDetails"
+                      render={({ field }) => (
+                        <FormItem className="mb-4">
+                          <FormLabel>Problem Details</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Enter detailed information about the problem..."
+                              className="min-h-[100px]"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Technical information, troubleshooting steps tried, or additional context
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="solutionNotes"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Solution Notes</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Enter details about how the problem was resolved..."
+                              className="min-h-[100px]"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Document the solution or fix implemented to resolve this issue
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
                   {/* Show Asset Status Section if assetId exists */}
                   {workOrder.assetId && (
-                    <div className="border p-4 rounded-lg bg-muted/40 space-y-4">
+                    <div className="border p-4 rounded-lg bg-muted/40 space-y-4 mt-4">
                       <div className="flex items-center justify-between">
                         <div>
                           <h3 className="font-medium">Asset Information</h3>

@@ -633,6 +633,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
               description = description.replace(/\[notes\]/g, event.notes);
             }
             
+            // Create workorder with problemDetails
+            let problemDetails = "";
+            
+            // Collect problem details from various fields
+            if (event.problemDetails) {
+              problemDetails = event.problemDetails;
+            } else if (event.notes) {
+              problemDetails = event.notes;
+            }
+            
             // Create the work order
             const workOrder = await storage.createWorkOrder({
               title,
@@ -643,6 +653,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               reportedDate: new Date(), // Add reported date to fix validation error
               assetId: event.assetId || defaultAssetId || button.defaultAssetId,
               assignedTo: button.defaultAssignedTo,
+              // Add problem details to work order
+              problemDetails: problemDetails,
               // No need to manually set these fields as they have defaults in the schema
               completedDate: null,
               affectsAssetStatus: false,

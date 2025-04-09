@@ -1,6 +1,7 @@
 import { useAuth } from "@/hooks/use-auth";
-import { Loader2 } from "lucide-react";
+import { Loader2, ShieldAlert } from "lucide-react";
 import { Redirect, Route } from "wouter";
+import { UserRole, AvailablePages } from "@shared/schema";
 
 export function ProtectedRoute({
   path,
@@ -10,6 +11,9 @@ export function ProtectedRoute({
   component: () => React.JSX.Element;
 }) {
   const { user, isLoading } = useAuth();
+  
+  // Extract page ID from path (remove leading slash)
+  const pageId = path.substring(1) || "dashboard";
 
   if (isLoading) {
     return (
@@ -29,5 +33,34 @@ export function ProtectedRoute({
     );
   }
 
-  return <Component />
+  // Admin users always have access to all pages
+  if (user.role === UserRole.ADMIN) {
+    return <Component />;
+  }
+
+  // For non-admin users, check page permissions
+  let userPermissions: string[] = [];
+  try {
+    userPermissions = JSON.parse(user.pagePermissions || '[]');
+  } catch (error) {
+    console.error('Error parsing user permissions:', error);
+  }
+
+  // If this page is in the user's permissions, allow access
+  if (userPermissions.includes(pageId)) {
+    return <Component />;
+  }
+
+  // Otherwise, show access denied
+  return (
+    <Route path={path}>
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+        <ShieldAlert className="h-16 w-16 text-destructive" />
+        <h1 className="text-2xl font-bold text-destructive">Access Denied</h1>
+        <p className="text-muted-foreground">
+          You don't have permission to access this page.
+        </p>
+      </div>
+    </Route>
+  );
 }

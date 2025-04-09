@@ -8,13 +8,25 @@ export const UserRole = {
   MANAGER: "MANAGER",
 } as const;
 
+// Define available pages for permission control
+export const AvailablePages = {
+  DASHBOARD: "dashboard",
+  WORK_ORDERS: "work-orders",
+  ASSETS: "assets",
+  MAINTENANCE_CALENDAR: "maintenance-calendar",
+  MAINTENANCE_ANALYTICS: "maintenance-analytics", 
+  SETTINGS: "settings",
+} as const;
+
 // User schema
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   role: text("role").notNull(),
-  approved: boolean("approved").notNull().default(false)
+  approved: boolean("approved").notNull().default(false),
+  // Store page permissions as a JSON array of page IDs
+  pagePermissions: text("page_permissions").default("[]").notNull()
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -23,6 +35,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
 }).extend({
   role: z.literal(UserRole.TECHNICIAN), // Default role for new users
   approved: z.literal(false), // Always start as unapproved
+  pagePermissions: z.literal("[]"), // No pages by default
 });
 
 // Work Order schema

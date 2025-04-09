@@ -29,11 +29,11 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 // Middleware to check if user is admin
-const isAdmin = (req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
+const isAdmin = (req: any, res: any, next: any) => {
   if (!req.isAuthenticated()) {
     return res.status(401).json({ message: "Unauthorized" });
   }
-  if (req.user.role !== UserRole.ADMIN) {
+  if (req.user?.role !== UserRole.ADMIN) {
     return res.status(403).json({ message: "Forbidden" });
   }
   next();
@@ -84,6 +84,7 @@ export function setupAuth(app: Express) {
       password: await hashPassword(req.body.password),
       role: UserRole.TECHNICIAN, // Default role
       approved: false, // Requires approval
+      pagePermissions: "[]", // No page permissions by default
     });
 
     res.status(201).json({ 
@@ -117,7 +118,7 @@ export function setupAuth(app: Express) {
     const userId = parseInt(req.params.id);
 
     // Prevent admin from deleting themselves
-    if (req.user.id === userId) {
+    if (req.user?.id === userId) {
       return res.status(400).json({ message: "Cannot delete your own account" });
     }
 
@@ -131,7 +132,7 @@ export function setupAuth(app: Express) {
 
   // Existing routes
   app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err, user, info) => {
+    passport.authenticate("local", (err: any, user: any, info: any) => {
       if (err) return next(err);
       if (!user) {
         return res.status(401).json({ 
@@ -157,7 +158,7 @@ export function setupAuth(app: Express) {
     res.json(req.user);
   });
 
-  // Existing admin routes for role management
+  // Admin routes for user management
   app.get("/api/admin/users", isAdmin, async (_req, res) => {
     try {
       const users = await storage.getAllUsers();
@@ -180,6 +181,23 @@ export function setupAuth(app: Express) {
       res.json(updatedUser);
     } catch (error) {
       res.status(500).json({ message: "Failed to update user role" });
+    }
+  });
+
+  // Add endpoint for updating page permissions
+  app.patch("/api/admin/users/:id/permissions", isAdmin, async (req, res) => {
+    const userId = parseInt(req.params.id);
+    const { permissions } = req.body;
+
+    if (!Array.isArray(permissions)) {
+      return res.status(400).json({ message: "Permissions must be an array of page IDs" });
+    }
+
+    try {
+      const updatedUser = await storage.updateUserPagePermissions(userId, permissions);
+      res.json(updatedUser);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update user permissions" });
     }
   });
 }

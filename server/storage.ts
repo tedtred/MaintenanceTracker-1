@@ -26,8 +26,9 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  getAllUsers(): Promise<User[]>; // New method
-  updateUserRole(userId: number, role: string): Promise<User>; // New method
+  getAllUsers(): Promise<User[]>; 
+  updateUserRole(userId: number, role: string): Promise<User>;
+  updateUserPagePermissions(userId: number, permissions: string[]): Promise<User>; // Add page permissions method
   getPendingUsers(): Promise<User[]>;
   approveUser(userId: number): Promise<User>;
   deleteUser(userId: number): Promise<void>;
@@ -99,11 +100,25 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(users);
   }
 
-  // New method to update user role
+  // Update user role
   async updateUserRole(userId: number, role: string): Promise<User> {
     const [updatedUser] = await db
       .update(users)
       .set({ role })
+      .where(eq(users.id, userId))
+      .returning();
+    if (!updatedUser) {
+      throw new Error("User not found");
+    }
+    return updatedUser;
+  }
+
+  // Update user page permissions
+  async updateUserPagePermissions(userId: number, permissions: string[]): Promise<User> {
+    const permissionsJson = JSON.stringify(permissions);
+    const [updatedUser] = await db
+      .update(users)
+      .set({ pagePermissions: permissionsJson })
       .where(eq(users.id, userId))
       .returning();
     if (!updatedUser) {

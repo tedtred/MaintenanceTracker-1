@@ -12,40 +12,46 @@ import {
   LogOut,
   Users,
   BarChart,
-  Settings, // Add Settings icon
+  Settings,
 } from "lucide-react";
-import { UserRole } from "@shared/schema";
+import { UserRole, AvailablePages } from "@shared/schema";
 
 const items = [
   {
     title: "Dashboard",
     icon: LayoutDashboard,
     href: "/",
+    id: AvailablePages.DASHBOARD,
   },
   {
     title: "Work Orders",
     icon: ClipboardList,
     href: "/work-orders",
+    id: AvailablePages.WORK_ORDERS,
   },
   {
     title: "Assets",
     icon: Wrench,
     href: "/assets",
+    id: AvailablePages.ASSETS,
   },
   {
     title: "Maintenance Calendar",
     icon: Calendar,
     href: "/maintenance-calendar",
+    id: AvailablePages.MAINTENANCE_CALENDAR,
   },
   {
     title: "Analytics",
     icon: BarChart,
     href: "/maintenance-analytics",
+    id: AvailablePages.MAINTENANCE_ANALYTICS,
   },
   {
     title: "Settings",
     icon: Settings,
     href: "/settings",
+    id: AvailablePages.SETTINGS,
   },
 ];
 
@@ -53,10 +59,31 @@ export function SidebarNav() {
   const { user, logoutMutation } = useAuth();
   const [location] = useLocation();
 
-  // Add admin page to navigation items if user is admin
-  const navItems = user?.role === UserRole.ADMIN 
-    ? [...items, { title: "User Management", icon: Users, href: "/admin" }]
-    : items;
+  // Parse user permissions
+  let userPermissions: string[] = [];
+  if (user && user.role !== UserRole.ADMIN) {
+    try {
+      userPermissions = JSON.parse(user.pagePermissions || '[]');
+    } catch (error) {
+      console.error('Error parsing user permissions:', error);
+    }
+  }
+
+  // For admin users, show all pages plus admin page
+  // For non-admin users, filter pages based on permissions
+  let navItems = [];
+  
+  if (user?.role === UserRole.ADMIN) {
+    navItems = [...items, { title: "User Management", icon: Users, href: "/admin", id: "admin" }];
+  } else {
+    // Filter items based on permissions
+    navItems = items.filter(item => 
+      // Always show dashboard
+      item.id === AvailablePages.DASHBOARD || 
+      // Show pages that user has permission to access
+      userPermissions.includes(item.id)
+    );
+  }
 
   return (
     <div className="relative border-r bg-sidebar h-screen w-52 flex flex-col">

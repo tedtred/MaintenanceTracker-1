@@ -37,7 +37,8 @@ export async function runMigrations() {
         username TEXT NOT NULL UNIQUE,
         password TEXT NOT NULL,
         role TEXT NOT NULL,
-        approved BOOLEAN NOT NULL DEFAULT false
+        approved BOOLEAN NOT NULL DEFAULT false,
+        page_permissions TEXT NOT NULL DEFAULT '[]'
       );
 
       CREATE TABLE IF NOT EXISTS work_orders (
@@ -116,7 +117,7 @@ export async function runMigrations() {
       SELECT COUNT(*) FROM users WHERE role = 'ADMIN'
     `);
 
-    const adminCount = parseInt(adminCheck.rows[0].count);
+    const adminCount = Number(adminCheck.rows[0].count);
 
     if (adminCount === 0) {
       console.log("Creating default admin user...");
@@ -127,8 +128,8 @@ export async function runMigrations() {
 
       // Use direct SQL execution instead of parameterized query
       await pool.query(`
-        INSERT INTO users (username, password, role, approved)
-        VALUES ('admin', $1, 'ADMIN', true)
+        INSERT INTO users (username, password, role, approved, page_permissions)
+        VALUES ('admin', $1, 'ADMIN', true, '[]')
       `, [hashedPassword]);
 
       console.log("Default admin user created. Username: admin, Password: admin123");

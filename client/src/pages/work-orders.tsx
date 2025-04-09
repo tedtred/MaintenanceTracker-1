@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { SidebarNav } from "@/components/sidebar-nav";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { WorkOrder, InsertWorkOrder, WorkOrderStatus, WorkOrderPriority } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -7,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import { insertWorkOrderSchema } from "@shared/schema";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -51,7 +52,18 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Loader2, Archive, Trash2 } from "lucide-react";
+import { 
+  Loader2, 
+  Archive, 
+  Trash2, 
+  ClipboardList, 
+  ArrowRight,
+  Filter,
+  PlusCircle,
+  CalendarClock
+} from "lucide-react";
+import { DataCardView, DataField } from "@/components/ui/data-card-view";
+import { useLocation } from "wouter";
 
 export default function WorkOrders() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -194,81 +206,313 @@ export default function WorkOrders() {
     );
   }
 
+  const isMobile = useIsMobile();
+  const [, navigate] = useLocation();
+  
+  // Configure mobile card fields
+  const cardFields: DataField[] = [
+    {
+      label: "Title",
+      value: "",
+      type: "text"
+    },
+    {
+      label: "Status",
+      value: "",
+      type: "badge"
+    },
+    {
+      label: "Priority",
+      value: "",
+      type: "badge"
+    },
+    {
+      label: "Reported",
+      value: "",
+      type: "text"
+    }
+  ];
+  
+  // Generate card data for each work order
+  const getWorkOrderCardData = (workOrders: WorkOrder[]) => {
+    return workOrders.map(wo => {
+      const fields: DataField[] = [
+        {
+          label: "Title",
+          value: wo.title,
+          type: "text"
+        },
+        {
+          label: "Status",
+          value: wo.status,
+          type: "badge",
+          badgeVariant: 
+            wo.status === WorkOrderStatus.COMPLETED 
+              ? "default" 
+              : wo.status === WorkOrderStatus.IN_PROGRESS 
+                ? "secondary" 
+                : wo.status === WorkOrderStatus.OPEN 
+                  ? "outline"
+                  : "destructive"
+        },
+        {
+          label: "Priority",
+          value: wo.priority,
+          type: "badge",
+          badgeVariant: 
+            wo.priority === WorkOrderPriority.HIGH 
+              ? "destructive" 
+              : wo.priority === WorkOrderPriority.MEDIUM 
+                ? "secondary"
+                : "outline"
+        },
+        {
+          label: "Reported",
+          value: new Date(wo.reportedDate).toLocaleString(),
+          type: "text"
+        }
+      ];
+      return { ...wo, fields };
+    });
+  };
+  
+  const handleWorkOrderClick = (workOrder: WorkOrder) => {
+    // For now, for both mobile and desktop, show the dialog
+    setSelectedWorkOrder(workOrder);
+    setIsDetailsDialogOpen(true);
+  };
+
   return (
-    <div className="flex h-screen">
-      <SidebarNav />
-      <div className="flex-1 p-8">
-        <div className="max-w-6xl mx-auto space-y-8">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold">Work Orders</h1>
-              <p className="text-muted-foreground">
-                Manage and track maintenance tasks
-              </p>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Switch
-                  checked={showArchived}
-                  onCheckedChange={setShowArchived}
-                  className="data-[state=checked]:bg-primary"
-                />
-                <span className="text-sm flex items-center gap-1">
-                  <Archive className="h-4 w-4" />
-                  Show Archived
-                </span>
-              </div>
-              <Button onClick={() => setIsCreateDialogOpen(true)}>
-                Create Work Order
-              </Button>
-            </div>
+    <div className="flex-1 px-4 py-6 sm:p-8 mb-16 sm:mb-0">
+      <div className="max-w-6xl mx-auto space-y-6">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
+              <ClipboardList className="h-6 w-6 sm:h-7 sm:w-7" />
+              Work Orders
+            </h1>
+            <p className="text-sm sm:text-base text-muted-foreground">
+              Manage and track maintenance tasks
+            </p>
           </div>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={showArchived}
+                onCheckedChange={setShowArchived}
+                className="data-[state=checked]:bg-primary"
+              />
+              <span className="text-sm flex items-center gap-1">
+                <Archive className="h-4 w-4" />
+                Show Archived
+              </span>
+            </div>
+            <Button 
+              onClick={() => setIsCreateDialogOpen(true)}
+              className="w-full sm:w-auto"
+              size={isMobile ? "lg" : "default"}
+            >
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Create Work Order
+            </Button>
+          </div>
+        </div>
 
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Priority</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Reported Date & Time</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredWorkOrders.map((wo) => (
-                <TableRow
-                  key={wo.id}
-                  className="cursor-pointer hover:bg-accent/50"
-                  onClick={() => {
-                    setSelectedWorkOrder(wo);
-                    setIsDetailsDialogOpen(true);
-                  }}
-                >
-                  <TableCell className="font-medium">{wo.title}</TableCell>
-                  <TableCell>{wo.priority}</TableCell>
-                  <TableCell>{wo.status}</TableCell>
-                  <TableCell>
-                    {new Date(wo.reportedDate).toLocaleString()}
-                  </TableCell>
+        {/* Mobile Card View */}
+        {isMobile ? (
+          <DataCardView
+            data={getWorkOrderCardData(filteredWorkOrders)}
+            fields={cardFields}
+            keyField="id"
+            onRowClick={handleWorkOrderClick}
+            isLoading={isLoading}
+            emptyMessage="No work orders found. Create one to get started."
+          />
+        ) : (
+          /* Desktop Table View */
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Priority</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Reported Date & Time</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredWorkOrders.map((wo) => (
+                  <TableRow
+                    key={wo.id}
+                    className="cursor-pointer hover:bg-accent/50"
+                    onClick={() => handleWorkOrderClick(wo)}
+                  >
+                    <TableCell className="font-medium">{wo.title}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          wo.priority === WorkOrderPriority.HIGH 
+                            ? "destructive" 
+                            : wo.priority === WorkOrderPriority.MEDIUM 
+                              ? "secondary"
+                              : "outline"
+                        }
+                      >
+                        {wo.priority}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          wo.status === WorkOrderStatus.COMPLETED 
+                            ? "default" 
+                            : wo.status === WorkOrderStatus.IN_PROGRESS 
+                              ? "secondary" 
+                              : wo.status === WorkOrderStatus.OPEN 
+                                ? "outline"
+                                : "destructive"
+                        }
+                      >
+                        {wo.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {new Date(wo.reportedDate).toLocaleString()}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
 
-          {/* Create Dialog */}
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Create New Work Order</DialogTitle>
-              </DialogHeader>
-              <Form {...form}>
+        {/* Create Dialog */}
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create New Work Order</DialogTitle>
+            </DialogHeader>
+            <Form {...form}>
+              <form
+                onSubmit={form.handleSubmit((data) =>
+                  createMutation.mutate(data)
+                )}
+                className="space-y-4"
+              >
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Title</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description</FormLabel>
+                      <FormControl>
+                        <Textarea {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="priority"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Priority</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select priority" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {Object.values(WorkOrderPriority).map((priority) => (
+                            <SelectItem key={priority} value={priority}>
+                              {priority}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={createMutation.isPending}
+                >
+                  {createMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    "Create Work Order"
+                  )}
+                </Button>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Details Dialog */}
+        <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <div className="flex justify-between items-center">
+                <DialogTitle>Work Order Details</DialogTitle>
+                {selectedWorkOrder && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" size="icon">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Work Order</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will permanently delete this work order and all its attachments.
+                          This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => deleteMutation.mutate(selectedWorkOrder.id)}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+              </div>
+            </DialogHeader>
+            {selectedWorkOrder && (
+              <Form {...detailsForm}>
                 <form
-                  onSubmit={form.handleSubmit((data) =>
-                    createMutation.mutate(data)
+                  onSubmit={detailsForm.handleSubmit((data) =>
+                    updateMutation.mutate({ ...data, id: selectedWorkOrder.id })
                   )}
                   className="space-y-4"
                 >
                   <FormField
-                    control={form.control}
+                    control={detailsForm.control}
                     name="title"
                     render={({ field }) => (
                       <FormItem>
@@ -281,7 +525,7 @@ export default function WorkOrders() {
                     )}
                   />
                   <FormField
-                    control={form.control}
+                    control={detailsForm.control}
                     name="description"
                     render={({ field }) => (
                       <FormItem>
@@ -294,24 +538,24 @@ export default function WorkOrders() {
                     )}
                   />
                   <FormField
-                    control={form.control}
-                    name="priority"
+                    control={detailsForm.control}
+                    name="status"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Priority</FormLabel>
+                        <FormLabel>Status</FormLabel>
                         <Select
                           onValueChange={field.onChange}
-                          defaultValue={field.value}
+                          value={field.value}
                         >
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select priority" />
+                              <SelectValue />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {Object.values(WorkOrderPriority).map((priority) => (
-                              <SelectItem key={priority} value={priority}>
-                                {priority}
+                            {Object.values(WorkOrderStatus).map((status) => (
+                              <SelectItem key={status} value={status}>
+                                {status}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -320,167 +564,54 @@ export default function WorkOrders() {
                       </FormItem>
                     )}
                   />
+                  <FormField
+                    control={detailsForm.control}
+                    name="priority"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Priority</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {Object.values(WorkOrderPriority).map(
+                              (priority) => (
+                                <SelectItem key={priority} value={priority}>
+                                  {priority}
+                                </SelectItem>
+                              )
+                            )}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="text-sm text-muted-foreground">
+                    Reported on: {new Date(selectedWorkOrder?.reportedDate).toLocaleString()}
+                  </div>
                   <Button
                     type="submit"
                     className="w-full"
-                    disabled={createMutation.isPending}
+                    disabled={updateMutation.isPending}
                   >
-                    {createMutation.isPending ? (
+                    {updateMutation.isPending ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      "Create Work Order"
+                      "Save Changes"
                     )}
                   </Button>
                 </form>
               </Form>
-            </DialogContent>
-          </Dialog>
-
-          {/* Details Dialog */}
-          <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
-            <DialogContent>
-              <DialogHeader>
-                <div className="flex justify-between items-center">
-                  <DialogTitle>Work Order Details</DialogTitle>
-                  {selectedWorkOrder && (
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="destructive" size="icon">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Work Order</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This will permanently delete this work order and all its attachments.
-                            This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => deleteMutation.mutate(selectedWorkOrder.id)}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                          >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  )}
-                </div>
-              </DialogHeader>
-              {selectedWorkOrder && (
-                <Form {...detailsForm}>
-                  <form
-                    onSubmit={detailsForm.handleSubmit((data) =>
-                      updateMutation.mutate({ ...data, id: selectedWorkOrder.id })
-                    )}
-                    className="space-y-4"
-                  >
-                    <FormField
-                      control={detailsForm.control}
-                      name="title"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Title</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={detailsForm.control}
-                      name="description"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Description</FormLabel>
-                          <FormControl>
-                            <Textarea {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={detailsForm.control}
-                      name="status"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Status</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            value={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {Object.values(WorkOrderStatus).map((status) => (
-                                <SelectItem key={status} value={status}>
-                                  {status}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={detailsForm.control}
-                      name="priority"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Priority</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            value={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {Object.values(WorkOrderPriority).map(
-                                (priority) => (
-                                  <SelectItem key={priority} value={priority}>
-                                    {priority}
-                                  </SelectItem>
-                                )
-                              )}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <div className="text-sm text-muted-foreground">
-                      Reported on: {new Date(selectedWorkOrder?.reportedDate).toLocaleString()}
-                    </div>
-                    <Button
-                      type="submit"
-                      className="w-full"
-                      disabled={updateMutation.isPending}
-                    >
-                      {updateMutation.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        "Save Changes"
-                      )}
-                    </Button>
-                  </form>
-                </Form>
-              )}
-            </DialogContent>
-          </Dialog>
-        </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

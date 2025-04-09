@@ -31,7 +31,9 @@ function Router() {
       <ProtectedRoute path="/problem-tracking" component={ProblemTracking} />
       <ProtectedRoute path="/problem-tracking-admin" component={ProblemTrackingAdmin} />
       <ProtectedRoute path="/admin" component={AdminPage} />
-      <Route component={NotFound} />
+      <Route path="*">
+        <NotFound />
+      </Route>
     </Switch>
   );
 }

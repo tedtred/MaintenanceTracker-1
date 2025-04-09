@@ -87,7 +87,7 @@ export function SidebarNav() {
   }
 
   return (
-    <div className="relative border-r bg-sidebar h-screen w-52 flex flex-col">
+    <div className="hidden sm:flex relative border-r bg-sidebar h-screen w-52 flex-col">
       <div className="p-4 border-b">
         <h2 className="font-semibold">CMMS</h2>
         <p className="text-sm text-sidebar-foreground mt-1">

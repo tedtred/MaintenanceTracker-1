@@ -2,13 +2,14 @@ import { useAuth } from "@/hooks/use-auth";
 import { Loader2, ShieldAlert } from "lucide-react";
 import { Redirect, Route } from "wouter";
 import { UserRole, AvailablePages } from "@shared/schema";
+import { ResponsiveLayout } from "@/components/responsive-layout";
 
 export function ProtectedRoute({
   path,
   component: Component,
 }: {
   path: string;
-  component: () => React.JSX.Element;
+  component: () => React.JSX.Element | null;
 }) {
   const { user, isLoading } = useAuth();
   
@@ -35,7 +36,13 @@ export function ProtectedRoute({
 
   // Admin users always have access to all pages
   if (user.role === UserRole.ADMIN) {
-    return <Component />;
+    return (
+      <Route path={path}>
+        <ResponsiveLayout>
+          <Component />
+        </ResponsiveLayout>
+      </Route>
+    );
   }
 
   // For non-admin users, check page permissions
@@ -48,7 +55,13 @@ export function ProtectedRoute({
 
   // If this page is in the user's permissions, allow access
   if (userPermissions.includes(pageId)) {
-    return <Component />;
+    return (
+      <Route path={path}>
+        <ResponsiveLayout>
+          <Component />
+        </ResponsiveLayout>
+      </Route>
+    );
   }
 
   // Otherwise, show access denied

@@ -101,9 +101,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
       const id = parseInt(req.params.id);
-      const workOrder = await storage.updateWorkOrder(id, req.body);
+      
+      // Process date fields to ensure they're proper Date objects
+      const updates = { ...req.body };
+      
+      // Convert string dates to Date objects
+      if (updates.dueDate && typeof updates.dueDate === 'string') {
+        updates.dueDate = new Date(updates.dueDate);
+      }
+      if (updates.completedDate && typeof updates.completedDate === 'string') {
+        updates.completedDate = new Date(updates.completedDate);
+      }
+      if (updates.reportedDate && typeof updates.reportedDate === 'string') {
+        updates.reportedDate = new Date(updates.reportedDate);
+      }
+      
+      const workOrder = await storage.updateWorkOrder(id, updates);
       res.json(workOrder);
     } catch (error) {
+      console.error('Error updating work order:', error);
       next(error);
     }
   });
@@ -185,9 +201,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
       const id = parseInt(req.params.id);
-      const asset = await storage.updateAsset(id, req.body);
+      
+      // Process date fields to ensure they're proper Date objects
+      const updates = { ...req.body };
+      
+      // Convert string dates to Date objects
+      if (updates.commissionedDate && typeof updates.commissionedDate === 'string') {
+        updates.commissionedDate = new Date(updates.commissionedDate);
+      }
+      if (updates.lastMaintenance && typeof updates.lastMaintenance === 'string') {
+        updates.lastMaintenance = new Date(updates.lastMaintenance);
+      }
+      
+      const asset = await storage.updateAsset(id, updates);
       res.json(asset);
     } catch (error) {
+      console.error('Error updating asset:', error);
       next(error);
     }
   });
@@ -306,9 +335,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
       const id = parseInt(req.params.id);
-      const schedule = await storage.updateMaintenanceSchedule(id, req.body);
+      
+      // Process date fields to ensure they're proper Date objects
+      const updates = { ...req.body };
+      
+      // Convert string dates to Date objects
+      if (updates.lastCompletedDate && typeof updates.lastCompletedDate === 'string') {
+        updates.lastCompletedDate = new Date(updates.lastCompletedDate);
+      }
+      if (updates.nextDueDate && typeof updates.nextDueDate === 'string') {
+        updates.nextDueDate = new Date(updates.nextDueDate);
+      }
+      
+      const schedule = await storage.updateMaintenanceSchedule(id, updates);
       res.json(schedule);
     } catch (error) {
+      console.error('Error updating maintenance schedule:', error);
       next(error);
     }
   });
@@ -637,9 +679,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
       const id = parseInt(req.params.id);
-      const event = await storage.updateProblemEvent(id, req.body);
+      
+      // Process date fields to ensure they're proper Date objects
+      const updates = { ...req.body };
+      
+      // Convert string dates to Date objects
+      if (updates.timestamp && typeof updates.timestamp === 'string') {
+        updates.timestamp = new Date(updates.timestamp);
+      }
+      if (updates.resolvedAt && typeof updates.resolvedAt === 'string') {
+        updates.resolvedAt = new Date(updates.resolvedAt);
+      }
+      
+      const event = await storage.updateProblemEvent(id, updates);
       res.json(event);
     } catch (error) {
+      console.error('Error updating problem event:', error);
       next(error);
     }
   });

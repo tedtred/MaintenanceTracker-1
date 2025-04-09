@@ -459,10 +459,10 @@ export default function ProblemTrackingAdmin() {
                 )}
               />
               
-              <div className="mt-6">
-                <h3 className="text-lg font-medium">Work Order Settings</h3>
+              <div className="mt-6 p-4 border rounded-lg bg-slate-50 dark:bg-slate-900">
+                <h3 className="text-lg font-bold text-blue-600 dark:text-blue-400">Work Order Template Settings</h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Configure this button to automatically create a work order when pressed
+                  Configure this button to automatically create a work order with predefined fields when pressed
                 </p>
               </div>
               
@@ -686,10 +686,10 @@ export default function ProblemTrackingAdmin() {
                 )}
               />
               
-              <div className="mt-6">
-                <h3 className="text-lg font-medium">Work Order Settings</h3>
+              <div className="mt-6 p-4 border rounded-lg bg-slate-50 dark:bg-slate-900">
+                <h3 className="text-lg font-bold text-blue-600 dark:text-blue-400">Work Order Template Settings</h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Configure this button to automatically create a work order when pressed
+                  Configure this button to automatically create a work order with predefined fields when pressed
                 </p>
               </div>
               

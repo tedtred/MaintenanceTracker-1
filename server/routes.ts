@@ -518,6 +518,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get the current user's ID from the session
       const userId = req.user!.id;
       
+      // Debug info for troubleshooting
+      console.log("Problem event request body:", JSON.stringify(req.body));
+      
       // Extract work order creation data if present
       const { 
         createWorkOrder, 
@@ -529,11 +532,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...problemData 
       } = req.body;
       
-      // Combine request body with user ID for problem event
-      const eventData = { ...problemData, userId };
+      // Combine request body with user ID for problem event and add timestamp if missing
+      const eventData = { 
+        ...problemData, 
+        userId,
+        // Add timestamp if not provided (required by schema)
+        timestamp: problemData.timestamp || new Date() 
+      };
+      
+      // Debug info for troubleshooting
+      console.log("Problem event data before validation:", JSON.stringify(eventData));
       
       const parsed = insertProblemEventSchema.safeParse(eventData);
       if (!parsed.success) {
+        // Log the detailed validation error
+        console.error("Validation error details:", JSON.stringify(parsed.error.errors));
+        
         return res.status(400).json({
           message: "Validation error",
           errors: handleZodError(parsed.error),
@@ -584,6 +598,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               status: WorkOrderStatus.OPEN,
               priority: workOrderPriority || button.workOrderPriority || WorkOrderPriority.HIGH,
               dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // Default due date: tomorrow
+              reportedDate: new Date(), // Add reported date to fix validation error
               assetId: event.assetId || defaultAssetId || button.defaultAssetId,
               assignedTo: button.defaultAssignedTo,
               // No need to manually set these fields as they have defaults in the schema

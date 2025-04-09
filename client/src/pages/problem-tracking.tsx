@@ -33,6 +33,8 @@ const problemReportSchema = z.object({
     z.literal(null),
     z.number().int().positive()
   ]).optional(),
+  // Add timestamp field to match server schema
+  timestamp: z.date().optional().default(() => new Date()),
 });
 
 type ProblemReportData = z.infer<typeof problemReportSchema>;
@@ -133,6 +135,7 @@ export default function ProblemTracking() {
       notes: "",
       locationName: "",
       assetId: undefined,
+      timestamp: new Date(), // Add default timestamp
     },
   });
   
@@ -513,6 +516,8 @@ export default function ProblemTracking() {
                         <FormLabel className="text-base">Related Asset</FormLabel>
                         <Select
                           onValueChange={(value) => {
+                            // Handle "none" selection with explicit null
+                            // This ensures it's serialized correctly when sent to server
                             field.onChange(value === "0" ? null : parseInt(value))
                           }}
                           defaultValue={field.value?.toString() || "0"}
@@ -609,6 +614,8 @@ export default function ProblemTracking() {
                           <FormLabel>Related Asset</FormLabel>
                           <Select
                             onValueChange={(value) => {
+                              // Handle "none" selection with explicit null
+                              // This ensures it's serialized correctly when sent to server
                               field.onChange(value === "0" ? null : parseInt(value))
                             }}
                             defaultValue={field.value?.toString() || "0"}

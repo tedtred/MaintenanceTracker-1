@@ -27,6 +27,7 @@ import {
 } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { isNoIcon, processButtonData, defaultButtonFormValues, handleMutationError, handleMutationSuccess } from "@/lib/problem-utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SidebarNav } from "@/components/sidebar-nav";
 import {
@@ -67,7 +68,7 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import React, { useState } from "react";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { HexColorPicker } from "react-colorful";
@@ -476,29 +477,21 @@ function ProblemButtonSection() {
   // Create button mutation
   const createMutation = useMutation({
     mutationFn: async (data: ButtonFormData) => {
-      // Convert "none" to null or undefined for backend
       const processedData = {
-        ...data,
-        icon: data.icon === "none" ? null : data.icon
+        ...processButtonData(data),
+        order: buttons.length > 0 ? Math.max(...buttons.map(b => b.order)) + 1 : 0
       };
       const response = await apiRequest("POST", "/api/problem-buttons", processedData);
       return await response.json() as ProblemButton;
     },
     onSuccess: () => {
-      toast({
-        title: "Button created",
-        description: "The problem button has been created successfully",
-      });
+      handleMutationSuccess("The problem button has been created successfully", "Button created");
       setIsCreateOpen(false);
-      createForm.reset();
+      createForm.reset(defaultButtonFormValues);
       queryClient.invalidateQueries({ queryKey: ["/api/problem-buttons"] });
     },
     onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      handleMutationError(error, "Failed to create button");
     },
   });
   
@@ -509,20 +502,13 @@ function ProblemButtonSection() {
       return await response.json() as ProblemButton;
     },
     onSuccess: () => {
-      toast({
-        title: "Button updated",
-        description: "The problem button has been updated successfully",
-      });
+      handleMutationSuccess("The problem button has been updated successfully", "Button updated");
       setIsEditOpen(false);
       setSelectedButton(null);
       queryClient.invalidateQueries({ queryKey: ["/api/problem-buttons"] });
     },
     onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      handleMutationError(error, "Failed to update button");
     },
   });
   
@@ -533,18 +519,11 @@ function ProblemButtonSection() {
       return id;
     },
     onSuccess: () => {
-      toast({
-        title: "Button deleted",
-        description: "The problem button has been deleted successfully",
-      });
+      handleMutationSuccess("The problem button has been deleted successfully", "Button deleted");
       queryClient.invalidateQueries({ queryKey: ["/api/problem-buttons"] });
     },
     onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      handleMutationError(error, "Failed to delete button");
     },
   });
   
@@ -584,34 +563,20 @@ function ProblemButtonSection() {
       queryClient.invalidateQueries({ queryKey: ["/api/problem-buttons"] });
     },
     onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      handleMutationError(error, "Failed to reorder buttons");
     },
   });
   
   // Form setup for create button
   const createForm = useForm<ButtonFormData>({
     resolver: zodResolver(buttonFormSchema),
-    defaultValues: {
-      icon: "none",
-      label: "",
-      color: "#6b7280",
-      active: true,
-    },
+    defaultValues: defaultButtonFormValues,
   });
   
   // Form setup for edit button
   const editForm = useForm<ButtonFormData>({
     resolver: zodResolver(buttonFormSchema),
-    defaultValues: {
-      label: "",
-      color: "#6b7280",
-      icon: "none",
-      active: true,
-    },
+    defaultValues: defaultButtonFormValues,
   });
   
   // Handle creating a new button
@@ -622,11 +587,7 @@ function ProblemButtonSection() {
   // Handle editing a button
   const handleEditButton = (data: ButtonFormData) => {
     if (selectedButton) {
-      // Convert "none" to null or undefined for backend
-      const processedData = {
-        ...data,
-        icon: data.icon === "none" ? null : data.icon
-      };
+      const processedData = processButtonData(data);
       updateMutation.mutate({
         id: selectedButton.id,
         data: processedData
@@ -703,13 +664,13 @@ function ProblemButtonSection() {
                         {button.icon === "Wrench" && <Wrench className="h-4 w-4 text-white" />}
                         {button.icon === "BarChart2" && <BarChart2 className="h-4 w-4 text-white" />}
                         {button.icon === "AlertCircle" && <AlertCircle className="h-4 w-4 text-white" />}
-                        {(!button.icon || button.icon === "none") && <AlertCircle className="h-4 w-4 text-white" />}
+                        {isNoIcon(button.icon) && <AlertCircle className="h-4 w-4 text-white" />}
                       </div>
                       <div className="flex-1">
                         <h3 className="font-medium">{button.label}</h3>
                         <div className="text-sm text-muted-foreground flex items-center gap-4">
                           <div>Color: {button.color}</div>
-                          {button.icon && button.icon !== "none" && <div>Icon: {button.icon}</div>}
+                          {!isNoIcon(button.icon) && <div>Icon: {button.icon}</div>}
                           <div>Status: {button.active ? 'Active' : 'Inactive'}</div>
                         </div>
                       </div>
@@ -763,6 +724,9 @@ function ProblemButtonSection() {
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Create Problem Button</DialogTitle>
+            <DialogDescription>
+              Configure a new problem reporting button for users.
+            </DialogDescription>
           </DialogHeader>
           <Form {...createForm}>
             <form onSubmit={createForm.handleSubmit(handleCreateButton)} className="space-y-4">
@@ -869,6 +833,9 @@ function ProblemButtonSection() {
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Edit Problem Button</DialogTitle>
+            <DialogDescription>
+              Modify the settings for this problem reporting button.
+            </DialogDescription>
           </DialogHeader>
           <Form {...editForm}>
             <form onSubmit={editForm.handleSubmit(handleEditButton)} className="space-y-4">

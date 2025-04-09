@@ -13,6 +13,7 @@ import {
   Users,
   BarChart,
   Settings,
+  AlertTriangle,
 } from "lucide-react";
 import { UserRole, AvailablePages } from "@shared/schema";
 
@@ -46,6 +47,12 @@ const items = [
     icon: BarChart,
     href: "/maintenance-analytics",
     id: AvailablePages.MAINTENANCE_ANALYTICS,
+  },
+  {
+    title: "Problem Tracking",
+    icon: AlertTriangle,
+    href: "/problem-tracking",
+    id: AvailablePages.PROBLEM_TRACKING,
   },
   {
     title: "Settings",

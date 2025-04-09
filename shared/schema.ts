@@ -15,6 +15,7 @@ export const AvailablePages = {
   ASSETS: "assets",
   MAINTENANCE_CALENDAR: "maintenance-calendar",
   MAINTENANCE_ANALYTICS: "maintenance-analytics", 
+  PROBLEM_TRACKING: "problem-tracking",
   SETTINGS: "settings",
 } as const;
 
@@ -321,3 +322,62 @@ export const WeekDay = {
   FRIDAY: 5,
   SATURDAY: 6,
 } as const;
+
+// Problem Buttons schema for quick entry
+export const problemButtons = pgTable("problem_buttons", {
+  id: serial("id").primaryKey(),
+  label: text("label").notNull(),
+  color: text("color").notNull().default("#6b7280"), // Default gray color
+  icon: text("icon"), // Icon name from lucide-react
+  order: integer("order").notNull().default(0),
+  active: boolean("active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertProblemButtonSchema = createInsertSchema(problemButtons)
+  .omit({ id: true, createdAt: true, updatedAt: true })
+  .extend({
+    label: z.string().min(1, "Label is required"),
+    color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Must be a valid hex color"),
+    icon: z.string().optional(),
+    order: z.number().int().nonnegative(),
+    active: z.boolean().default(true),
+  });
+
+// Problem Events schema to track reported problems
+export const problemEvents = pgTable("problem_events", {
+  id: serial("id").primaryKey(),
+  buttonId: integer("button_id").references(() => problemButtons.id).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  timestamp: timestamp("timestamp").notNull().defaultNow(),
+  notes: text("notes"),
+  locationName: text("location_name"),
+  assetId: integer("asset_id").references(() => assets.id),
+  resolved: boolean("resolved").notNull().default(false),
+  resolvedAt: timestamp("resolved_at"),
+  resolvedBy: integer("resolved_by").references(() => users.id),
+  workOrderId: integer("work_order_id").references(() => workOrders.id),
+});
+
+export const insertProblemEventSchema = createInsertSchema(problemEvents)
+  .omit({ id: true, resolvedAt: true })
+  .extend({
+    buttonId: z.number().int().positive("Button selection is required"),
+    userId: z.number().int().positive(),
+    timestamp: z.string().or(z.date()).transform((val) =>
+      typeof val === 'string' ? new Date(val) : val
+    ),
+    notes: z.string().optional(),
+    locationName: z.string().optional(),
+    assetId: z.number().int().positive().optional(),
+    resolved: z.boolean().default(false),
+    resolvedBy: z.number().int().positive().optional(),
+    workOrderId: z.number().int().positive().optional(),
+  });
+
+// Add new types
+export type ProblemButton = typeof problemButtons.$inferSelect;
+export type InsertProblemButton = z.infer<typeof insertProblemButtonSchema>;
+export type ProblemEvent = typeof problemEvents.$inferSelect;
+export type InsertProblemEvent = z.infer<typeof insertProblemEventSchema>;

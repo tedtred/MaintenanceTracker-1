@@ -15,7 +15,9 @@ import Assets from "@/pages/assets";
 import MaintenanceCalendar from "@/pages/maintenance-calendar";
 import MaintenanceAnalytics from "@/pages/maintenance-analytics";
 import AdminPage from "@/pages/admin";
-import Settings from "@/pages/Settings"; // Add Settings import
+import Settings from "@/pages/Settings";
+import ProblemTracking from "@/pages/problem-tracking";
+import ProblemTrackingAdmin from "@/pages/problem-tracking-admin";
 
 function Router() {
   return (
@@ -27,8 +29,10 @@ function Router() {
       <ProtectedRoute path="/assets" component={Assets} />
       <ProtectedRoute path="/maintenance-calendar" component={MaintenanceCalendar} />
       <ProtectedRoute path="/maintenance-analytics" component={MaintenanceAnalytics} />
+      <ProtectedRoute path="/problem-tracking" component={ProblemTracking} />
+      <ProtectedRoute path="/problem-tracking-admin" component={ProblemTrackingAdmin} />
       <ProtectedRoute path="/admin" component={AdminPage} />
-      <ProtectedRoute path="/settings" component={Settings} /> {/* Add Settings route */}
+      <ProtectedRoute path="/settings" component={Settings} />
       <Route component={NotFound} />
     </Switch>
   );

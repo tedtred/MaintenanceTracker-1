@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
-import { insertWorkOrderSchema, insertAssetSchema, insertMaintenanceScheduleSchema, insertMaintenanceCompletionSchema } from "@shared/schema";
+import { insertWorkOrderSchema, insertAssetSchema, insertMaintenanceScheduleSchema, insertMaintenanceCompletionSchema, insertProblemButtonSchema, insertProblemEventSchema } from "@shared/schema";
 import { ZodError } from "zod";
 import { upload, handleFileUpload, processCSVImport, generateCSVExport } from "./services/file-storage";
 import path from "path";
@@ -401,6 +401,155 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const asset = await storage.updateAsset(Number(assetId), { status });
       res.json(asset);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Problem tracking endpoints
+  
+  // Problem buttons
+  app.get("/api/problem-buttons", async (req, res, next) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const buttons = await storage.getProblemButtons();
+      res.json(buttons);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  app.get("/api/problem-buttons/:id", async (req, res, next) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const id = parseInt(req.params.id);
+      const button = await storage.getProblemButton(id);
+      if (!button) {
+        return res.status(404).json({ message: "Button not found" });
+      }
+      res.json(button);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  app.post("/api/problem-buttons", async (req, res, next) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const parsed = insertProblemButtonSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          message: "Validation error",
+          errors: handleZodError(parsed.error),
+        });
+      }
+      const button = await storage.createProblemButton(parsed.data);
+      res.status(201).json(button);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  app.patch("/api/problem-buttons/:id", async (req, res, next) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const id = parseInt(req.params.id);
+      const button = await storage.updateProblemButton(id, req.body);
+      res.json(button);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  app.delete("/api/problem-buttons/:id", async (req, res, next) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteProblemButton(id);
+      res.sendStatus(200);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  // Problem events
+  app.get("/api/problem-events", async (req, res, next) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { start, end } = req.query;
+      
+      let events;
+      if (start && end) {
+        events = await storage.getProblemEventsByDate(
+          new Date(start as string),
+          new Date(end as string)
+        );
+      } else {
+        events = await storage.getProblemEvents();
+      }
+      res.json(events);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  app.get("/api/problem-events/:id", async (req, res, next) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const id = parseInt(req.params.id);
+      const event = await storage.getProblemEvent(id);
+      if (!event) {
+        return res.status(404).json({ message: "Event not found" });
+      }
+      res.json(event);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  app.post("/api/problem-events", async (req, res, next) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      // Get the current user's ID from the session
+      const userId = req.user!.id;
+      
+      // Combine request body with user ID
+      const eventData = { ...req.body, userId };
+      
+      const parsed = insertProblemEventSchema.safeParse(eventData);
+      if (!parsed.success) {
+        return res.status(400).json({
+          message: "Validation error",
+          errors: handleZodError(parsed.error),
+        });
+      }
+      
+      const event = await storage.createProblemEvent(parsed.data);
+      res.status(201).json(event);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  app.patch("/api/problem-events/:id", async (req, res, next) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const id = parseInt(req.params.id);
+      const event = await storage.updateProblemEvent(id, req.body);
+      res.json(event);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  app.post("/api/problem-events/:id/resolve", async (req, res, next) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const id = parseInt(req.params.id);
+      const userId = req.user!.id;
+      
+      const event = await storage.resolveProblemEvent(id, userId);
+      res.json(event);
     } catch (error) {
       next(error);
     }

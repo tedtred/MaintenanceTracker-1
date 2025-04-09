@@ -1,7 +1,7 @@
-import { User, WorkOrder, Asset, MaintenanceSchedule, InsertUser, InsertWorkOrder, InsertAsset, InsertMaintenanceSchedule, WorkOrderAttachment, InsertWorkOrderAttachment, MaintenanceCompletion, InsertMaintenanceCompletion } from "@shared/schema";
-import { users, workOrders, assets, maintenanceSchedules, workOrderAttachments, maintenanceCompletions } from "@shared/schema";
+import { User, WorkOrder, Asset, MaintenanceSchedule, InsertUser, InsertWorkOrder, InsertAsset, InsertMaintenanceSchedule, WorkOrderAttachment, InsertWorkOrderAttachment, MaintenanceCompletion, InsertMaintenanceCompletion, ProblemButton, InsertProblemButton, ProblemEvent, InsertProblemEvent } from "@shared/schema";
+import { users, workOrders, assets, maintenanceSchedules, workOrderAttachments, maintenanceCompletions, problemButtons, problemEvents } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, lte, gte, desc } from "drizzle-orm";
+import { eq, and, lte, gte, desc, asc } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -67,6 +67,21 @@ export interface IStorage {
   // Settings
   getSettings(): Promise<Settings>;
   updateSettings(settings: Partial<Settings>): Promise<Settings>;
+  
+  // Problem tracking
+  getProblemButtons(): Promise<ProblemButton[]>;
+  getProblemButton(id: number): Promise<ProblemButton | undefined>;
+  createProblemButton(button: InsertProblemButton): Promise<ProblemButton>;
+  updateProblemButton(id: number, button: Partial<ProblemButton>): Promise<ProblemButton>;
+  deleteProblemButton(id: number): Promise<void>;
+  
+  // Problem events
+  getProblemEvents(): Promise<ProblemEvent[]>;
+  getProblemEventsByDate(startDate: Date, endDate: Date): Promise<ProblemEvent[]>;
+  getProblemEvent(id: number): Promise<ProblemEvent | undefined>;
+  createProblemEvent(event: InsertProblemEvent): Promise<ProblemEvent>;
+  updateProblemEvent(id: number, event: Partial<ProblemEvent>): Promise<ProblemEvent>;
+  resolveProblemEvent(id: number, userId: number): Promise<ProblemEvent>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -477,6 +492,136 @@ export class DatabaseStorage implements IStorage {
       .returning();
 
     return updatedSettings;
+  }
+
+  // Problem tracking methods
+  async getProblemButtons(): Promise<ProblemButton[]> {
+    return await db
+      .select()
+      .from(problemButtons)
+      .orderBy(asc(problemButtons.order));
+  }
+
+  async getProblemButton(id: number): Promise<ProblemButton | undefined> {
+    const [button] = await db
+      .select()
+      .from(problemButtons)
+      .where(eq(problemButtons.id, id));
+    return button;
+  }
+
+  async createProblemButton(button: InsertProblemButton): Promise<ProblemButton> {
+    // Get the current highest order value
+    const buttons = await this.getProblemButtons();
+    const highestOrder = buttons.length > 0 
+      ? Math.max(...buttons.map(b => b.order))
+      : -1;
+
+    const [newButton] = await db
+      .insert(problemButtons)
+      .values({
+        ...button,
+        order: button.order || highestOrder + 1,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+    
+    return newButton;
+  }
+
+  async updateProblemButton(id: number, updates: Partial<ProblemButton>): Promise<ProblemButton> {
+    const [updatedButton] = await db
+      .update(problemButtons)
+      .set({
+        ...updates,
+        updatedAt: new Date()
+      })
+      .where(eq(problemButtons.id, id))
+      .returning();
+    
+    if (!updatedButton) {
+      throw new Error("Button not found");
+    }
+    
+    return updatedButton;
+  }
+
+  async deleteProblemButton(id: number): Promise<void> {
+    await db.delete(problemButtons).where(eq(problemButtons.id, id));
+  }
+
+  // Problem events methods
+  async getProblemEvents(): Promise<ProblemEvent[]> {
+    return await db
+      .select()
+      .from(problemEvents)
+      .orderBy(desc(problemEvents.timestamp));
+  }
+
+  async getProblemEventsByDate(startDate: Date, endDate: Date): Promise<ProblemEvent[]> {
+    return await db
+      .select()
+      .from(problemEvents)
+      .where(
+        and(
+          gte(problemEvents.timestamp, startDate),
+          lte(problemEvents.timestamp, endDate)
+        )
+      )
+      .orderBy(desc(problemEvents.timestamp));
+  }
+
+  async getProblemEvent(id: number): Promise<ProblemEvent | undefined> {
+    const [event] = await db
+      .select()
+      .from(problemEvents)
+      .where(eq(problemEvents.id, id));
+    return event;
+  }
+
+  async createProblemEvent(event: InsertProblemEvent): Promise<ProblemEvent> {
+    const [newEvent] = await db
+      .insert(problemEvents)
+      .values({
+        ...event,
+        timestamp: event.timestamp || new Date()
+      })
+      .returning();
+    
+    return newEvent;
+  }
+
+  async updateProblemEvent(id: number, updates: Partial<ProblemEvent>): Promise<ProblemEvent> {
+    const [updatedEvent] = await db
+      .update(problemEvents)
+      .set(updates)
+      .where(eq(problemEvents.id, id))
+      .returning();
+    
+    if (!updatedEvent) {
+      throw new Error("Event not found");
+    }
+    
+    return updatedEvent;
+  }
+
+  async resolveProblemEvent(id: number, userId: number): Promise<ProblemEvent> {
+    const [resolvedEvent] = await db
+      .update(problemEvents)
+      .set({
+        resolved: true,
+        resolvedAt: new Date(),
+        resolvedBy: userId
+      })
+      .where(eq(problemEvents.id, id))
+      .returning();
+    
+    if (!resolvedEvent) {
+      throw new Error("Event not found");
+    }
+    
+    return resolvedEvent;
   }
 }
 

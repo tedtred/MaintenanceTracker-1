@@ -476,7 +476,12 @@ function ProblemButtonSection() {
   // Create button mutation
   const createMutation = useMutation({
     mutationFn: async (data: ButtonFormData) => {
-      const response = await apiRequest("POST", "/api/problem-buttons", data);
+      // Convert "none" to null or undefined for backend
+      const processedData = {
+        ...data,
+        icon: data.icon === "none" ? null : data.icon
+      };
+      const response = await apiRequest("POST", "/api/problem-buttons", processedData);
       return await response.json() as ProblemButton;
     },
     onSuccess: () => {
@@ -591,6 +596,7 @@ function ProblemButtonSection() {
   const createForm = useForm<ButtonFormData>({
     resolver: zodResolver(buttonFormSchema),
     defaultValues: {
+      icon: "none",
       label: "",
       color: "#6b7280",
       active: true,
@@ -603,6 +609,7 @@ function ProblemButtonSection() {
     defaultValues: {
       label: "",
       color: "#6b7280",
+      icon: "none",
       active: true,
     },
   });
@@ -615,9 +622,14 @@ function ProblemButtonSection() {
   // Handle editing a button
   const handleEditButton = (data: ButtonFormData) => {
     if (selectedButton) {
+      // Convert "none" to null or undefined for backend
+      const processedData = {
+        ...data,
+        icon: data.icon === "none" ? null : data.icon
+      };
       updateMutation.mutate({
         id: selectedButton.id,
-        data
+        data: processedData
       });
     }
   };
@@ -628,7 +640,7 @@ function ProblemButtonSection() {
     editForm.reset({
       label: button.label,
       color: button.color,
-      icon: button.icon || undefined,
+      icon: button.icon || "none",
       active: button.active,
     });
     setIsEditOpen(true);
@@ -691,13 +703,13 @@ function ProblemButtonSection() {
                         {button.icon === "Wrench" && <Wrench className="h-4 w-4 text-white" />}
                         {button.icon === "BarChart2" && <BarChart2 className="h-4 w-4 text-white" />}
                         {button.icon === "AlertCircle" && <AlertCircle className="h-4 w-4 text-white" />}
-                        {!button.icon && <AlertCircle className="h-4 w-4 text-white" />}
+                        {(!button.icon || button.icon === "none") && <AlertCircle className="h-4 w-4 text-white" />}
                       </div>
                       <div className="flex-1">
                         <h3 className="font-medium">{button.label}</h3>
                         <div className="text-sm text-muted-foreground flex items-center gap-4">
                           <div>Color: {button.color}</div>
-                          {button.icon && <div>Icon: {button.icon}</div>}
+                          {button.icon && button.icon !== "none" && <div>Icon: {button.icon}</div>}
                           <div>Status: {button.active ? 'Active' : 'Inactive'}</div>
                         </div>
                       </div>
@@ -801,7 +813,7 @@ function ProblemButtonSection() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                         {availableIcons.map((icon) => (
                           <SelectItem key={icon.value} value={icon.value}>
                             <div className="flex items-center">
@@ -907,7 +919,7 @@ function ProblemButtonSection() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                         {availableIcons.map((icon) => (
                           <SelectItem key={icon.value} value={icon.value}>
                             <div className="flex items-center">

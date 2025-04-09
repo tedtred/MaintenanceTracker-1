@@ -379,457 +379,459 @@ export default function ProblemTrackingAdmin() {
       
       {/* Create Button Dialog */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[500px] max-h-[85vh]">
           <DialogHeader>
             <DialogTitle>Create Problem Button</DialogTitle>
           </DialogHeader>
-          <Form {...createForm}>
-            <form onSubmit={createForm.handleSubmit(handleCreateButton)} className="space-y-4">
-              <FormField
-                control={createForm.control}
-                name="label"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Button Label</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., Equipment Failure" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={createForm.control}
-                name="color"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Button Color</FormLabel>
-                    <FormControl>
-                      <div className="space-y-2">
-                        <Input {...field} />
-                        <HexColorPicker color={field.value} onChange={(color) => field.onChange(color)} />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={createForm.control}
-                name="icon"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Icon (Optional)</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value || "none"}
-                    >
+          <ScrollArea className="max-h-[65vh] pr-4">
+            <Form {...createForm}>
+              <form onSubmit={createForm.handleSubmit(handleCreateButton)} className="space-y-4">
+                <FormField
+                  control={createForm.control}
+                  name="label"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Button Label</FormLabel>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select an icon" />
-                        </SelectTrigger>
+                        <Input placeholder="e.g., Equipment Failure" {...field} />
                       </FormControl>
-                      <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
-                        {availableIcons.map((icon) => (
-                          <SelectItem key={icon.value} value={icon.value}>
-                            <div className="flex items-center">
-                              {icon.icon}
-                              <span className="ml-2">{icon.label}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={createForm.control}
-                name="active"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-                    <div className="space-y-0.5">
-                      <FormLabel>Active</FormLabel>
-                      <FormDescription>
-                        Whether this button is visible to users
-                      </FormDescription>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              
-              <div className="mt-6 p-4 border rounded-lg bg-slate-50 dark:bg-slate-900">
-                <h3 className="text-lg font-bold text-blue-600 dark:text-blue-400">Work Order Template Settings</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Configure this button to automatically create a work order with predefined fields when pressed
-                </p>
-              </div>
-              
-              <FormField
-                control={createForm.control}
-                name="createWorkOrder"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-                    <div className="space-y-0.5">
-                      <FormLabel>Create Work Order</FormLabel>
-                      <FormDescription>
-                        Automatically generate a work order when this problem is reported
-                      </FormDescription>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              
-              {createForm.watch("createWorkOrder") && (
-                <>
-                  <FormField
-                    control={createForm.control}
-                    name="workOrderTitle"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Work Order Title Template</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g., [asset] Issue - Needs Repair" {...field} />
-                        </FormControl>
-                        <FormDescription>
-                          Use [asset] to include the asset name automatically
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={createForm.control}
-                    name="workOrderDescription"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Work Order Description Template</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder="e.g., Issue reported at [location]. Details: [notes]" 
-                            {...field} 
-                            className="min-h-24"
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Use [asset], [location], and [notes] to include details automatically
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={createForm.control}
-                    name="workOrderPriority"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Default Priority</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select priority" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="LOW">Low</SelectItem>
-                            <SelectItem value="MEDIUM">Medium</SelectItem>
-                            <SelectItem value="HIGH">High</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={createForm.control}
-                    name="notifyMaintenance"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-                        <div className="space-y-0.5">
-                          <FormLabel>Notify Maintenance Team</FormLabel>
-                          <FormDescription>
-                            Send notification to maintenance team when work order is created
-                          </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={createForm.control}
+                  name="color"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Button Color</FormLabel>
+                      <FormControl>
+                        <div className="space-y-2">
+                          <Input {...field} />
+                          <HexColorPicker color={field.value} onChange={(color) => field.onChange(color)} />
                         </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={createForm.control}
+                  name="icon"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Icon (Optional)</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value || "none"}
+                      >
                         <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select an icon" />
+                          </SelectTrigger>
                         </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                </>
-              )}
-              
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
-                  <X className="mr-2 h-4 w-4" />
-                  Cancel
-                </Button>
-                <Button 
-                  type="submit" 
-                  onClick={createForm.handleSubmit(handleCreateButton)}
-                  disabled={createMutation.isPending}
-                >
-                  <Save className="mr-2 h-4 w-4" />
-                  {createMutation.isPending ? "Creating..." : "Create Button"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
+                        <SelectContent>
+                          <SelectItem value="none">None</SelectItem>
+                          {availableIcons.map((icon) => (
+                            <SelectItem key={icon.value} value={icon.value}>
+                              <div className="flex items-center">
+                                {icon.icon}
+                                <span className="ml-2">{icon.label}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={createForm.control}
+                  name="active"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                      <div className="space-y-0.5">
+                        <FormLabel>Active</FormLabel>
+                        <FormDescription>
+                          Whether this button is visible to users
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                
+                <div className="mt-6 p-4 border rounded-lg bg-slate-50 dark:bg-slate-900">
+                  <h3 className="text-lg font-bold text-blue-600 dark:text-blue-400">Work Order Template Settings</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Configure this button to automatically create a work order with predefined fields when pressed
+                  </p>
+                </div>
+                
+                <FormField
+                  control={createForm.control}
+                  name="createWorkOrder"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                      <div className="space-y-0.5">
+                        <FormLabel>Create Work Order</FormLabel>
+                        <FormDescription>
+                          Automatically generate a work order when this problem is reported
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                
+                {createForm.watch("createWorkOrder") && (
+                  <>
+                    <FormField
+                      control={createForm.control}
+                      name="workOrderTitle"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Work Order Title Template</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g., [asset] Issue - Needs Repair" {...field} />
+                          </FormControl>
+                          <FormDescription>
+                            Use [asset] to include the asset name automatically
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={createForm.control}
+                      name="workOrderDescription"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Work Order Description Template</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="e.g., Issue reported at [location]. Details: [notes]" 
+                              {...field} 
+                              className="min-h-24"
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Use [asset], [location], and [notes] to include details automatically
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={createForm.control}
+                      name="workOrderPriority"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Default Priority</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select priority" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="LOW">Low</SelectItem>
+                              <SelectItem value="MEDIUM">Medium</SelectItem>
+                              <SelectItem value="HIGH">High</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={createForm.control}
+                      name="notifyMaintenance"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                          <div className="space-y-0.5">
+                            <FormLabel>Notify Maintenance Team</FormLabel>
+                            <FormDescription>
+                              Send notification to maintenance team when work order is created
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </>
+                )}
+              </form>
+            </Form>
+          </ScrollArea>
+          <DialogFooter className="mt-4 pt-4 border-t">
+            <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
+              <X className="mr-2 h-4 w-4" />
+              Cancel
+            </Button>
+            <Button 
+              type="submit" 
+              onClick={createForm.handleSubmit(handleCreateButton)}
+              disabled={createMutation.isPending}
+            >
+              <Save className="mr-2 h-4 w-4" />
+              {createMutation.isPending ? "Creating..." : "Create Button"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
       
       {/* Edit Button Dialog */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[500px] max-h-[85vh]">
           <DialogHeader>
             <DialogTitle>Edit Problem Button</DialogTitle>
           </DialogHeader>
-          <Form {...editForm}>
-            <form onSubmit={editForm.handleSubmit(handleEditButton)} className="space-y-4">
-              <FormField
-                control={editForm.control}
-                name="label"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Button Label</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={editForm.control}
-                name="color"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Button Color</FormLabel>
-                    <FormControl>
-                      <div className="space-y-2">
-                        <Input {...field} />
-                        <HexColorPicker color={field.value} onChange={(color) => field.onChange(color)} />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={editForm.control}
-                name="icon"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Icon (Optional)</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value || "none"}
-                    >
+          <ScrollArea className="max-h-[65vh] pr-4">
+            <Form {...editForm}>
+              <form onSubmit={editForm.handleSubmit(handleEditButton)} className="space-y-4">
+                <FormField
+                  control={editForm.control}
+                  name="label"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Button Label</FormLabel>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select an icon" />
-                        </SelectTrigger>
+                        <Input {...field} />
                       </FormControl>
-                      <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
-                        {availableIcons.map((icon) => (
-                          <SelectItem key={icon.value} value={icon.value}>
-                            <div className="flex items-center">
-                              {icon.icon}
-                              <span className="ml-2">{icon.label}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={editForm.control}
-                name="active"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-                    <div className="space-y-0.5">
-                      <FormLabel>Active</FormLabel>
-                      <FormDescription>
-                        Whether this button is visible to users
-                      </FormDescription>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              
-              <div className="mt-6 p-4 border rounded-lg bg-slate-50 dark:bg-slate-900">
-                <h3 className="text-lg font-bold text-blue-600 dark:text-blue-400">Work Order Template Settings</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Configure this button to automatically create a work order with predefined fields when pressed
-                </p>
-              </div>
-              
-              <FormField
-                control={editForm.control}
-                name="createWorkOrder"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-                    <div className="space-y-0.5">
-                      <FormLabel>Create Work Order</FormLabel>
-                      <FormDescription>
-                        Automatically generate a work order when this problem is reported
-                      </FormDescription>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              
-              {editForm.watch("createWorkOrder") && (
-                <>
-                  <FormField
-                    control={editForm.control}
-                    name="workOrderTitle"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Work Order Title Template</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g., [asset] Issue - Needs Repair" {...field} />
-                        </FormControl>
-                        <FormDescription>
-                          Use [asset] to include the asset name automatically
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={editForm.control}
-                    name="workOrderDescription"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Work Order Description Template</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder="e.g., Issue reported at [location]. Details: [notes]" 
-                            {...field} 
-                            className="min-h-24"
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Use [asset], [location], and [notes] to include details automatically
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={editForm.control}
-                    name="workOrderPriority"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Default Priority</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select priority" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="LOW">Low</SelectItem>
-                            <SelectItem value="MEDIUM">Medium</SelectItem>
-                            <SelectItem value="HIGH">High</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={editForm.control}
-                    name="notifyMaintenance"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-                        <div className="space-y-0.5">
-                          <FormLabel>Notify Maintenance Team</FormLabel>
-                          <FormDescription>
-                            Send notification to maintenance team when work order is created
-                          </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={editForm.control}
+                  name="color"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Button Color</FormLabel>
+                      <FormControl>
+                        <div className="space-y-2">
+                          <Input {...field} />
+                          <HexColorPicker color={field.value} onChange={(color) => field.onChange(color)} />
                         </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={editForm.control}
+                  name="icon"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Icon (Optional)</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value || "none"}
+                      >
                         <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select an icon" />
+                          </SelectTrigger>
                         </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                </>
-              )}
-              
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsEditOpen(false)}>
-                  <X className="mr-2 h-4 w-4" />
-                  Cancel
-                </Button>
-                <Button 
-                  type="submit" 
-                  onClick={editForm.handleSubmit(handleEditButton)}
-                  disabled={updateMutation.isPending}
-                >
-                  <Save className="mr-2 h-4 w-4" />
-                  {updateMutation.isPending ? "Saving..." : "Save Changes"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
+                        <SelectContent>
+                          <SelectItem value="none">None</SelectItem>
+                          {availableIcons.map((icon) => (
+                            <SelectItem key={icon.value} value={icon.value}>
+                              <div className="flex items-center">
+                                {icon.icon}
+                                <span className="ml-2">{icon.label}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={editForm.control}
+                  name="active"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                      <div className="space-y-0.5">
+                        <FormLabel>Active</FormLabel>
+                        <FormDescription>
+                          Whether this button is visible to users
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                
+                <div className="mt-6 p-4 border rounded-lg bg-slate-50 dark:bg-slate-900">
+                  <h3 className="text-lg font-bold text-blue-600 dark:text-blue-400">Work Order Template Settings</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Configure this button to automatically create a work order with predefined fields when pressed
+                  </p>
+                </div>
+                
+                <FormField
+                  control={editForm.control}
+                  name="createWorkOrder"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                      <div className="space-y-0.5">
+                        <FormLabel>Create Work Order</FormLabel>
+                        <FormDescription>
+                          Automatically generate a work order when this problem is reported
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                
+                {editForm.watch("createWorkOrder") && (
+                  <>
+                    <FormField
+                      control={editForm.control}
+                      name="workOrderTitle"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Work Order Title Template</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g., [asset] Issue - Needs Repair" {...field} />
+                          </FormControl>
+                          <FormDescription>
+                            Use [asset] to include the asset name automatically
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={editForm.control}
+                      name="workOrderDescription"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Work Order Description Template</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="e.g., Issue reported at [location]. Details: [notes]" 
+                              {...field} 
+                              className="min-h-24"
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Use [asset], [location], and [notes] to include details automatically
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={editForm.control}
+                      name="workOrderPriority"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Default Priority</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select priority" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="LOW">Low</SelectItem>
+                              <SelectItem value="MEDIUM">Medium</SelectItem>
+                              <SelectItem value="HIGH">High</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={editForm.control}
+                      name="notifyMaintenance"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                          <div className="space-y-0.5">
+                            <FormLabel>Notify Maintenance Team</FormLabel>
+                            <FormDescription>
+                              Send notification to maintenance team when work order is created
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </>
+                )}
+              </form>
+            </Form>
+          </ScrollArea>
+          <DialogFooter className="mt-4 pt-4 border-t">
+            <Button variant="outline" onClick={() => setIsEditOpen(false)}>
+              <X className="mr-2 h-4 w-4" />
+              Cancel
+            </Button>
+            <Button 
+              type="submit" 
+              onClick={editForm.handleSubmit(handleEditButton)}
+              disabled={updateMutation.isPending}
+            >
+              <Save className="mr-2 h-4 w-4" />
+              {updateMutation.isPending ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

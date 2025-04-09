@@ -751,11 +751,10 @@ export default function MaintenanceCalendar() {
                                 <SelectValue placeholder="Update Status" />
                               </SelectTrigger>
                               <SelectContent>
-                                {Object.values(AssetStatus).map((status) => (
-                                  <SelectItem key={status} value={status}>
-                                    {status}
-                                  </SelectItem>
-                                ))}
+                                <SelectItem value="OPERATIONAL">OPERATIONAL</SelectItem>
+                                <SelectItem value="MAINTENANCE">MAINTENANCE</SelectItem>
+                                <SelectItem value="OFFLINE">OFFLINE</SelectItem>
+                                <SelectItem value="DECOMMISSIONED">DECOMMISSIONED</SelectItem>
                               </SelectContent>
                             </Select>
                           );
@@ -814,7 +813,7 @@ export default function MaintenanceCalendar() {
                         </div>
                         
                         {selectedEvent.resource.affectsAssetStatus && 
-                         selectedEvent.resource.status === MaintenanceStatus.WAITING_ON_PARTS && (
+                         selectedEvent.resource.status === "WAITING_ON_PARTS" && (
                           <div className="mt-4 p-3 rounded-md bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800">
                             <div className="flex items-start gap-2">
                               <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
@@ -920,13 +919,13 @@ export default function MaintenanceCalendar() {
                           </div>
                           <div className="flex items-center gap-2">
                             <Switch 
-                              checked={selectedEvent.resource.status === MaintenanceStatus.WAITING_ON_PARTS}
+                              checked={selectedEvent.resource.status === "WAITING_ON_PARTS"}
                               onCheckedChange={(checked) => {
                                 // Set the maintenance schedule status to WAITING_ON_PARTS or IN_PROGRESS
                                 updateMaintenanceScheduleMutation.mutate({
                                   id: selectedEvent.resource.id,
                                   updates: { 
-                                    status: checked ? MaintenanceStatus.WAITING_ON_PARTS : MaintenanceStatus.IN_PROGRESS
+                                    status: checked ? "WAITING_ON_PARTS" : "IN_PROGRESS"
                                   }
                                 });
                                 
@@ -934,7 +933,7 @@ export default function MaintenanceCalendar() {
                                 if (selectedEvent.resource.affectsAssetStatus && checked) {
                                   updateAssetStatusMutation.mutate({
                                     assetId: selectedEvent.resource.assetId,
-                                    status: AssetStatus.MAINTENANCE
+                                    status: "MAINTENANCE"
                                   });
                                 }
                               }}

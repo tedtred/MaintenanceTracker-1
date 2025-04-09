@@ -27,6 +27,7 @@ import { AlertTriangle, AlertCircle, BarChart2, Wrench, Check, Plus, X, Settings
 const problemReportSchema = z.object({
   buttonId: z.number().int().positive("Button selection is required"),
   notes: z.string().optional(),
+  problemDetails: z.string().optional(),
   locationName: z.string().optional(),
   // Handle assetId as either null, undefined, or a positive number
   assetId: z.union([
@@ -106,10 +107,22 @@ export default function ProblemTracking() {
     },
   });
   
+  // Define an interface for the solution notes form
+  interface SolutionFormData {
+    solutionNotes: string;
+  }
+  
+  // Solution notes form setup for problem resolution
+  const solutionForm = useForm<SolutionFormData>({
+    defaultValues: {
+      solutionNotes: "",
+    }
+  });
+  
   // Resolve problem mutation
   const resolveMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const response = await apiRequest("POST", `/api/problem-events/${id}/resolve`);
+    mutationFn: async ({ id, solutionNotes }: { id: number, solutionNotes: string }) => {
+      const response = await apiRequest("POST", `/api/problem-events/${id}/resolve`, { solutionNotes });
       const event = await response.json();
       return event;
     },
@@ -137,6 +150,7 @@ export default function ProblemTracking() {
     resolver: zodResolver(problemReportSchema),
     defaultValues: {
       notes: "",
+      problemDetails: "",
       locationName: "",
       assetId: undefined,
       timestamp: new Date(), // Add default timestamp
@@ -482,14 +496,35 @@ export default function ProblemTracking() {
                     name="notes"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-base">Description</FormLabel>
+                        <FormLabel className="text-base">Brief Description</FormLabel>
                         <FormControl>
                           <Textarea
-                            placeholder="Describe the problem..."
+                            placeholder="Describe the problem briefly..."
+                            className="min-h-[80px]"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="problemDetails"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-base">Detailed Information</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Provide additional technical details about the problem..."
                             className="min-h-[100px]"
                             {...field}
                           />
                         </FormControl>
+                        <FormDescription>
+                          Include specific information like error messages, symptoms, or troubleshooting steps already tried
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -579,10 +614,28 @@ export default function ProblemTracking() {
                     name="notes"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Description</FormLabel>
+                        <FormLabel>Brief Description</FormLabel>
                         <FormControl>
                           <Textarea
-                            placeholder="Describe the problem..."
+                            placeholder="Describe the problem briefly..."
+                            className="min-h-[80px]"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="problemDetails"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Technical Details</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Provide additional details or troubleshooting information..."
                             className="min-h-[100px]"
                             {...field}
                           />
@@ -685,6 +738,13 @@ export default function ProblemTracking() {
                 </div>
               )}
               
+              {selectedEvent.problemDetails && (
+                <div>
+                  <h3 className="font-medium">Problem Details</h3>
+                  <p>{selectedEvent.problemDetails}</p>
+                </div>
+              )}
+              
               <div className="grid grid-cols-2 gap-4">
                 {selectedEvent.locationName && (
                   <div>
@@ -710,6 +770,33 @@ export default function ProblemTracking() {
                   <p>{format(new Date(selectedEvent.timestamp), "MMM d, h:mm a")}</p>
                 </div>
               </div>
+              
+              {/* Solution Notes Form */}
+              <div className="border-t pt-4 mt-4">
+                <h3 className="font-medium mb-2">Resolution Notes</h3>
+                <Form {...solutionForm}>
+                  <form className="space-y-4">
+                    <FormField
+                      control={solutionForm.control}
+                      name="solutionNotes"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Enter solution details or notes about how the problem was resolved"
+                              className="min-h-[100px]"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Provide details about how this problem was resolved
+                          </FormDescription>
+                        </FormItem>
+                      )}
+                    />
+                  </form>
+                </Form>
+              </div>
             </div>
           )}
           <DialogFooter className="mt-6 pt-4 border-t gap-2">
@@ -722,7 +809,10 @@ export default function ProblemTracking() {
             </Button>
             <Button 
               variant="default" 
-              onClick={() => selectedEvent && resolveMutation.mutate(selectedEvent.id)}
+              onClick={() => selectedEvent && resolveMutation.mutate({
+                id: selectedEvent.id,
+                solutionNotes: solutionForm.getValues().solutionNotes
+              })}
               disabled={resolveMutation.isPending}
             >
               <Check className="mr-2 h-4 w-4" />

@@ -704,9 +704,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const userId = req.user!.id;
+      const { solutionNotes } = req.body;
       
-      const event = await storage.resolveProblemEvent(id, userId);
-      res.json(event);
+      // Update the event with solution notes and resolve it
+      const event = await storage.updateProblemEvent(id, { solutionNotes });
+      const resolvedEvent = await storage.resolveProblemEvent(id, userId);
+      
+      res.json(resolvedEvent);
     } catch (error) {
       next(error);
     }

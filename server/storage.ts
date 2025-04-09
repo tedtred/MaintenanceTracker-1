@@ -215,7 +215,7 @@ export class DatabaseStorage implements IStorage {
           else if (key === 'assignedTo') updateData.assignedTo = updates.assignedTo;
           else if (key === 'assetId') updateData.assetId = updates.assetId;
           else if (key === 'notes') updateData.notes = updates.notes;
-          else if (key === 'completionNotes') updateData.completionNotes = updates.completionNotes;
+          else if (key === 'solutionNotes') updateData.solutionNotes = updates.solutionNotes;
         }
       });
       
@@ -772,8 +772,8 @@ export class DatabaseStorage implements IStorage {
           
           await this.updateWorkOrder(workOrder.id, {
             status: WorkOrderStatus.COMPLETED,
-            completionNotes: workOrder.completionNotes 
-              ? `${workOrder.completionNotes}\nAutomatically completed when problem was resolved.` 
+            solutionNotes: workOrder.solutionNotes 
+              ? `${workOrder.solutionNotes}\nAutomatically completed when problem was resolved.` 
               : "Automatically completed when problem was resolved."
           });
         }

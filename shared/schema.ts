@@ -53,6 +53,8 @@ export const workOrders = pgTable("work_orders", {
   completedDate: timestamp("completed_date"),
   affectsAssetStatus: boolean("affects_asset_status").default(false).notNull(), // New field
   partsRequired: text("parts_required"), // New field for parts tracking
+  problemDetails: text("problem_details"), // Detailed description of the problem
+  solutionNotes: text("solution_notes"), // Notes about how the problem was resolved
   createdBy: integer("created_by").references(() => users.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -78,6 +80,8 @@ export const insertWorkOrderSchema = createInsertSchema(workOrders)
     ),
     affectsAssetStatus: z.boolean().default(false),
     partsRequired: z.string().optional(),
+    problemDetails: z.string().optional(),
+    solutionNotes: z.string().optional(),
     createdBy: z.number().optional(),
     createdAt: z.string().or(z.date()).optional(),
     updatedAt: z.string().or(z.date()).optional(),
@@ -396,6 +400,8 @@ export const problemEvents = pgTable("problem_events", {
   resolvedAt: timestamp("resolved_at"),
   resolvedBy: integer("resolved_by").references(() => users.id),
   workOrderId: integer("work_order_id").references(() => workOrders.id),
+  problemDetails: text("problem_details"), // Detailed description of the problem
+  solutionNotes: text("solution_notes"), // Notes about how the problem was resolved
 });
 
 export const insertProblemEventSchema = createInsertSchema(problemEvents)
@@ -416,6 +422,8 @@ export const insertProblemEventSchema = createInsertSchema(problemEvents)
     resolved: z.boolean().default(false),
     resolvedBy: z.number().int().positive().optional(),
     workOrderId: z.number().int().positive().optional(),
+    problemDetails: z.string().optional(),
+    solutionNotes: z.string().optional(),
   });
 
 // Add new types

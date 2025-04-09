@@ -12,6 +12,8 @@ import {
   InsertMaintenanceCompletion,
   MaintenanceCompletion,
   Settings,
+  AssetStatus,
+  MaintenanceStatus,
 } from "@shared/schema";
 import { Card } from "@/components/ui/card";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -35,7 +37,7 @@ import {
 } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { Textarea } from "@/components/ui/textarea";
-import { Trash2, Info, CheckCircle2, CalendarDays, ListTodo, Calendar as CalendarIcon } from "lucide-react";
+import { Trash2, Info, CheckCircle2, CalendarDays, ListTodo, Calendar as CalendarIcon, AlertTriangle } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Table,
@@ -53,6 +55,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const localizer = dateFnsLocalizer({
@@ -227,6 +230,52 @@ export default function MaintenanceCalendar() {
       toast({
         title: "Success",
         description: "Maintenance schedule removed",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Mutation for updating asset status
+  const updateAssetStatusMutation = useMutation({
+    mutationFn: async ({ assetId, status }: { assetId: number; status: string }) => {
+      const res = await apiRequest("PATCH", `/api/assets/${assetId}`, {
+        status
+      });
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/assets"] });
+      toast({
+        title: "Success",
+        description: "Asset status updated successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Mutation for updating maintenance schedule to track impact on asset status
+  const updateMaintenanceScheduleMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: number; updates: Partial<MaintenanceSchedule> }) => {
+      const res = await apiRequest("PATCH", `/api/maintenance-schedules/${id}`, updates);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/maintenance-schedules"] });
+      toast({
+        title: "Success",
+        description: "Maintenance schedule updated successfully",
       });
     },
     onError: (error: Error) => {
@@ -679,8 +728,40 @@ export default function MaintenanceCalendar() {
                   </div>
 
                   {selectedEvent.resource.assetId && (
-                    <div className="space-y-2">
-                      <h3 className="font-medium">Asset Information</h3>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-medium">Asset Information</h3>
+                        
+                        {/* Add asset status selector */}
+                        {(() => {
+                          const asset = getAssetDetails(selectedEvent.resource.assetId);
+                          if (!asset) return null;
+                          
+                          return (
+                            <Select
+                              value={asset.status}
+                              onValueChange={(status) => 
+                                updateAssetStatusMutation.mutate({ 
+                                  assetId: selectedEvent.resource.assetId, 
+                                  status 
+                                })
+                              }
+                            >
+                              <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="Update Status" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {Object.values(AssetStatus).map((status) => (
+                                  <SelectItem key={status} value={status}>
+                                    {status}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          );
+                        })()}
+                      </div>
+                      
                       {(() => {
                         const asset = getAssetDetails(selectedEvent.resource.assetId);
                         return asset ? (
@@ -699,13 +780,56 @@ export default function MaintenanceCalendar() {
                             </div>
                             <div>
                               <p className="text-muted-foreground">Status</p>
-                              <p>{asset.status}</p>
+                              <p className="font-medium">{asset.status}</p>
                             </div>
                           </div>
                         ) : (
                           <p className="text-sm text-muted-foreground">Asset information not available</p>
                         );
                       })()}
+                      
+                      {/* Add equipment impact toggle */}
+                      <div className="border rounded-lg p-4 bg-muted/30">
+                        <div className="flex items-center justify-between gap-4">
+                          <div>
+                            <h4 className="font-medium mb-1">Equipment Impact</h4>
+                            <p className="text-sm text-muted-foreground">
+                              When enabled, this maintenance schedule affects equipment operational status
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-muted-foreground">
+                              {selectedEvent.resource.affectsAssetStatus ? "Enabled" : "Disabled"}
+                            </span>
+                            <Switch 
+                              checked={selectedEvent.resource.affectsAssetStatus}
+                              onCheckedChange={(checked) => {
+                                updateMaintenanceScheduleMutation.mutate({
+                                  id: selectedEvent.resource.id,
+                                  updates: { affectsAssetStatus: checked }
+                                });
+                              }}
+                            />
+                          </div>
+                        </div>
+                        
+                        {selectedEvent.resource.affectsAssetStatus && 
+                         selectedEvent.resource.status === MaintenanceStatus.WAITING_ON_PARTS && (
+                          <div className="mt-4 p-3 rounded-md bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800">
+                            <div className="flex items-start gap-2">
+                              <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                              <div>
+                                <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                                  This maintenance is waiting for parts
+                                </p>
+                                <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                                  The asset status will be set to "MAINTENANCE" automatically.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
 
@@ -784,6 +908,40 @@ export default function MaintenanceCalendar() {
                           </FormItem>
                         )}
                       />
+                      
+                      {/* Parts Required toggle */}
+                      <div className="border rounded-lg p-4 bg-muted/30">
+                        <div className="flex items-center justify-between gap-4">
+                          <div>
+                            <h4 className="font-medium mb-1">Waiting for Parts</h4>
+                            <p className="text-sm text-muted-foreground">
+                              Enable this if maintenance is incomplete due to waiting for parts
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Switch 
+                              checked={selectedEvent.resource.status === MaintenanceStatus.WAITING_ON_PARTS}
+                              onCheckedChange={(checked) => {
+                                // Set the maintenance schedule status to WAITING_ON_PARTS or IN_PROGRESS
+                                updateMaintenanceScheduleMutation.mutate({
+                                  id: selectedEvent.resource.id,
+                                  updates: { 
+                                    status: checked ? MaintenanceStatus.WAITING_ON_PARTS : MaintenanceStatus.IN_PROGRESS
+                                  }
+                                });
+                                
+                                // Also update the asset status if equipment impact is enabled
+                                if (selectedEvent.resource.affectsAssetStatus && checked) {
+                                  updateAssetStatusMutation.mutate({
+                                    assetId: selectedEvent.resource.assetId,
+                                    status: AssetStatus.MAINTENANCE
+                                  });
+                                }
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
 
                       <div className="flex justify-end gap-2">
                         <Button

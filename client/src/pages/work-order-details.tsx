@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useParams, Link } from "wouter";
-import { WorkOrder, WorkOrderStatus, WorkOrderPriority } from "@shared/schema";
+import { WorkOrder, WorkOrderStatus, WorkOrderPriority, Asset, AssetStatus } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -14,6 +14,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -26,7 +27,8 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, ArrowLeft } from "lucide-react";
+import { Loader2, ArrowLeft, Wrench, AlertTriangle } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 export default function WorkOrderDetails() {
   const { id } = useParams<{ id: string }>();
@@ -36,6 +38,38 @@ export default function WorkOrderDetails() {
   const { data: workOrder, isLoading, error } = useQuery<WorkOrder>({
     queryKey: [`/api/work-orders/${workOrderId}`],
     enabled: !!workOrderId,
+  });
+  
+  // Fetch the asset if assetId is available
+  const { data: asset } = useQuery<Asset>({
+    queryKey: [`/api/assets/${workOrder?.assetId}`],
+    enabled: !!workOrder?.assetId,
+  });
+
+  // Add mutation for updating the asset status
+  const updateAssetStatusMutation = useMutation({
+    mutationFn: async (status: string) => {
+      if (!workOrder?.assetId) throw new Error("No asset ID");
+      
+      const res = await apiRequest("PATCH", `/api/assets/${workOrder.assetId}`, {
+        status
+      });
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/assets/${workOrder?.assetId}`] });
+      toast({
+        title: "Success",
+        description: "Asset status updated successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   const updateMutation = useMutation({
@@ -48,7 +82,18 @@ export default function WorkOrderDetails() {
         description: data.description,
         status: data.status,
         priority: data.priority,
+        affectsAssetStatus: data.affectsAssetStatus,
+        partsRequired: data.partsRequired
       };
+
+      // If status is "WAITING_ON_PARTS" and affectsAssetStatus is true,
+      // update the asset status to MAINTENANCE
+      if (data.status === WorkOrderStatus.WAITING_ON_PARTS && 
+          data.affectsAssetStatus && 
+          workOrder?.assetId && 
+          asset?.status !== AssetStatus.MAINTENANCE) {
+        updateAssetStatusMutation.mutate(AssetStatus.MAINTENANCE);
+      }
 
       const res = await apiRequest("PATCH", `/api/work-orders/${workOrderId}`, updates);
       return await res.json();
@@ -75,6 +120,8 @@ export default function WorkOrderDetails() {
       description: workOrder?.description || "",
       status: workOrder?.status || WorkOrderStatus.OPEN,
       priority: workOrder?.priority || WorkOrderPriority.MEDIUM,
+      affectsAssetStatus: workOrder?.affectsAssetStatus || false,
+      partsRequired: workOrder?.partsRequired || "",
     },
   });
 
@@ -231,6 +278,105 @@ export default function WorkOrderDetails() {
                       )}
                     />
                   </div>
+                  
+                  {/* Conditionally show parts required input when status is WAITING_ON_PARTS */}
+                  {form.watch("status") === WorkOrderStatus.WAITING_ON_PARTS && (
+                    <FormField
+                      control={form.control}
+                      name="partsRequired"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Parts Required</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="List the parts needed for this work order" 
+                              className="min-h-[80px]"
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Specify the parts needed to complete this maintenance task
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+                  
+                  {/* Show Asset Status Section if assetId exists */}
+                  {workOrder.assetId && (
+                    <div className="border p-4 rounded-lg bg-muted/40 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="font-medium">Asset Information</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {asset?.name} - Current status: <span className="font-medium">{asset?.status}</span>
+                          </p>
+                        </div>
+                        
+                        {/* Add direct asset status update button */}
+                        {asset && (
+                          <Select
+                            value={asset.status}
+                            onValueChange={(status) => updateAssetStatusMutation.mutate(status)}
+                          >
+                            <SelectTrigger className="w-[180px]">
+                              <SelectValue placeholder="Change Status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {Object.values(AssetStatus).map((status) => (
+                                <SelectItem key={status} value={status}>
+                                  {status}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      </div>
+                      
+                      <FormField
+                        control={form.control}
+                        name="affectsAssetStatus"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                            <div className="space-y-0.5">
+                              <FormLabel className="text-base">
+                                <div className="flex items-center">
+                                  <Wrench className="w-4 h-4 mr-2" />
+                                  This work order affects equipment status
+                                </div>
+                              </FormLabel>
+                              <FormDescription>
+                                When enabled, this work order will update the asset's status automatically
+                              </FormDescription>
+                            </div>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      
+                      {form.watch("affectsAssetStatus") && (
+                        <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/50 p-3">
+                          <div className="flex gap-2">
+                            <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-500 shrink-0 mt-0.5" />
+                            <div className="space-y-1">
+                              <p className="font-medium text-amber-800 dark:text-amber-200">Asset Status Will Change</p>
+                              <p className="text-sm text-amber-700 dark:text-amber-300">
+                                When this work order status is "Waiting on Parts", the asset status will 
+                                automatically be set to "Maintenance".
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
                   <Button
                     type="submit"
                     className="w-full"

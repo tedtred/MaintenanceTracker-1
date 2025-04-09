@@ -49,6 +49,8 @@ export const workOrders = pgTable("work_orders", {
   assetId: integer("asset_id").references(() => assets.id),
   reportedDate: timestamp("reported_date").notNull().defaultNow(),
   completedDate: timestamp("completed_date"),
+  affectsAssetStatus: boolean("affects_asset_status").default(false).notNull(), // New field
+  partsRequired: text("parts_required"), // New field for parts tracking
 });
 
 export const insertWorkOrderSchema = createInsertSchema(workOrders)
@@ -66,6 +68,8 @@ export const insertWorkOrderSchema = createInsertSchema(workOrders)
     completedDate: z.string().or(z.date()).nullable().transform((val) =>
       val ? (typeof val === 'string' ? new Date(val) : val) : null
     ),
+    affectsAssetStatus: z.boolean().default(false),
+    partsRequired: z.string().optional(),
   });
 
 // Assets schema
@@ -134,8 +138,9 @@ export type InsertWorkOrderAttachment = z.infer<typeof insertWorkOrderAttachment
 export const WorkOrderStatus = {
   OPEN: "OPEN",
   IN_PROGRESS: "IN_PROGRESS",
+  WAITING_ON_PARTS: "WAITING_ON_PARTS", // New status
   COMPLETED: "COMPLETED",
-  ARCHIVED: "ARCHIVED", // Add ARCHIVED status
+  ARCHIVED: "ARCHIVED",
 } as const;
 
 export const WorkOrderPriority = {
@@ -163,6 +168,7 @@ export const maintenanceSchedules = pgTable("maintenance_schedules", {
   frequency: text("frequency").notNull(),
   lastCompleted: timestamp("last_completed"),
   status: text("status").notNull(),
+  affectsAssetStatus: boolean("affects_asset_status").default(false).notNull(), // New field
 });
 
 export const insertMaintenanceScheduleSchema = createInsertSchema(maintenanceSchedules)
@@ -179,6 +185,7 @@ export const insertMaintenanceScheduleSchema = createInsertSchema(maintenanceSch
     ),
     frequency: z.string().min(1, "Frequency is required"),
     status: z.string().min(1, "Status is required"),
+    affectsAssetStatus: z.boolean().default(false),
   });
 
 // Add new types
@@ -221,6 +228,7 @@ export const MaintenanceFrequency = {
 export const MaintenanceStatus = {
   SCHEDULED: "SCHEDULED",
   IN_PROGRESS: "IN_PROGRESS",
+  WAITING_ON_PARTS: "WAITING_ON_PARTS", // New status
   COMPLETED: "COMPLETED",
   OVERDUE: "OVERDUE",
 } as const;

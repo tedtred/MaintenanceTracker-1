@@ -188,7 +188,7 @@ function PagePermissionsDialog({ user }: { user: User }) {
   );
 }
 
-// User Management Component
+// User Administration Component
 function UserManagementSection() {
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
@@ -1357,7 +1357,7 @@ export default function AdminPage() {
             <TabsList className="mb-4">
               <TabsTrigger value="users">
                 <UserCog className="h-4 w-4 mr-2" />
-                User Management
+                User Administration
               </TabsTrigger>
               <TabsTrigger value="problemButtons">
                 <AlertTriangle className="h-4 w-4 mr-2" />

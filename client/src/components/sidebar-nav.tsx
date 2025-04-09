@@ -81,7 +81,7 @@ export function SidebarNav() {
   let navItems = [];
   
   if (user?.role === UserRole.ADMIN) {
-    navItems = [...items, { title: "User Management", icon: Users, href: "/admin", id: "admin" }];
+    navItems = [...items, { title: "Admin Panel", icon: Users, href: "/admin", id: "admin" }];
   } else {
     // Filter items based on permissions
     navItems = items.filter(item => 

@@ -483,12 +483,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateSettings(updates: Partial<Settings>): Promise<Settings> {
+    // Get current settings record
+    const existingSettings = await this.getSettings();
+    
+    // Update the existing record
     const [updatedSettings] = await db
-      .insert(settings)
-      .values({
+      .update(settings)
+      .set({
         ...updates,
         updatedAt: new Date()
       })
+      .where(eq(settings.id, existingSettings.id))
       .returning();
 
     return updatedSettings;

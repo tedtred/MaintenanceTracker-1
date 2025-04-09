@@ -14,7 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Drawer, DrawerContent, DrawerTrigger, DrawerHeader, DrawerFooter, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useForm } from "react-hook-form";
@@ -394,7 +394,7 @@ export default function ProblemTracking() {
                           .map(event => {
                             const button = buttons.find(b => b.id === event.buttonId);
                             return (
-                              <Card key={event.id} className="overflow-hidden opacity-70">
+                              <Card key={event.id} className="overflow-hidden">
                                 <CardHeader className="py-3" 
                                   style={{ 
                                     borderBottom: `1px solid ${button?.color || '#e5e7eb'}`, 
@@ -403,11 +403,11 @@ export default function ProblemTracking() {
                                 >
                                   <div className="flex justify-between items-start">
                                     <CardTitle className="text-base flex items-center">
-                                      <Check className="mr-2 h-4 w-4 text-green-500" />
+                                      <Check className="mr-2 h-4 w-4" style={{ color: button?.color }} />
                                       {getButtonLabel(event.buttonId)}
                                     </CardTitle>
                                     <div className="text-xs text-muted-foreground">
-                                      Resolved: {event.resolvedAt && format(new Date(event.resolvedAt), "MMM d, h:mm a")}
+                                      {format(new Date(event.timestamp), "MMM d, h:mm a")}
                                     </div>
                                   </div>
                                 </CardHeader>
@@ -427,10 +427,16 @@ export default function ProblemTracking() {
                                       </div>
                                     )}
                                     <div>
-                                      Resolved by: <span className="font-medium">
-                                        {event.resolvedBy ? getUserName(event.resolvedBy) : "Unknown"}
-                                      </span>
+                                      Reported by: <span className="font-medium">{getUserName(event.userId)}</span>
                                     </div>
+                                    <div>
+                                      Resolved by: <span className="font-medium">{event.resolvedBy ? getUserName(event.resolvedBy) : 'Unknown'}</span>
+                                    </div>
+                                    {event.resolvedDate && (
+                                      <div>
+                                        Resolved at: <span className="font-medium">{format(new Date(event.resolvedDate), "MMM d, h:mm a")}</span>
+                                      </div>
+                                    )}
                                   </div>
                                 </CardContent>
                               </Card>
@@ -450,24 +456,25 @@ export default function ProblemTracking() {
       {isMobile ? (
         <Drawer open={isReportOpen} onOpenChange={setIsReportOpen}>
           <DrawerContent>
-            <DrawerHeader>
+            <DrawerHeader className="border-b">
               <DrawerTitle>Report Problem: {selectedButton?.label}</DrawerTitle>
               <DrawerDescription>
                 Add details about the issue you're experiencing
               </DrawerDescription>
             </DrawerHeader>
-            <div className="px-4">
+            <div className="px-4 py-3 flex-1 overflow-y-auto">
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
                   <FormField
                     control={form.control}
                     name="notes"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Description</FormLabel>
+                        <FormLabel className="text-base">Description</FormLabel>
                         <FormControl>
                           <Textarea
                             placeholder="Describe the problem..."
+                            className="min-h-[100px]"
                             {...field}
                           />
                         </FormControl>
@@ -481,7 +488,7 @@ export default function ProblemTracking() {
                     name="locationName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Location</FormLabel>
+                        <FormLabel className="text-base">Location</FormLabel>
                         <FormControl>
                           <Input
                             placeholder="e.g. Building A, Room 101"
@@ -498,10 +505,10 @@ export default function ProblemTracking() {
                     name="assetId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Related Asset</FormLabel>
+                        <FormLabel className="text-base">Related Asset</FormLabel>
                         <Select
-                          onValueChange={(value) => field.onChange(parseInt(value))}
-                          defaultValue={field.value?.toString()}
+                          onValueChange={(value) => field.onChange(parseInt(value) || undefined)}
+                          defaultValue={field.value?.toString() || "0"}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -509,7 +516,8 @@ export default function ProblemTracking() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {assets.map((asset) => (
+                            <SelectItem value="0">None</SelectItem>
+                            {assets.map(asset => (
                               <SelectItem key={asset.id} value={asset.id.toString()}>
                                 {asset.name}
                               </SelectItem>
@@ -523,15 +531,16 @@ export default function ProblemTracking() {
                 </form>
               </Form>
             </div>
-            <DrawerFooter>
+            <DrawerFooter className="border-t pt-4">
               <Button 
                 type="submit" 
                 onClick={form.handleSubmit(onSubmit)}
                 disabled={reportMutation.isPending}
+                className="w-full mb-2"
               >
                 {reportMutation.isPending ? "Submitting..." : "Submit Report"}
               </Button>
-              <Button variant="outline" onClick={() => setIsReportOpen(false)}>
+              <Button variant="outline" onClick={() => setIsReportOpen(false)} className="w-full">
                 Cancel
               </Button>
             </DrawerFooter>
@@ -539,85 +548,97 @@ export default function ProblemTracking() {
         </Drawer>
       ) : (
         <Dialog open={isReportOpen} onOpenChange={setIsReportOpen}>
-          <DialogContent>
+          <DialogContent className="sm:max-w-[550px] max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Report Problem: {selectedButton?.label}</DialogTitle>
               <DialogDescription>
                 Add details about the issue you're experiencing
               </DialogDescription>
             </DialogHeader>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="notes"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Describe the problem..."
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="locationName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Location</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="e.g. Building A, Room 101"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="assetId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Related Asset</FormLabel>
-                      <Select
-                        onValueChange={(value) => field.onChange(parseInt(value))}
-                        defaultValue={field.value?.toString()}
-                      >
+            <div className="max-h-[60vh] overflow-y-auto pr-2">
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <FormField
+                    control={form.control}
+                    name="notes"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select an asset (optional)" />
-                          </SelectTrigger>
+                          <Textarea
+                            placeholder="Describe the problem..."
+                            className="min-h-[100px]"
+                            {...field}
+                          />
                         </FormControl>
-                        <SelectContent>
-                          {assets.map((asset) => (
-                            <SelectItem key={asset.id} value={asset.id.toString()}>
-                              {asset.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </form>
-            </Form>
-            <DialogFooter>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <div className="grid gap-6 sm:grid-cols-2">
+                    <FormField
+                      control={form.control}
+                      name="locationName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Location</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="e.g. Building A, Room 101"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="assetId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Related Asset</FormLabel>
+                          <Select
+                            onValueChange={(value) => field.onChange(parseInt(value) || undefined)}
+                            defaultValue={field.value?.toString() || "0"}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select an asset (optional)" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="0">None</SelectItem>
+                              {assets.map((asset) => (
+                                <SelectItem key={asset.id} value={asset.id.toString()}>
+                                  {asset.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </form>
+              </Form>
+            </div>
+            <DialogFooter className="mt-6 pt-4 border-t">
               <Button 
                 type="submit" 
                 onClick={form.handleSubmit(onSubmit)}
                 disabled={reportMutation.isPending}
               >
                 {reportMutation.isPending ? "Submitting..." : "Submit Report"}
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => setIsReportOpen(false)}
+              >
+                Cancel
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -626,7 +647,7 @@ export default function ProblemTracking() {
       
       {/* Event Management Dialog */}
       <Dialog open={!!selectedEvent} onOpenChange={(open) => !open && setSelectedEvent(null)}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[550px] max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Manage Problem</DialogTitle>
           </DialogHeader>
@@ -671,7 +692,7 @@ export default function ProblemTracking() {
               </div>
             </div>
           )}
-          <DialogFooter>
+          <DialogFooter className="mt-6 pt-4 border-t gap-2">
             <Button 
               variant="outline" 
               onClick={() => setSelectedEvent(null)}

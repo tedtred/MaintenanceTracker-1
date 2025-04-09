@@ -370,8 +370,8 @@ export const insertProblemButtonSchema = createInsertSchema(problemButtons)
       WorkOrderPriority.MEDIUM,
       WorkOrderPriority.HIGH
     ]).default(WorkOrderPriority.HIGH).optional(),
-    defaultAssetId: z.number().int().positive().optional(),
-    defaultAssignedTo: z.number().int().positive().optional(),
+    defaultAssetId: z.number().int().positive().nullable().optional(),
+    defaultAssignedTo: z.number().int().positive().nullable().optional(),
     notifyMaintenance: z.boolean().default(false),
   });
 
@@ -400,7 +400,7 @@ export const insertProblemEventSchema = createInsertSchema(problemEvents)
     ),
     notes: z.string().optional(),
     locationName: z.string().optional(),
-    assetId: z.number().int().positive().optional(),
+    assetId: z.number().int().positive().nullable().optional(),
     resolved: z.boolean().default(false),
     resolvedBy: z.number().int().positive().optional(),
     workOrderId: z.number().int().positive().optional(),

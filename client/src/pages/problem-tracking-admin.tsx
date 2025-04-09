@@ -32,8 +32,8 @@ const buttonFormSchema = z.object({
   workOrderTitle: z.string().optional(),
   workOrderDescription: z.string().optional(),
   workOrderPriority: z.enum(["LOW", "MEDIUM", "HIGH"]).optional(),
-  defaultAssetId: z.number().optional(),
-  defaultAssignedTo: z.number().optional(),
+  defaultAssetId: z.number().nullable().optional(),
+  defaultAssignedTo: z.number().nullable().optional(),
   notifyMaintenance: z.boolean().default(false),
 });
 

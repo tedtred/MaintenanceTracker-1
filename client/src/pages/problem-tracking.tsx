@@ -28,7 +28,7 @@ const problemReportSchema = z.object({
   buttonId: z.number().int().positive("Button selection is required"),
   notes: z.string().optional(),
   locationName: z.string().optional(),
-  assetId: z.number().int().positive().optional(),
+  assetId: z.number().nullable().optional(),
 });
 
 type ProblemReportData = z.infer<typeof problemReportSchema>;
@@ -432,9 +432,9 @@ export default function ProblemTracking() {
                                     <div>
                                       Resolved by: <span className="font-medium">{event.resolvedBy ? getUserName(event.resolvedBy) : 'Unknown'}</span>
                                     </div>
-                                    {event.resolvedDate && (
+                                    {event.resolvedAt && (
                                       <div>
-                                        Resolved at: <span className="font-medium">{format(new Date(event.resolvedDate), "MMM d, h:mm a")}</span>
+                                        Resolved at: <span className="font-medium">{format(new Date(event.resolvedAt), "MMM d, h:mm a")}</span>
                                       </div>
                                     )}
                                   </div>
@@ -462,9 +462,9 @@ export default function ProblemTracking() {
                 Add details about the issue you're experiencing
               </DrawerDescription>
             </DrawerHeader>
-            <div className="px-4 py-3 flex-1 overflow-y-auto">
+            <div className="px-4 py-6 flex-1 overflow-y-auto">
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
                   <FormField
                     control={form.control}
                     name="notes"
@@ -548,16 +548,16 @@ export default function ProblemTracking() {
         </Drawer>
       ) : (
         <Dialog open={isReportOpen} onOpenChange={setIsReportOpen}>
-          <DialogContent className="sm:max-w-[550px] max-h-[85vh] overflow-y-auto">
+          <DialogContent className="sm:max-w-[600px] md:max-w-[650px] max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Report Problem: {selectedButton?.label}</DialogTitle>
               <DialogDescription>
                 Add details about the issue you're experiencing
               </DialogDescription>
             </DialogHeader>
-            <div className="max-h-[60vh] overflow-y-auto pr-2">
+            <div className="max-h-[60vh] overflow-y-auto pr-2 py-4">
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
                   <FormField
                     control={form.control}
                     name="notes"
@@ -647,7 +647,7 @@ export default function ProblemTracking() {
       
       {/* Event Management Dialog */}
       <Dialog open={!!selectedEvent} onOpenChange={(open) => !open && setSelectedEvent(null)}>
-        <DialogContent className="sm:max-w-[550px] max-h-[85vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[600px] md:max-w-[650px] max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Manage Problem</DialogTitle>
           </DialogHeader>

@@ -552,6 +552,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (!button) {
             console.error(`Button ${event.buttonId} not found for work order creation`);
           } else {
+            console.log('Creating work order from button template:', { 
+              buttonId: button.id, 
+              createWorkOrder: button.createWorkOrder,
+              template: button.workOrderTitle
+            });
+            
             // Process template variables in title and description
             let title = workOrderTitle || button.workOrderTitle || `Problem: ${button.label}`;
             let description = workOrderDescription || button.workOrderDescription || '';
@@ -580,12 +586,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
               dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // Default due date: tomorrow
               assetId: event.assetId || defaultAssetId || button.defaultAssetId,
               assignedTo: button.defaultAssignedTo,
-              reportedDate: new Date(),
+              // No need to manually set these fields as they have defaults in the schema
               completedDate: null,
               affectsAssetStatus: false,
               createdBy: userId,
-              createdAt: new Date(),
-              updatedAt: new Date(),
             });
             
             // Update the problem event with the work order ID

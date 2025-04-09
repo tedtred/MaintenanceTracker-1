@@ -151,10 +151,15 @@ export default function ProblemTracking() {
       workOrderPriority: button.workOrderPriority || 'MEDIUM',
       defaultAssetId: data.assetId || button.defaultAssetId,
       notifyMaintenance: button.notifyMaintenance || false,
-      // Add context details that will be used for template variables
-      locationName: data.locationName,
-      notes: data.notes,
     } : {};
+    
+    // Show feedback about work order creation if enabled
+    if (button?.createWorkOrder) {
+      toast({
+        title: "Creating Work Order",
+        description: `A work order will be automatically created for this problem`,
+      });
+    }
     
     // Combine the problem report with the work order data if needed
     reportMutation.mutate({

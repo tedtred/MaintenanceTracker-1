@@ -28,7 +28,11 @@ const problemReportSchema = z.object({
   buttonId: z.number().int().positive("Button selection is required"),
   notes: z.string().optional(),
   locationName: z.string().optional(),
-  assetId: z.number().nullable().optional(),
+  // Handle assetId as either null, undefined, or a positive number
+  assetId: z.union([
+    z.literal(null),
+    z.number().int().positive()
+  ]).optional(),
 });
 
 type ProblemReportData = z.infer<typeof problemReportSchema>;
@@ -509,7 +513,7 @@ export default function ProblemTracking() {
                         <FormLabel className="text-base">Related Asset</FormLabel>
                         <Select
                           onValueChange={(value) => {
-                            field.onChange(value === "0" ? undefined : parseInt(value))
+                            field.onChange(value === "0" ? null : parseInt(value))
                           }}
                           defaultValue={field.value?.toString() || "0"}
                         >
@@ -605,7 +609,7 @@ export default function ProblemTracking() {
                           <FormLabel>Related Asset</FormLabel>
                           <Select
                             onValueChange={(value) => {
-                              field.onChange(value === "0" ? undefined : parseInt(value))
+                              field.onChange(value === "0" ? null : parseInt(value))
                             }}
                             defaultValue={field.value?.toString() || "0"}
                           >

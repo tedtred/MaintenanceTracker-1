@@ -185,34 +185,87 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateWorkOrder(id: number, updates: Partial<WorkOrder>): Promise<WorkOrder> {
-    // Handle status change to COMPLETED
-    const updateData: Partial<WorkOrder> = { ...updates };
-
-    if (updates.status === WorkOrderStatus.COMPLETED && !updates.completedDate) {
-      updateData.completedDate = new Date();
+    try {
+      // Handle status change to COMPLETED
+      const updateData: Partial<WorkOrder> = {};
+      
+      // Only include valid fields to update
+      const dateFields = ['reportedDate', 'completedDate', 'dueDate', 'updatedAt'];
+      
+      // Copy non-date fields as is
+      Object.keys(updates).forEach(key => {
+        if (!dateFields.includes(key)) {
+          // Type-safe assignment based on known work order fields
+          if (key === 'id') updateData.id = updates.id;
+          else if (key === 'title') updateData.title = updates.title;
+          else if (key === 'description') updateData.description = updates.description;
+          else if (key === 'status') updateData.status = updates.status;
+          else if (key === 'priority') updateData.priority = updates.priority;
+          else if (key === 'assignedTo') updateData.assignedTo = updates.assignedTo;
+          else if (key === 'assetId') updateData.assetId = updates.assetId;
+          else if (key === 'notes') updateData.notes = updates.notes;
+          else if (key === 'completionNotes') updateData.completionNotes = updates.completionNotes;
+        }
+      });
+      
+      // Set completedDate automatically if status changes to COMPLETED
+      if (updates.status === WorkOrderStatus.COMPLETED && !updates.completedDate) {
+        updateData.completedDate = new Date();
+      }
+      
+      // Process date fields - convert strings to Date objects
+      if ('reportedDate' in updates) {
+        const value = updates.reportedDate;
+        if (value === null) {
+          updateData.reportedDate = null as any; // Type coercion needed
+        } else if (typeof value === 'string') {
+          updateData.reportedDate = new Date(value);
+        } else if (value instanceof Date) {
+          updateData.reportedDate = value;
+        }
+      }
+      
+      if ('completedDate' in updates) {
+        const value = updates.completedDate;
+        if (value === null) {
+          updateData.completedDate = null;
+        } else if (typeof value === 'string') {
+          updateData.completedDate = new Date(value);
+        } else if (value instanceof Date) {
+          updateData.completedDate = value;
+        }
+      }
+      
+      if ('dueDate' in updates) {
+        const value = updates.dueDate;
+        if (value === null) {
+          updateData.dueDate = null;
+        } else if (typeof value === 'string') {
+          updateData.dueDate = new Date(value);
+        } else if (value instanceof Date) {
+          updateData.dueDate = value;
+        }
+      }
+      
+      // Always update the updatedAt timestamp
+      updateData.updatedAt = new Date();
+      
+      console.log('Work order update data:', JSON.stringify(updateData, (key, value) => 
+        value instanceof Date ? value.toISOString() : value
+      ));
+      
+      const [workOrder] = await db
+        .update(workOrders)
+        .set(updateData)
+        .where(eq(workOrders.id, id))
+        .returning();
+  
+      if (!workOrder) throw new Error("Work order not found");
+      return workOrder;
+    } catch (error) {
+      console.error("Error in updateWorkOrder:", error);
+      throw error;
     }
-
-    // Ensure dates are properly formatted
-    if (updateData.reportedDate && typeof updateData.reportedDate === 'string') {
-      updateData.reportedDate = new Date(updateData.reportedDate);
-    }
-
-    if (updateData.completedDate && typeof updateData.completedDate === 'string') {
-      updateData.completedDate = new Date(updateData.completedDate);
-    }
-    
-    if (updateData.dueDate && typeof updateData.dueDate === 'string') {
-      updateData.dueDate = new Date(updateData.dueDate);
-    }
-
-    const [workOrder] = await db
-      .update(workOrders)
-      .set(updateData)
-      .where(eq(workOrders.id, id))
-      .returning();
-
-    if (!workOrder) throw new Error("Work order not found");
-    return workOrder;
   }
 
   async createWorkOrderAttachment(attachment: InsertWorkOrderAttachment): Promise<WorkOrderAttachment> {
@@ -449,13 +502,38 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteWorkOrder(id: number): Promise<void> {
-    // First delete any attachments
-    await db
-      .delete(workOrderAttachments)
-      .where(eq(workOrderAttachments.workOrderId, id));
-
-    // Then delete the work order
-    await db.delete(workOrders).where(eq(workOrders.id, id));
+    try {
+      // First check if there are problem events referencing this work order
+      const problemEventsQuery = await db
+        .select()
+        .from(problemEvents)
+        .where(eq(problemEvents.workOrderId, id));
+      
+      // If problem events reference this work order, update them to remove the reference
+      if (problemEventsQuery.length > 0) {
+        console.log(`Found ${problemEventsQuery.length} problem events referencing work order ${id}, updating them first`);
+        
+        for (const event of problemEventsQuery) {
+          await db
+            .update(problemEvents)
+            .set({ workOrderId: null })
+            .where(eq(problemEvents.id, event.id));
+        }
+      }
+      
+      // Delete any attachments
+      await db
+        .delete(workOrderAttachments)
+        .where(eq(workOrderAttachments.workOrderId, id));
+  
+      // Then delete the work order
+      await db.delete(workOrders).where(eq(workOrders.id, id));
+      
+      console.log(`Successfully deleted work order ${id}`);
+    } catch (error) {
+      console.error("Error deleting work order:", error);
+      throw error;
+    }
   }
 
   async deleteUser(userId: number): Promise<void> {

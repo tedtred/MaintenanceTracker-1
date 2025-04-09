@@ -223,13 +223,63 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateAsset(id: number, updates: Partial<Asset>): Promise<Asset> {
-    const [asset] = await db
-      .update(assets)
-      .set(updates)
-      .where(eq(assets.id, id))
-      .returning();
-    if (!asset) throw new Error("Asset not found");
-    return asset;
+    try {
+      // Clean up the updates object to ensure it only contains valid fields
+      const cleanUpdates: Record<string, any> = {};
+      
+      // Only include valid fields that exist in the database schema
+      if ('name' in updates) cleanUpdates.name = updates.name;
+      if ('description' in updates) cleanUpdates.description = updates.description;
+      if ('category' in updates) cleanUpdates.category = updates.category;
+      if ('location' in updates) cleanUpdates.location = updates.location;
+      if ('purchaseDate' in updates) cleanUpdates.purchaseDate = updates.purchaseDate;
+      if ('purchaseCost' in updates) cleanUpdates.purchaseCost = updates.purchaseCost;
+      if ('serialNumber' in updates) cleanUpdates.serialNumber = updates.serialNumber;
+      if ('status' in updates) cleanUpdates.status = updates.status;
+      if ('model' in updates) cleanUpdates.model = updates.model;
+      if ('manufacturer' in updates) cleanUpdates.manufacturer = updates.manufacturer;
+      if ('warrantyExpirationDate' in updates) cleanUpdates.warrantyExpirationDate = updates.warrantyExpirationDate;
+      
+      // Handle case where there are no fields to update
+      if (Object.keys(cleanUpdates).length === 0) {
+        // Just return the current asset
+        const { rows } = await pool.query(
+          `SELECT * FROM assets WHERE id = $1`,
+          [id]
+        );
+        if (rows.length === 0) throw new Error("Asset not found");
+        return rows[0];
+      }
+      
+      // Directly use SQL for more control and error handling
+      const query = `
+        UPDATE assets
+        SET ${Object.keys(cleanUpdates).map(key => {
+          // Convert camelCase keys to snake_case for SQL
+          const snakeKey = key.replace(/([A-Z])/g, "_$1").toLowerCase();
+          return `${snakeKey} = $${Object.keys(cleanUpdates).indexOf(key) + 2}`;
+        }).join(', ')}
+        WHERE id = $1
+        RETURNING *
+      `;
+      
+      const values = [id, ...Object.values(cleanUpdates)];
+      const { rows } = await pool.query(query, values);
+      
+      if (rows.length === 0) throw new Error("Asset not found");
+      
+      // Convert snake_case keys back to camelCase
+      const asset: any = {};
+      Object.keys(rows[0]).forEach(key => {
+        const camelKey = key.replace(/_([a-z])/g, g => g[1].toUpperCase());
+        asset[camelKey] = rows[0][key];
+      });
+      
+      return asset as Asset;
+    } catch (error) {
+      console.error("Error updating asset:", error);
+      throw error;
+    }
   }
 
   async deleteAsset(id: number): Promise<void> {
@@ -278,13 +328,61 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateMaintenanceSchedule(id: number, updates: Partial<MaintenanceSchedule>): Promise<MaintenanceSchedule> {
-    const [schedule] = await db
-      .update(maintenanceSchedules)
-      .set(updates)
-      .where(eq(maintenanceSchedules.id, id))
-      .returning();
-    if (!schedule) throw new Error("Maintenance schedule not found");
-    return schedule;
+    try {
+      // Clean up the updates object to ensure it only contains valid fields
+      const cleanUpdates: Record<string, any> = {};
+      
+      // Only include valid fields that exist in the database schema
+      if ('title' in updates) cleanUpdates.title = updates.title;
+      if ('description' in updates) cleanUpdates.description = updates.description;
+      if ('assetId' in updates) cleanUpdates.assetId = updates.assetId;
+      if ('startDate' in updates) cleanUpdates.startDate = updates.startDate;
+      if ('endDate' in updates) cleanUpdates.endDate = updates.endDate;
+      if ('frequency' in updates) cleanUpdates.frequency = updates.frequency;
+      if ('lastCompleted' in updates) cleanUpdates.lastCompleted = updates.lastCompleted;
+      if ('status' in updates) cleanUpdates.status = updates.status;
+      if ('affectsAssetStatus' in updates) cleanUpdates.affectsAssetStatus = updates.affectsAssetStatus;
+      
+      // Handle case where there are no fields to update
+      if (Object.keys(cleanUpdates).length === 0) {
+        // Just return the current schedule
+        const { rows } = await pool.query(
+          `SELECT * FROM maintenance_schedules WHERE id = $1`,
+          [id]
+        );
+        if (rows.length === 0) throw new Error("Maintenance schedule not found");
+        return rows[0];
+      }
+      
+      // Directly use SQL for more control and error handling
+      const query = `
+        UPDATE maintenance_schedules
+        SET ${Object.keys(cleanUpdates).map(key => {
+          // Convert camelCase keys to snake_case for SQL
+          const snakeKey = key.replace(/([A-Z])/g, "_$1").toLowerCase();
+          return `${snakeKey} = $${Object.keys(cleanUpdates).indexOf(key) + 2}`;
+        }).join(', ')}
+        WHERE id = $1
+        RETURNING *
+      `;
+      
+      const values = [id, ...Object.values(cleanUpdates)];
+      const { rows } = await pool.query(query, values);
+      
+      if (rows.length === 0) throw new Error("Maintenance schedule not found");
+      
+      // Convert snake_case keys back to camelCase
+      const schedule: any = {};
+      Object.keys(rows[0]).forEach(key => {
+        const camelKey = key.replace(/_([a-z])/g, g => g[1].toUpperCase());
+        schedule[camelKey] = rows[0][key];
+      });
+      
+      return schedule as MaintenanceSchedule;
+    } catch (error) {
+      console.error("Error updating maintenance schedule:", error);
+      throw error;
+    }
   }
 
   async getMaintenanceCompletions(): Promise<MaintenanceCompletion[]> {

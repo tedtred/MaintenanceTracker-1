@@ -380,6 +380,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add route for updating asset status
+  app.patch("/api/assets/:id/status", async (req, res, next) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { assetId, status } = req.body;
+      
+      // Basic validation
+      if (!assetId || !status) {
+        return res.status(400).json({ message: "Asset ID and status are required" });
+      }
+      
+      // Ensure status is one of the allowed values
+      const validStatuses = ["OPERATIONAL", "MAINTENANCE", "OFFLINE", "DECOMMISSIONED"];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({ 
+          message: `Invalid status. Must be one of: ${validStatuses.join(', ')}` 
+        });
+      }
+      
+      const asset = await storage.updateAsset(Number(assetId), { status });
+      res.json(asset);
+    } catch (error) {
+      next(error);
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

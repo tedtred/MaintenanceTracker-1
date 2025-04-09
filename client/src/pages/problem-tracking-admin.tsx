@@ -59,11 +59,9 @@ export default function ProblemTrackingAdmin() {
   // Create button mutation
   const createMutation = useMutation({
     mutationFn: async (data: ButtonFormData) => {
-      const button = await apiRequest("/api/problem-buttons", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
-      return button as ProblemButton;
+      const response = await apiRequest("POST", "/api/problem-buttons", data);
+      const button = await response.json();
+      return button;
     },
     onSuccess: () => {
       toast({
@@ -86,11 +84,9 @@ export default function ProblemTrackingAdmin() {
   // Update button mutation
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: Partial<ProblemButton> }) => {
-      const button = await apiRequest(`/api/problem-buttons/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify(data),
-      });
-      return button as ProblemButton;
+      const response = await apiRequest("PATCH", `/api/problem-buttons/${id}`, data);
+      const button = await response.json();
+      return button;
     },
     onSuccess: () => {
       toast({
@@ -113,9 +109,7 @@ export default function ProblemTrackingAdmin() {
   // Delete button mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      await apiRequest(`/api/problem-buttons/${id}`, {
-        method: "DELETE",
-      });
+      await apiRequest("DELETE", `/api/problem-buttons/${id}`);
       return id;
     },
     onSuccess: () => {

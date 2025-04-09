@@ -76,11 +76,9 @@ export default function ProblemTracking() {
   // Report problem mutation
   const reportMutation = useMutation({
     mutationFn: async (data: ProblemReportData) => {
-      const event = await apiRequest("/api/problem-events", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
-      return event as ProblemEvent;
+      const response = await apiRequest("POST", "/api/problem-events", data);
+      const event = await response.json();
+      return event;
     },
     onSuccess: () => {
       toast({
@@ -103,10 +101,9 @@ export default function ProblemTracking() {
   // Resolve problem mutation
   const resolveMutation = useMutation({
     mutationFn: async (id: number) => {
-      const event = await apiRequest(`/api/problem-events/${id}/resolve`, {
-        method: "POST",
-      });
-      return event as ProblemEvent;
+      const response = await apiRequest("POST", `/api/problem-events/${id}/resolve`);
+      const event = await response.json();
+      return event;
     },
     onSuccess: () => {
       toast({

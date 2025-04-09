@@ -200,6 +200,10 @@ export class DatabaseStorage implements IStorage {
     if (updateData.completedDate && typeof updateData.completedDate === 'string') {
       updateData.completedDate = new Date(updateData.completedDate);
     }
+    
+    if (updateData.dueDate && typeof updateData.dueDate === 'string') {
+      updateData.dueDate = new Date(updateData.dueDate);
+    }
 
     const [workOrder] = await db
       .update(workOrders)
@@ -598,9 +602,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateProblemEvent(id: number, updates: Partial<ProblemEvent>): Promise<ProblemEvent> {
+    // Ensure dates are properly formatted
+    const updateData = { ...updates };
+    
+    if (updateData.timestamp && typeof updateData.timestamp === 'string') {
+      updateData.timestamp = new Date(updateData.timestamp);
+    }
+    
+    if (updateData.resolvedAt && typeof updateData.resolvedAt === 'string') {
+      updateData.resolvedAt = new Date(updateData.resolvedAt);
+    }
+    
     const [updatedEvent] = await db
       .update(problemEvents)
-      .set(updates)
+      .set(updateData)
       .where(eq(problemEvents.id, id))
       .returning();
     

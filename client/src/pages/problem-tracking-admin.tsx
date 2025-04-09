@@ -187,6 +187,7 @@ export default function ProblemTrackingAdmin() {
     defaultValues: {
       label: "",
       color: "#6b7280",
+      icon: undefined,
       active: true,
       // Work order fields
       createWorkOrder: false,
@@ -203,6 +204,7 @@ export default function ProblemTrackingAdmin() {
     defaultValues: {
       label: "",
       color: "#6b7280",
+      icon: undefined,
       active: true,
       // Work order fields
       createWorkOrder: false,
@@ -215,11 +217,19 @@ export default function ProblemTrackingAdmin() {
   
   // Handle creating a new button
   const handleCreateButton = (data: ButtonFormData) => {
+    // Convert "none" to null/undefined for the backend
+    if (data.icon === "none") {
+      data.icon = undefined;
+    }
     createMutation.mutate(data);
   };
   
   // Handle editing a button
   const handleEditButton = (data: ButtonFormData) => {
+    // Convert "none" to null/undefined for the backend
+    if (data.icon === "none") {
+      data.icon = undefined;
+    }
     if (selectedButton) {
       updateMutation.mutate({
         id: selectedButton.id,
@@ -234,7 +244,7 @@ export default function ProblemTrackingAdmin() {
     editForm.reset({
       label: button.label,
       color: button.color,
-      icon: button.icon || undefined,
+      icon: button.icon || "none", // Use "none" instead of empty string
       active: button.active,
       // Work order fields
       createWorkOrder: button.createWorkOrder || false,
@@ -414,7 +424,7 @@ export default function ProblemTrackingAdmin() {
                     <FormLabel>Icon (Optional)</FormLabel>
                     <Select
                       onValueChange={field.onChange}
-                      defaultValue={field.value}
+                      defaultValue={field.value || "none"}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -422,7 +432,7 @@ export default function ProblemTrackingAdmin() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                         {availableIcons.map((icon) => (
                           <SelectItem key={icon.value} value={icon.value}>
                             <div className="flex items-center">
@@ -474,7 +484,7 @@ export default function ProblemTrackingAdmin() {
                     <div className="space-y-0.5">
                       <FormLabel>Create Work Order</FormLabel>
                       <FormDescription>
-                        Automatically create a work order when this button is pressed
+                        Automatically generate a work order when this problem is reported
                       </FormDescription>
                     </div>
                     <FormControl>
@@ -487,7 +497,7 @@ export default function ProblemTrackingAdmin() {
                 )}
               />
               
-              {createForm.watch('createWorkOrder') && (
+              {createForm.watch("createWorkOrder") && (
                 <>
                   <FormField
                     control={createForm.control}
@@ -496,10 +506,10 @@ export default function ProblemTrackingAdmin() {
                       <FormItem>
                         <FormLabel>Work Order Title Template</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g., Equipment Failure: [asset]" {...field} />
+                          <Input placeholder="e.g., [asset] Issue - Needs Repair" {...field} />
                         </FormControl>
                         <FormDescription>
-                          Use [asset] to include the asset name if selected
+                          Use [asset] to include the asset name automatically
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -514,13 +524,13 @@ export default function ProblemTrackingAdmin() {
                         <FormLabel>Work Order Description Template</FormLabel>
                         <FormControl>
                           <Textarea 
-                            placeholder="e.g., Equipment failure reported at [location]. Requires immediate attention." 
-                            className="min-h-[100px]"
+                            placeholder="e.g., Issue reported at [location]. Details: [notes]" 
                             {...field} 
+                            className="min-h-24"
                           />
                         </FormControl>
                         <FormDescription>
-                          Use [location] to include the location and [notes] to include any notes
+                          Use [asset], [location], and [notes] to include details automatically
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -561,7 +571,7 @@ export default function ProblemTrackingAdmin() {
                         <div className="space-y-0.5">
                           <FormLabel>Notify Maintenance Team</FormLabel>
                           <FormDescription>
-                            Send notification to maintenance team when this button is pressed
+                            Send notification to maintenance team when work order is created
                           </FormDescription>
                         </div>
                         <FormControl>
@@ -575,22 +585,23 @@ export default function ProblemTrackingAdmin() {
                   />
                 </>
               )}
+              
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
+                  <X className="mr-2 h-4 w-4" />
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  onClick={createForm.handleSubmit(handleCreateButton)}
+                  disabled={createMutation.isPending}
+                >
+                  <Save className="mr-2 h-4 w-4" />
+                  {createMutation.isPending ? "Creating..." : "Create Button"}
+                </Button>
+              </DialogFooter>
             </form>
           </Form>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
-              <X className="mr-2 h-4 w-4" />
-              Cancel
-            </Button>
-            <Button 
-              type="submit" 
-              onClick={createForm.handleSubmit(handleCreateButton)}
-              disabled={createMutation.isPending}
-            >
-              <Save className="mr-2 h-4 w-4" />
-              {createMutation.isPending ? "Creating..." : "Create Button"}
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
       
@@ -641,7 +652,7 @@ export default function ProblemTrackingAdmin() {
                     <FormLabel>Icon (Optional)</FormLabel>
                     <Select
                       onValueChange={field.onChange}
-                      defaultValue={field.value}
+                      defaultValue={field.value || "none"}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -649,7 +660,7 @@ export default function ProblemTrackingAdmin() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                         {availableIcons.map((icon) => (
                           <SelectItem key={icon.value} value={icon.value}>
                             <div className="flex items-center">
@@ -701,7 +712,7 @@ export default function ProblemTrackingAdmin() {
                     <div className="space-y-0.5">
                       <FormLabel>Create Work Order</FormLabel>
                       <FormDescription>
-                        Automatically create a work order when this button is pressed
+                        Automatically generate a work order when this problem is reported
                       </FormDescription>
                     </div>
                     <FormControl>
@@ -714,7 +725,7 @@ export default function ProblemTrackingAdmin() {
                 )}
               />
               
-              {editForm.watch('createWorkOrder') && (
+              {editForm.watch("createWorkOrder") && (
                 <>
                   <FormField
                     control={editForm.control}
@@ -723,10 +734,10 @@ export default function ProblemTrackingAdmin() {
                       <FormItem>
                         <FormLabel>Work Order Title Template</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g., Equipment Failure: [asset]" {...field} />
+                          <Input placeholder="e.g., [asset] Issue - Needs Repair" {...field} />
                         </FormControl>
                         <FormDescription>
-                          Use [asset] to include the asset name if selected
+                          Use [asset] to include the asset name automatically
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -741,13 +752,13 @@ export default function ProblemTrackingAdmin() {
                         <FormLabel>Work Order Description Template</FormLabel>
                         <FormControl>
                           <Textarea 
-                            placeholder="e.g., Equipment failure reported at [location]. Requires immediate attention." 
-                            className="min-h-[100px]"
+                            placeholder="e.g., Issue reported at [location]. Details: [notes]" 
                             {...field} 
+                            className="min-h-24"
                           />
                         </FormControl>
                         <FormDescription>
-                          Use [location] to include the location and [notes] to include any notes
+                          Use [asset], [location], and [notes] to include details automatically
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -788,7 +799,7 @@ export default function ProblemTrackingAdmin() {
                         <div className="space-y-0.5">
                           <FormLabel>Notify Maintenance Team</FormLabel>
                           <FormDescription>
-                            Send notification to maintenance team when this button is pressed
+                            Send notification to maintenance team when work order is created
                           </FormDescription>
                         </div>
                         <FormControl>
@@ -802,22 +813,23 @@ export default function ProblemTrackingAdmin() {
                   />
                 </>
               )}
+              
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsEditOpen(false)}>
+                  <X className="mr-2 h-4 w-4" />
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  onClick={editForm.handleSubmit(handleEditButton)}
+                  disabled={updateMutation.isPending}
+                >
+                  <Save className="mr-2 h-4 w-4" />
+                  {updateMutation.isPending ? "Saving..." : "Save Changes"}
+                </Button>
+              </DialogFooter>
             </form>
           </Form>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditOpen(false)}>
-              <X className="mr-2 h-4 w-4" />
-              Cancel
-            </Button>
-            <Button 
-              type="submit" 
-              onClick={editForm.handleSubmit(handleEditButton)}
-              disabled={updateMutation.isPending}
-            >
-              <Save className="mr-2 h-4 w-4" />
-              {updateMutation.isPending ? "Saving..." : "Save Changes"}
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

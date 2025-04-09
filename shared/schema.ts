@@ -237,26 +237,66 @@ export const AssetCategory = {
 // Add Settings schema
 export const settings = pgTable("settings", {
   id: serial("id").primaryKey(),
+  // Work Schedule Settings
   workWeekStart: integer("work_week_start").notNull().default(1), // 1 = Monday
   workWeekEnd: integer("work_week_end").notNull().default(5),     // 5 = Friday
   workDayStart: text("work_day_start").notNull().default("09:00"),
   workDayEnd: text("work_day_end").notNull().default("17:00"),
+  
+  // Date & Time Settings
   timeZone: text("time_zone").notNull().default("UTC"),
   dateFormat: text("date_format").notNull().default("MM/DD/YYYY"),
   timeFormat: text("time_format").notNull().default("HH:mm"),
+  
+  // Notification Settings
+  emailNotifications: boolean("email_notifications").notNull().default(true),
+  maintenanceDueReminder: integer("maintenance_due_reminder").notNull().default(1), // Days before due date
+  criticalAlertsOnly: boolean("critical_alerts_only").notNull().default(false),
+  
+  // Theme Settings
+  theme: text("theme").notNull().default("system"), // light, dark, system
+  accentColor: text("accent_color").notNull().default("#0284c7"), // Default blue
+  
+  // Company Info
+  companyName: text("company_name").default(""),
+  companyLogo: text("company_logo").default(""),
+  
+  // Holiday Calendar
+  holidayCalendar: text("holiday_calendar").default("[]"), // JSON array of holiday dates
+  
+  // System
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 export const insertSettingsSchema = createInsertSchema(settings)
   .omit({ id: true })
   .extend({
+    // Work Schedule validation
     workWeekStart: z.number().min(0).max(6),
     workWeekEnd: z.number().min(0).max(6),
     workDayStart: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/),
     workDayEnd: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/),
+    
+    // Date & Time validation
     timeZone: z.string(),
     dateFormat: z.string(),
     timeFormat: z.string(),
+    
+    // Notification Settings validation
+    emailNotifications: z.boolean().default(true),
+    maintenanceDueReminder: z.number().min(0).max(30).default(1),
+    criticalAlertsOnly: z.boolean().default(false),
+    
+    // Theme Settings validation
+    theme: z.enum(["light", "dark", "system"]).default("system"),
+    accentColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).default("#0284c7"),
+    
+    // Company Info validation
+    companyName: z.string().optional(),
+    companyLogo: z.string().optional(),
+    
+    // Holiday Calendar validation
+    holidayCalendar: z.string().default("[]"),
   });
 
 // Add new types

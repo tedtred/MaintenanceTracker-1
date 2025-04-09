@@ -99,7 +99,10 @@ export default function WorkOrderDetails() {
       return await res.json();
     },
     onSuccess: () => {
+      // Invalidate both work orders and problem events queries
       queryClient.invalidateQueries({ queryKey: [`/api/work-orders/${workOrderId}`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/work-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/problem-events"] });
       toast({
         title: "Success",
         description: "Work order updated successfully",

@@ -93,7 +93,9 @@ export default function ProblemTracking() {
       });
       setIsReportOpen(false);
       form.reset();
+      // Invalidate both problem events and work orders queries (since a work order may have been created)
       queryClient.invalidateQueries({ queryKey: ["/api/problem-events"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/work-orders"] });
     },
     onError: (error: Error) => {
       toast({
@@ -117,7 +119,9 @@ export default function ProblemTracking() {
         description: "The problem has been marked as resolved",
       });
       setSelectedEvent(null);
+      // Invalidate both problem events and work orders queries
       queryClient.invalidateQueries({ queryKey: ["/api/problem-events"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/work-orders"] });
     },
     onError: (error: Error) => {
       toast({

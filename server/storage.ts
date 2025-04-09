@@ -186,6 +186,17 @@ export class DatabaseStorage implements IStorage {
 
   async updateWorkOrder(id: number, updates: Partial<WorkOrder>): Promise<WorkOrder> {
     try {
+      // Get the current work order state to check for status change
+      const currentWorkOrder = await this.getWorkOrder(id);
+      if (!currentWorkOrder) {
+        throw new Error("Work order not found");
+      }
+      
+      // Determine if this is a status change to COMPLETED
+      const isCompletingWorkOrder = 
+        updates.status === WorkOrderStatus.COMPLETED && 
+        currentWorkOrder.status !== WorkOrderStatus.COMPLETED;
+      
       // Handle status change to COMPLETED
       const updateData: Partial<WorkOrder> = {};
       
@@ -209,7 +220,7 @@ export class DatabaseStorage implements IStorage {
       });
       
       // Set completedDate automatically if status changes to COMPLETED
-      if (updates.status === WorkOrderStatus.COMPLETED && !updates.completedDate) {
+      if (isCompletingWorkOrder && !updates.completedDate) {
         updateData.completedDate = new Date();
       }
       
@@ -261,6 +272,24 @@ export class DatabaseStorage implements IStorage {
         .returning();
   
       if (!workOrder) throw new Error("Work order not found");
+      
+      // If we're completing a work order, check for related problem events to mark as resolved
+      if (isCompletingWorkOrder) {
+        // Find any problem events that reference this work order
+        const relatedProblemEvents = await db
+          .select()
+          .from(problemEvents)
+          .where(eq(problemEvents.workOrderId, id));
+          
+        // If this work order is linked to problem events, resolve them too
+        for (const event of relatedProblemEvents) {
+          if (!event.resolved) {
+            console.log(`Automatically resolving problem event ${event.id} because work order ${id} was completed`);
+            await this.resolveProblemEvent(event.id, workOrder.assignedTo || event.userId);
+          }
+        }
+      }
+      
       return workOrder;
     } catch (error) {
       console.error("Error in updateWorkOrder:", error);
@@ -705,21 +734,56 @@ export class DatabaseStorage implements IStorage {
   }
 
   async resolveProblemEvent(id: number, userId: number): Promise<ProblemEvent> {
-    const [resolvedEvent] = await db
-      .update(problemEvents)
-      .set({
-        resolved: true,
-        resolvedAt: new Date(),
-        resolvedBy: userId
-      })
-      .where(eq(problemEvents.id, id))
-      .returning();
-    
-    if (!resolvedEvent) {
-      throw new Error("Event not found");
+    try {
+      // Get the current problem event state to check if it's already resolved
+      const currentEvent = await this.getProblemEvent(id);
+      if (!currentEvent) {
+        throw new Error("Problem event not found");
+      }
+      
+      // Don't do anything if already resolved
+      if (currentEvent.resolved) {
+        return currentEvent;
+      }
+
+      // Mark the problem event as resolved
+      const [resolvedEvent] = await db
+        .update(problemEvents)
+        .set({
+          resolved: true,
+          resolvedAt: new Date(),
+          resolvedBy: userId
+        })
+        .where(eq(problemEvents.id, id))
+        .returning();
+      
+      if (!resolvedEvent) {
+        throw new Error("Problem event not found");
+      }
+      
+      // If this problem event has a linked work order, check if it should be completed too
+      if (resolvedEvent.workOrderId) {
+        const workOrder = await this.getWorkOrder(resolvedEvent.workOrderId);
+        
+        // Only update if the work order exists and isn't already completed
+        if (workOrder && workOrder.status !== WorkOrderStatus.COMPLETED && 
+            workOrder.status !== WorkOrderStatus.ARCHIVED) {
+          console.log(`Automatically completing work order ${workOrder.id} because problem event ${id} was resolved`);
+          
+          await this.updateWorkOrder(workOrder.id, {
+            status: WorkOrderStatus.COMPLETED,
+            completionNotes: workOrder.completionNotes 
+              ? `${workOrder.completionNotes}\nAutomatically completed when problem was resolved.` 
+              : "Automatically completed when problem was resolved."
+          });
+        }
+      }
+      
+      return resolvedEvent;
+    } catch (error) {
+      console.error("Error resolving problem event:", error);
+      throw error;
     }
-    
-    return resolvedEvent;
   }
 }
 

@@ -64,7 +64,8 @@ import {
   Palette,
   Building,
   CalendarDays,
-  WrenchIcon
+  WrenchIcon,
+  Upload
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import React, { useState } from "react";
@@ -1094,6 +1095,11 @@ function SystemSettingsSection() {
       title: "Holiday Calendar",
       icon: <CalendarDays className="mr-2 h-4 w-4" />,
     },
+    {
+      id: "advanced",
+      title: "Advanced",
+      icon: <WrenchIcon className="mr-2 h-4 w-4" />,
+    },
   ];
 
   if (isLoading) {
@@ -1299,7 +1305,270 @@ function SystemSettingsSection() {
                     </div>
                   )}
                   
-                  {/* Other tabs would follow the same pattern */}
+                  {/* Notifications Section */}
+                  {activeTab === "notifications" && (
+                    <div className="space-y-6">
+                      <div className="grid gap-6">
+                        <FormField
+                          control={form.control}
+                          name="emailNotifications"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between p-4 border rounded-lg">
+                              <div className="space-y-0.5">
+                                <FormLabel className="text-base">Email Notifications</FormLabel>
+                                <FormDescription>
+                                  Receive maintenance alerts and work order updates via email
+                                </FormDescription>
+                              </div>
+                              <FormControl>
+                                <Switch
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="maintenanceDueReminder"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Maintenance Due Reminder (Days)</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  type="number" 
+                                  {...field} 
+                                  onChange={(e) => field.onChange(parseInt(e.target.value))}
+                                  min={0}
+                                  max={30}
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                Number of days before scheduled maintenance to send reminders
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="criticalAlertsOnly"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between p-4 border rounded-lg">
+                              <div className="space-y-0.5">
+                                <FormLabel className="text-base">Critical Alerts Only</FormLabel>
+                                <FormDescription>
+                                  Only receive notifications for high-priority and critical maintenance tasks
+                                </FormDescription>
+                              </div>
+                              <FormControl>
+                                <Switch
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Appearance Section */}
+                  {activeTab === "appearance" && (
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <FormField
+                          control={form.control}
+                          name="theme"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Theme</FormLabel>
+                              <Select 
+                                onValueChange={field.onChange} 
+                                defaultValue={field.value}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="light">Light</SelectItem>
+                                  <SelectItem value="dark">Dark</SelectItem>
+                                  <SelectItem value="system">System</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormDescription>
+                                Choose your preferred color theme
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="accentColor"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Accent Color</FormLabel>
+                              <div className="flex items-center gap-2">
+                                <div 
+                                  className="w-6 h-6 rounded-full border"
+                                  style={{ backgroundColor: field.value }}
+                                ></div>
+                                <FormControl>
+                                  <Input 
+                                    type="color" 
+                                    {...field} 
+                                    className="w-full"
+                                  />
+                                </FormControl>
+                              </div>
+                              <FormDescription>
+                                Select a primary color for buttons and accents
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Company Profile Section */}
+                  {activeTab === "company" && (
+                    <div className="space-y-6">
+                      <div className="grid gap-6">
+                        <FormField
+                          control={form.control}
+                          name="companyName"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Company Name</FormLabel>
+                              <FormControl>
+                                <Input {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="companyLogo"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Company Logo URL</FormLabel>
+                              <FormControl>
+                                <div className="flex flex-col space-y-2">
+                                  <Input {...field} placeholder="https://your-company.com/logo.png" />
+                                  {field.value && (
+                                    <div className="mt-2 p-4 border rounded">
+                                      <p className="text-sm mb-2">Logo Preview:</p>
+                                      <img 
+                                        src={field.value} 
+                                        alt="Company Logo" 
+                                        className="max-h-24 max-w-full"
+                                        onError={(e) => {
+                                          (e.target as HTMLImageElement).src = 'https://placehold.co/200x100?text=Logo+Error';
+                                        }}
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+                              </FormControl>
+                              <FormDescription>
+                                Enter a URL to your company logo
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Holiday Calendar Section */}
+                  {activeTab === "holidays" && (
+                    <div className="space-y-6">
+                      <div className="grid gap-4">
+                        {holidays.map((holiday) => (
+                          <div key={holiday.id} className="p-4 border rounded-lg flex flex-col md:flex-row gap-4">
+                            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <Input 
+                                placeholder="Holiday Name" 
+                                value={holiday.name} 
+                                onChange={(e) => updateHoliday(holiday.id, 'name', e.target.value)}
+                              />
+                              <Input 
+                                type="date" 
+                                value={holiday.date} 
+                                onChange={(e) => updateHoliday(holiday.id, 'date', e.target.value)}
+                              />
+                              <div className="md:col-span-2 flex items-center space-x-2">
+                                <Switch 
+                                  id={`recurring-${holiday.id}`} 
+                                  checked={holiday.isRecurringYearly}
+                                  onCheckedChange={(checked) => updateHoliday(holiday.id, 'isRecurringYearly', checked)}
+                                />
+                                <label htmlFor={`recurring-${holiday.id}`} className="text-sm">
+                                  Repeats yearly
+                                </label>
+                              </div>
+                            </div>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="shrink-0 h-9 w-9"
+                              onClick={() => removeHoliday(holiday.id)}
+                              type="button"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          className="mt-2 w-full" 
+                          onClick={addHoliday}
+                        >
+                          <Plus className="mr-2 h-4 w-4" />
+                          Add Holiday
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Advanced Section */}
+                  {activeTab === "advanced" && (
+                    <div className="space-y-6">
+                      <div className="p-4 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg">
+                        <div className="flex items-start gap-3">
+                          <AlertCircle className="h-5 w-5 text-amber-500 mt-0.5" />
+                          <div>
+                            <h4 className="font-medium text-amber-700 dark:text-amber-300">Advanced Settings</h4>
+                            <p className="text-sm text-amber-600 dark:text-amber-400">
+                              This section will be expanded in future updates with data retention policies and system integrations.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="grid gap-4">
+                        <div className="flex justify-between items-center p-4 border rounded-md">
+                          <div>
+                            <h4 className="font-medium">System Data Export</h4>
+                            <p className="text-sm text-muted-foreground">Export all system data for backup</p>
+                          </div>
+                          <Button type="button" variant="outline">
+                            <Upload className="mr-2 h-4 w-4" />
+                            Export
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   
                   <Button type="submit" className="mt-4">Save Settings</Button>
                 </form>

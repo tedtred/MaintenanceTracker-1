@@ -54,12 +54,6 @@ const items = [
     href: "/problem-tracking",
     id: AvailablePages.PROBLEM_TRACKING,
   },
-  {
-    title: "Settings",
-    icon: Settings,
-    href: "/settings",
-    id: AvailablePages.SETTINGS,
-  },
 ];
 
 export function SidebarNav() {

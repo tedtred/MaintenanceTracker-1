@@ -1,5 +1,5 @@
 import { useQuery, useMutation, UseQueryResult } from "@tanstack/react-query";
-import { ProblemButton, Asset } from "@shared/schema";
+import { ProblemButton, Asset, User } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { z } from "zod";
 
@@ -16,6 +16,7 @@ export const buttonFormSchema = z.object({
   workOrderDescription: z.string().optional(),
   workOrderPriority: z.string().optional(),
   defaultAssetId: z.number().nullable().optional(),
+  defaultAssignedTo: z.number().nullable().optional(),
   notifyMaintenance: z.boolean().default(false),
 });
 
@@ -33,6 +34,11 @@ export function useProblemAdmin() {
   // Query for assets (for work order integration)
   const assetsQuery = useQuery<Asset[]>({
     queryKey: ["/api/assets"],
+  });
+  
+  // Query for users (for assigning work orders)
+  const usersQuery = useQuery<User[]>({
+    queryKey: ["/api/admin/users"],
   });
   
   // Create button mutation
@@ -76,6 +82,7 @@ export function useProblemAdmin() {
     // Queries
     buttonsQuery,
     assetsQuery,
+    usersQuery,
     
     // Mutations
     createButtonMutation,

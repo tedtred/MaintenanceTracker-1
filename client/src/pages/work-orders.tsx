@@ -234,45 +234,62 @@ export default function WorkOrders() {
   
   // Generate card data for each work order
   const getWorkOrderCardData = (workOrders: WorkOrder[]) => {
-    return workOrders.map(wo => ({
-      id: wo.id,
-      fields: [
-        {
-          label: "Title",
-          value: wo.title,
-          type: "text"
-        },
-        {
-          label: "Status",
-          value: wo.status,
-          type: "badge",
-          badgeVariant: 
-            wo.status === WorkOrderStatus.COMPLETED 
-              ? "default" 
-              : wo.status === WorkOrderStatus.IN_PROGRESS 
-                ? "secondary" 
-                : wo.status === WorkOrderStatus.OPEN 
-                  ? "outline"
-                  : "destructive"
-        },
-        {
-          label: "Priority",
-          value: wo.priority,
-          type: "badge",
-          badgeVariant: 
-            wo.priority === WorkOrderPriority.HIGH 
-              ? "destructive" 
-              : wo.priority === WorkOrderPriority.MEDIUM 
-                ? "secondary"
-                : "outline"
-        },
-        {
-          label: "Reported",
-          value: new Date(wo.reportedDate).toLocaleString(),
-          type: "text"
-        }
-      ]
-    }));
+    // Log the incoming data to debug
+    console.log("Work orders for mobile view:", workOrders);
+    
+    if (!Array.isArray(workOrders) || workOrders.length === 0) {
+      return [];
+    }
+    
+    return workOrders.map(wo => {
+      if (!wo) {
+        console.error("Invalid work order object:", wo);
+        return {
+          id: 0,
+          fields: cardFields
+        };
+      }
+      
+      return {
+        id: wo.id,
+        fields: [
+          {
+            label: "Title",
+            value: wo.title || "No title",
+            type: "text"
+          },
+          {
+            label: "Status",
+            value: wo.status || "Unknown",
+            type: "badge",
+            badgeVariant: 
+              wo.status === WorkOrderStatus.COMPLETED 
+                ? "default" 
+                : wo.status === WorkOrderStatus.IN_PROGRESS 
+                  ? "secondary" 
+                  : wo.status === WorkOrderStatus.OPEN 
+                    ? "outline"
+                    : "destructive"
+          },
+          {
+            label: "Priority",
+            value: wo.priority || "Unknown",
+            type: "badge",
+            badgeVariant: 
+              wo.priority === WorkOrderPriority.HIGH 
+                ? "destructive" 
+                : wo.priority === WorkOrderPriority.MEDIUM 
+                  ? "secondary"
+                  : "outline"
+          },
+          {
+            label: "Reported",
+            value: wo.reportedDate ? new Date(wo.reportedDate).toLocaleString() : "Unknown",
+            type: "text"
+          }
+        ]
+      };
+    });
   };
   
   const handleWorkOrderClick = (workOrder: WorkOrder) => {

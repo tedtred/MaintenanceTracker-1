@@ -165,7 +165,7 @@ export default function ProblemTracking() {
   
   // Handle form submit
   const onSubmit = (data: ProblemReportData) => {
-    const button = buttons.find(b => b.id === data.buttonId);
+    const button = Array.isArray(buttons) ? buttons.find(b => b.id === data.buttonId) : null;
     
     // Check if we should create a work order alongside the problem event
     const workOrderData = button?.createWorkOrder ? {
@@ -196,10 +196,11 @@ export default function ProblemTracking() {
   // Status counts for stats
   const openProblems = events.filter(event => !event.resolved).length;
   const resolvedProblems = events.filter(event => event.resolved).length;
-  const highPriorityProblems = events.filter(event => !event.resolved && buttons.find(b => b.id === event.buttonId)?.label.toLowerCase().includes("critical")).length;
+  const highPriorityProblems = events.filter(event => !event.resolved && (Array.isArray(buttons) ? buttons.find(b => b.id === event.buttonId)?.label.toLowerCase().includes("critical") : false)).length;
   
   // Get button label by ID
   const getButtonLabel = (buttonId: number) => {
+    if (!Array.isArray(buttons)) return "Unknown";
     const button = buttons.find(b => b.id === buttonId);
     return button ? button.label : "Unknown";
   };
@@ -207,6 +208,7 @@ export default function ProblemTracking() {
   // Get asset name by ID
   const getAssetName = (assetId: number | null) => {
     if (!assetId) return "None";
+    if (!Array.isArray(assets)) return "Unknown";
     const asset = assets.find(a => a.id === assetId);
     return asset ? asset.name : "Unknown";
   };
@@ -336,7 +338,7 @@ export default function ProblemTracking() {
                       events
                         .filter(event => !event.resolved)
                         .map(event => {
-                          const button = buttons.find(b => b.id === event.buttonId);
+                          const button = Array.isArray(buttons) ? buttons.find(b => b.id === event.buttonId) : null;
                           return (
                             <Card key={event.id} className="overflow-hidden">
                               <CardHeader className="py-3" 
@@ -415,7 +417,7 @@ export default function ProblemTracking() {
                       events
                         .filter(event => event.resolved)
                         .map(event => {
-                          const button = buttons.find(b => b.id === event.buttonId);
+                          const button = Array.isArray(buttons) ? buttons.find(b => b.id === event.buttonId) : null;
                           return (
                             <Card key={event.id} className="overflow-hidden">
                               <CardHeader className="py-3" 

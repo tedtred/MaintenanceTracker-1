@@ -298,7 +298,7 @@ export default function MaintenanceCalendar() {
   };
 
   // Filter schedules based on selected asset and frequency
-  const filteredSchedules = schedules.filter(schedule => {
+  const filteredSchedules = Array.isArray(schedules) ? schedules.filter(schedule => {
     // Filter by asset
     if (selectedAsset !== 'all' && schedule.assetId.toString() !== selectedAsset) {
       return false;
@@ -310,7 +310,7 @@ export default function MaintenanceCalendar() {
     }
     
     return true;
-  });
+  }) : [];
 
   const events = filteredSchedules.flatMap((schedule) =>
     generateRecurringEvents(schedule, getAssetName(schedule.assetId), completions)

@@ -57,20 +57,18 @@ app.use((req, res, next) => {
 
   // Run migrations before server start
   try {
-    // Check for FORCE_DB_REBUILD environment variable
-    const forceRebuild = process.env.FORCE_DB_REBUILD === 'true';
+    // Check for FORCE_DB_REBUILD environment variable, but only in production
+    const forceRebuild = isProduction && process.env.FORCE_DB_REBUILD === 'true';
     
     if (forceRebuild) {
       console.log("⚠️ FORCE_DB_REBUILD is set to true. The database will be reset!");
-    }
-    
-    await runMigrations(forceRebuild);
-    
-    if (forceRebuild && isProduction) {
-      // In production, after a successful force rebuild, update the environment variable
-      // to prevent repeated rebuilds on restart
+      await runMigrations(true);
       console.log("Database rebuilt successfully. Remember to set FORCE_DB_REBUILD=false for subsequent deployments.");
+    } else if (isProduction) {
+      // In production without force rebuild, still run migrations but don't force rebuild
+      await runMigrations(false);
     }
+    // In development, don't run migrations automatically
   } catch (error) {
     console.error("Failed to run migrations:", error);
     // Continue anyway, as the tables might already exist

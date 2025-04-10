@@ -32,8 +32,10 @@ export async function runMigrations(forceRebuild = false) {
     throw new Error("DATABASE_URL environment variable is not set");
   }
 
-  // Check if we should reset the database (when not coming from automated process)
-  const shouldPrompt = process.stdout.isTTY && !forceRebuild;
+  // Check if we should reset the database
+  // Skip prompts if in production mode or when force rebuild is requested
+  const isProduction = process.env.NODE_ENV === 'production';
+  const shouldPrompt = process.stdout.isTTY && !forceRebuild && !isProduction;
   let shouldResetDb = forceRebuild;
 
   if (shouldPrompt) {
@@ -71,6 +73,12 @@ export async function runMigrations(forceRebuild = false) {
     // Force rebuild if requested and confirmed
     if (shouldResetDb) {
       console.log("🔄 Force rebuilding database...");
+      
+      if (isProduction) {
+        console.log("Running in production mode with FORCE_DB_REBUILD=true");
+        console.log("This is typically used for deployment scenarios to ensure database schema matches the application.");
+      }
+      
       await pool.query(`DROP SCHEMA public CASCADE; CREATE SCHEMA public;`);
       console.log("✅ Database schema reset complete");
     }

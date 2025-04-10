@@ -115,23 +115,12 @@ function PagePermissionsDialog({ user }: { user: User }) {
       const userPermissions = JSON.parse(user.pagePermissions || '[]');
       setSelectedPermissions(userPermissions);
       
-      // Try to get user's default landing page from settings
-      if (settings?.roleDefaultPages) {
-        try {
-          const defaultPages = JSON.parse(settings.roleDefaultPages || '{}');
-          const rolePage = defaultPages[user.role];
-          if (rolePage) {
-            setDefaultLandingPage(rolePage);
-          } else {
-            // If no default page for this role, set to first allowed page
-            setDefaultLandingPage(userPermissions.length > 0 ? userPermissions[0] : "");
-          }
-        } catch (e) {
-          console.error("Error parsing default pages:", e);
-          setDefaultLandingPage(userPermissions.length > 0 ? userPermissions[0] : "");
-        }
+      // Get user's default landing page
+      if (user.defaultLandingPage) {
+        // Use the user's stored default landing page
+        setDefaultLandingPage(user.defaultLandingPage);
       } else {
-        // If no settings available, use first permission as default
+        // If no default page is set, use first permission as default
         setDefaultLandingPage(userPermissions.length > 0 ? userPermissions[0] : "");
       }
     } catch (error) {
@@ -150,15 +139,12 @@ function PagePermissionsDialog({ user }: { user: User }) {
         permissions: selectedPermissions
       });
       
-      // Save default landing page
-      if (defaultLandingPage && settings) {
+      // Save default landing page directly to the user record
+      if (defaultLandingPage) {
         try {
-          const defaultPages = JSON.parse(settings.roleDefaultPages || '{}');
-          defaultPages[user.role] = defaultLandingPage;
-          
-          await apiRequest("PATCH", `/api/settings`, {
-            ...settings,
-            roleDefaultPages: JSON.stringify(defaultPages)
+          // Update the user's default landing page
+          await apiRequest("PATCH", `/api/admin/users/${user.id}/default-landing-page`, {
+            defaultLandingPage: defaultLandingPage
           });
         } catch (e) {
           console.error("Error updating default landing page:", e);

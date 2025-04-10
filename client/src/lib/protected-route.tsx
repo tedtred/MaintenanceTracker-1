@@ -64,15 +64,52 @@ export function ProtectedRoute({
     );
   }
 
-  // Otherwise, show access denied
+  // Otherwise, show access denied with navigation options
+  const { logoutMutation } = useAuth();
+  
+  // Find the first accessible page for the user
+  const findFirstAccessiblePage = () => {
+    if (!user || !user.pagePermissions) return "/";
+    
+    try {
+      const userPermissions = JSON.parse(user.pagePermissions || '[]');
+      // If they have any permissions, return the first one as the default page
+      if (userPermissions.length > 0) {
+        return `/${userPermissions[0]}`;
+      }
+    } catch (error) {
+      console.error('Error parsing user permissions:', error);
+    }
+    return "/";
+  };
+  
+  const handleLogout = () => {
+    logoutMutation.mutate();
+  };
+  
   return (
     <Route path={path}>
       <div className="flex flex-col items-center justify-center min-h-screen gap-4">
         <ShieldAlert className="h-16 w-16 text-destructive" />
         <h1 className="text-2xl font-bold text-destructive">Access Denied</h1>
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground mb-4">
           You don't have permission to access this page.
         </p>
+        
+        <div className="flex gap-4">
+          <a 
+            href={findFirstAccessiblePage()}
+            className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+          >
+            Go to Home
+          </a>
+          <button
+            onClick={handleLogout}
+            className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
+          >
+            Log Out
+          </button>
+        </div>
       </div>
     </Route>
   );

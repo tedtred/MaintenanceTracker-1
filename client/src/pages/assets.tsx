@@ -878,37 +878,37 @@ export default function Assets() {
                           )}
                         />
                         <div className="pt-6 flex justify-between">
-                          {isAdmin ? (
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button type="button" variant="destructive">Delete Asset</Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    This action cannot be undone. This will permanently delete the asset
-                                    and all related maintenance schedules.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={handleDeleteAsset}>
-                                    {deleteAssetMutation.isPending ? (
-                                      <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        Deleting...
-                                      </>
-                                    ) : (
-                                      'Delete'
-                                    )}
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          ) : (
-                            <div>{/* Empty div to maintain layout when delete button is hidden */}</div>
-                          )}
+                          <div>
+                            {isAdmin && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button type="button" variant="destructive">Delete Asset</Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This action cannot be undone. This will permanently delete the asset
+                                      and all related maintenance schedules.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleDeleteAsset}>
+                                      {deleteAssetMutation.isPending ? (
+                                        <>
+                                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                          Deleting...
+                                        </>
+                                      ) : (
+                                        'Delete'
+                                      )}
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
+                          </div>
                           <div className="flex gap-2">
                             <Button type="button" variant="outline" onClick={() => setIsDetailsDialogOpen(false)}>
                               Cancel
@@ -962,7 +962,7 @@ export default function Assets() {
                                       <Badge>{schedule.status}</Badge>
                                     </TableCell>
                                     <TableCell className="text-right">
-                                      {isAdmin ? (
+                                      {isAdmin && (
                                         <AlertDialog>
                                           <AlertDialogTrigger asChild>
                                             <Button variant="ghost" size="sm">
@@ -1003,7 +1003,7 @@ export default function Assets() {
                                             </AlertDialogFooter>
                                           </AlertDialogContent>
                                         </AlertDialog>
-                                      ) : null}
+                                      )}
                                     </TableCell>
                                   </TableRow>
                                 ))

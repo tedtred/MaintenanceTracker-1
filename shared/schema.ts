@@ -287,6 +287,9 @@ export const settings = pgTable("settings", {
   // Holiday Calendar
   holidayCalendar: text("holiday_calendar").default("[]"), // JSON array of holiday dates
   
+  // User Access and Default Pages
+  roleDefaultPages: text("role_default_pages").default("{}"), // JSON object mapping roles to default pages
+  
   // System
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -320,6 +323,9 @@ export const insertSettingsSchema = createInsertSchema(settings)
     
     // Holiday Calendar validation
     holidayCalendar: z.string().default("[]"),
+    
+    // User Default Pages validation
+    roleDefaultPages: z.string().default("{}"),
   });
 
 // Add new types

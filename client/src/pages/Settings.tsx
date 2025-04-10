@@ -54,6 +54,11 @@ const settingsSections = [
     icon: <Building className="mr-2 h-4 w-4" />,
   },
   {
+    id: "access",
+    title: "User Access",
+    icon: <Info className="mr-2 h-4 w-4" />,
+  },
+  {
     id: "holidays",
     title: "Holiday Calendar",
     icon: <CalendarDays className="mr-2 h-4 w-4" />,
@@ -72,10 +77,17 @@ interface HolidayDate {
   isRecurringYearly: boolean;
 }
 
+// Define interface for role default pages
+interface RoleDefaultPage {
+  role: string;
+  defaultPage: string;
+}
+
 export default function SettingsPage() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("schedule");
   const [holidays, setHolidays] = useState<HolidayDate[]>([]);
+  const [roleDefaultPages, setRoleDefaultPages] = useState<RoleDefaultPage[]>([]);
 
   const { data: settings, isLoading } = useQuery({
     queryKey: ['/api/settings'],
@@ -89,6 +101,23 @@ export default function SettingsPage() {
           }
         } catch (error) {
           console.error("Failed to parse holiday calendar data:", error);
+        }
+      }
+      
+      // Parse role default pages data when settings load
+      if (data?.roleDefaultPages) {
+        try {
+          const parsedRoleDefaultPages = JSON.parse(data.roleDefaultPages);
+          if (typeof parsedRoleDefaultPages === 'object') {
+            // Convert object to array for easier UI handling
+            const roleDefaults = Object.entries(parsedRoleDefaultPages).map(([role, defaultPage]) => ({
+              role,
+              defaultPage: defaultPage as string
+            }));
+            setRoleDefaultPages(roleDefaults);
+          }
+        } catch (error) {
+          console.error("Failed to parse role default pages data:", error);
         }
       }
     }
@@ -122,7 +151,10 @@ export default function SettingsPage() {
       companyLogo: "",
       
       // Holiday Calendar
-      holidayCalendar: "[]"
+      holidayCalendar: "[]",
+      
+      // User Access
+      roleDefaultPages: "{}"
     }
   });
 

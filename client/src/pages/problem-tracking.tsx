@@ -671,7 +671,7 @@ export default function ProblemTracking() {
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="none">None</SelectItem>
-                            {assets.map(asset => (
+                            {Array.isArray(assets) && assets.map(asset => (
                               <SelectItem key={asset.id} value={asset.id.toString()}>
                                 {asset.name}
                               </SelectItem>

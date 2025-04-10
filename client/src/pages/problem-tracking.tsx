@@ -48,6 +48,7 @@ export default function ProblemTracking() {
   const [activeTab, setActiveTab] = useState("report");
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<ProblemEvent | null>(null);
   const [selectedButton, setSelectedButton] = useState<ProblemButton | null>(null);
   
@@ -93,26 +94,33 @@ export default function ProblemTracking() {
     
     // Check if we should skip the details form
     if (button.skipDetailsForm) {
-      // If skipDetailsForm is true, submit the problem immediately
-      const defaultData = {
-        buttonId: button.id,
-        notes: "",
-        problemDetails: "",
-        locationName: "",
-        assetId: button.defaultAssetId,
-        timestamp: new Date(),
-      };
-      
-      // Submit with minimal data
-      onSubmit(defaultData);
-      toast({
-        title: "Problem Reported",
-        description: `${button.label} has been reported successfully`,
-      });
+      // If skipDetailsForm is true, show a confirmation dialog instead
+      setIsConfirmOpen(true);
     } else {
       // Show the details form as usual
       setIsReportOpen(true);
     }
+  };
+  
+  // Handle quick report confirmation
+  const handleQuickReport = () => {
+    if (!selectedButton) return;
+    
+    // Prepare minimal data for a quick report
+    const defaultData = {
+      buttonId: selectedButton.id,
+      notes: "",
+      problemDetails: "",
+      locationName: "",
+      assetId: selectedButton.defaultAssetId,
+      timestamp: new Date(),
+    };
+    
+    // Submit with minimal data
+    onSubmit(defaultData);
+    
+    // Close the confirm dialog
+    setIsConfirmOpen(false);
   };
   
   // Handle form submit for problem reporting

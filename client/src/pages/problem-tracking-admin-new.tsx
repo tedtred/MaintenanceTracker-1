@@ -240,6 +240,7 @@ export default function ProblemTrackingAdminNew() {
   const renderContent = () => {
     const buttons = Array.isArray(buttonsQuery.data) ? buttonsQuery.data : [];
     const assets = Array.isArray(assetsQuery.data) ? assetsQuery.data : [];
+    const users = Array.isArray(usersQuery.data) ? usersQuery.data : [];
     
     return (
       <div className="w-full">
@@ -980,7 +981,7 @@ export default function ProblemTrackingAdminNew() {
   
   return (
     <MultiQueryLoader
-      queries={[buttonsQuery, assetsQuery]}
+      queries={[buttonsQuery, assetsQuery, usersQuery]}
       loadingComponent={
         <div className="flex items-center justify-center min-h-screen">
           <Loader2 className="h-8 w-8 animate-spin" />

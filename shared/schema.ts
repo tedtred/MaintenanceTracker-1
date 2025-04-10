@@ -97,6 +97,7 @@ export const assets = pgTable("assets", {
   location: text("location").notNull(),
   status: text("status").notNull(),
   category: text("category").notNull(),
+  assetTag: text("asset_tag"), // New field for asset tagging
   modelNumber: text("model_number"),
   serialNumber: text("serial_number"),
   manufacturer: text("manufacturer"),

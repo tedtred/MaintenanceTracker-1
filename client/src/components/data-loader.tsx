@@ -65,7 +65,7 @@ export function DataLoader<T>({
  */
 interface MultiQueryLoaderProps {
   queries: UseQueryResult<any, Error>[];
-  children: React.ReactNode;
+  children: React.ReactNode | (() => React.ReactNode);
   loadingComponent?: React.ReactNode;
   errorComponent?: (errors: (Error | null)[]) => React.ReactNode;
 }
@@ -107,5 +107,5 @@ export function MultiQueryLoader({
     );
   }
 
-  return <>{children}</>;
+  return typeof children === 'function' ? <>{children()}</> : <>{children}</>;
 }

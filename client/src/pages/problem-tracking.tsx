@@ -552,8 +552,8 @@ export default function ProblemTracking() {
                       <FormItem>
                         <FormLabel className="text-base">Related Asset</FormLabel>
                         <Select
-                          onValueChange={(value) => field.onChange(value ? parseInt(value) : null)}
-                          value={field.value?.toString() || ""}
+                          onValueChange={(value) => field.onChange(value && value !== "none" ? parseInt(value) : null)}
+                          value={field.value?.toString() || "none"}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -661,8 +661,8 @@ export default function ProblemTracking() {
                       <FormItem>
                         <FormLabel>Related Asset</FormLabel>
                         <Select
-                          onValueChange={(value) => field.onChange(value ? parseInt(value) : null)}
-                          value={field.value?.toString() || ""}
+                          onValueChange={(value) => field.onChange(value && value !== "none" ? parseInt(value) : null)}
+                          value={field.value?.toString() || "none"}
                         >
                           <FormControl>
                             <SelectTrigger>

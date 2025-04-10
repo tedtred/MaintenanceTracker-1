@@ -179,20 +179,24 @@ export default function MaintenanceCalendar() {
   const isMobile = useIsMobile();
   const { toast } = useToast();
 
-  const { data: schedules = [] } = useQuery<MaintenanceSchedule[]>({
+  const schedulesQuery = useQuery<MaintenanceSchedule[]>({
     queryKey: ["/api/maintenance-schedules"],
+    queryFn: () => apiRequest("GET", "/api/maintenance-schedules"),
   });
 
-  const { data: assets = [] } = useQuery<Asset[]>({
+  const assetsQuery = useQuery<Asset[]>({
     queryKey: ["/api/assets"],
+    queryFn: () => apiRequest("GET", "/api/assets"),
   });
 
-  const { data: completions = [] } = useQuery<MaintenanceCompletion[]>({
+  const completionsQuery = useQuery<MaintenanceCompletion[]>({
     queryKey: ["/api/maintenance-completions"],
+    queryFn: () => apiRequest("GET", "/api/maintenance-completions"),
   });
   
-  const { data: settings } = useQuery<Settings>({
+  const settingsQuery = useQuery<Settings>({
     queryKey: ['/api/settings'],
+    queryFn: () => apiRequest("GET", "/api/settings"),
   });
 
   const completeMaintenanceMutation = useMutation({
@@ -293,12 +297,12 @@ export default function MaintenanceCalendar() {
   });
 
   const getAssetName = (assetId: number) => {
-    const asset = Array.isArray(assets) ? assets.find(a => a.id === assetId) : undefined;
+    const asset = Array.isArray(assetsQuery.data) ? assetsQuery.data.find(a => a.id === assetId) : undefined;
     return asset ? asset.name : 'Unknown Asset';
   };
 
   // Filter schedules based on selected asset and frequency
-  const filteredSchedules = Array.isArray(schedules) ? schedules.filter(schedule => {
+  const filteredSchedules = Array.isArray(schedulesQuery.data) ? schedulesQuery.data.filter(schedule => {
     // Filter by asset
     if (selectedAsset !== 'all' && schedule.assetId.toString() !== selectedAsset) {
       return false;
@@ -313,7 +317,7 @@ export default function MaintenanceCalendar() {
   }) : [];
 
   const events = filteredSchedules.flatMap((schedule) =>
-    generateRecurringEvents(schedule, getAssetName(schedule.assetId), completions)
+    generateRecurringEvents(schedule, getAssetName(schedule.assetId), completionsQuery.data)
   );
 
   const handleSelectEvent = (event: any) => {
@@ -327,12 +331,12 @@ export default function MaintenanceCalendar() {
   };
 
   const getAssetDetails = (assetId: number) => {
-    return Array.isArray(assets) ? assets.find(a => a.id === assetId) : undefined;
+    return Array.isArray(assetsQuery.data) ? assetsQuery.data.find(a => a.id === assetId) : undefined;
   };
 
   const getCompletionHistory = (scheduleId: number) => {
-    return Array.isArray(completions) 
-      ? completions
+    return Array.isArray(completionsQuery.data) 
+      ? completionsQuery.data
         .filter(c => c.scheduleId === scheduleId)
         .sort((a, b) => new Date(b.completedDate).getTime() - new Date(a.completedDate).getTime())
       : [];
@@ -345,24 +349,24 @@ export default function MaintenanceCalendar() {
 
   // Using the week start day from settings if available
   useEffect(() => {
-    if (settings) {
+    if (settingsQuery.data) {
       // Update the localizer with the user's preferred start of week
-      const weekStartsOn = settings.workWeekStart as 0 | 1 | 2 | 3 | 4 | 5 | 6;
+      const weekStartsOn = settingsQuery.data.workWeekStart as 0 | 1 | 2 | 3 | 4 | 5 | 6;
       // For react-big-calendar, we need to return a function that returns the first day of week
       localizer.startOfWeek = () => {
         const sdow = startOfWeek(new Date(), { weekStartsOn });
         return sdow.getDay() as any;
       };
     }
-  }, [settings]);
+  }, [settingsQuery.data]);
 
   // Format dates according to user's preference
   const formatDate = (date: Date) => {
-    if (!settings) return format(date, 'MMM dd, yyyy');
+    if (!settingsQuery.data) return format(date, 'MMM dd, yyyy');
     
     try {
       // Convert settings.dateFormat to a format string that date-fns understands
-      const formatStr = settings.dateFormat
+      const formatStr = settingsQuery.data.dateFormat
         .replace('MM', 'MM')
         .replace('DD', 'dd')
         .replace('YYYY', 'yyyy');

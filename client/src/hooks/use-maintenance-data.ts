@@ -8,6 +8,7 @@ import {
   InsertMaintenanceSchedule,
   MaintenanceCompletion,
   InsertMaintenanceCompletion,
+  MaintenanceChangeLog,
 } from "@shared/schema";
 
 /**
@@ -230,4 +231,20 @@ export function useCompleteMaintenanceMutation() {
       });
     },
   });
+}
+
+/**
+ * Hook to fetch maintenance change logs for a specific schedule
+ */
+export function useMaintenanceChangeLogs(scheduleId: number, options?: { enabled?: boolean }) {
+  return useApiQuery<MaintenanceChangeLog[]>(
+    ["/api/maintenance-change-logs", scheduleId],
+    {
+      enabled: options?.enabled !== false && !!scheduleId,
+      queryFn: async () => {
+        const res = await apiRequest("GET", `/api/maintenance-schedules/${scheduleId}/change-logs`);
+        return res.json();
+      },
+    }
+  );
 }

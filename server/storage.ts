@@ -417,8 +417,17 @@ export class DatabaseStorage implements IStorage {
     await db.delete(assets).where(eq(assets.id, id));
   }
 
-  async createMaintenanceSchedule(schedule: InsertMaintenanceSchedule): Promise<MaintenanceSchedule> {
+  async createMaintenanceSchedule(schedule: InsertMaintenanceSchedule, userId?: number): Promise<MaintenanceSchedule> {
     const [newSchedule] = await db.insert(maintenanceSchedules).values(schedule).returning();
+    
+    // Log the creation
+    await this.createMaintenanceChangeLog({
+      scheduleId: newSchedule.id,
+      changedBy: userId || null,
+      changeType: "CREATE",
+      newValue: JSON.stringify(newSchedule),
+    });
+    
     return newSchedule;
   }
 
@@ -532,11 +541,43 @@ export class DatabaseStorage implements IStorage {
     return newCompletion;
   }
 
-  async deleteMaintenanceSchedule(id: number): Promise<void> {
-    // First delete all related maintenance completions
+  async createMaintenanceChangeLog(log: InsertMaintenanceChangeLog): Promise<MaintenanceChangeLog> {
+    const [newLog] = await db.insert(maintenanceChangeLogs).values(log).returning();
+    return newLog;
+  }
+
+  async getMaintenanceChangeLogs(scheduleId: number): Promise<MaintenanceChangeLog[]> {
+    return await db
+      .select()
+      .from(maintenanceChangeLogs)
+      .where(eq(maintenanceChangeLogs.scheduleId, scheduleId))
+      .orderBy(desc(maintenanceChangeLogs.changedAt));
+  }
+
+  async deleteMaintenanceSchedule(id: number, userId?: number): Promise<void> {
+    // First get the schedule to record it for change logs
+    const schedule = await this.getMaintenanceSchedule(id);
+    
+    if (schedule) {
+      // Log the deletion
+      await this.createMaintenanceChangeLog({
+        scheduleId: id,
+        changedBy: userId || null,
+        changeType: "DELETE",
+        oldValue: JSON.stringify(schedule),
+        newValue: null,
+      });
+    }
+    
+    // Delete all related maintenance completions
     await db
       .delete(maintenanceCompletions)
       .where(eq(maintenanceCompletions.scheduleId, id));
+      
+    // Delete all related change logs
+    await db
+      .delete(maintenanceChangeLogs)
+      .where(eq(maintenanceChangeLogs.scheduleId, id));
 
     // Then delete the maintenance schedule
     await db

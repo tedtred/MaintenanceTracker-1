@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
-import { format, parse, startOfWeek, getDay } from "date-fns";
+import { format, parse, startOfWeek, getDay, formatDistanceToNow } from "date-fns";
 import enUS from "date-fns/locale/en-US";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import {
@@ -10,18 +10,27 @@ import {
   MaintenanceFrequency,
   MaintenanceStatus,
   Asset,
+  MaintenanceChangeLog,
 } from "@shared/schema";
-import { queryClient, apiRequest } from "@/lib/queryClient";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import { insertMaintenanceScheduleSchema } from "@shared/schema";
+import { 
+  useMaintenanceSchedules,
+  useCreateSchedule, 
+  useUpdateSchedule, 
+  useDeleteSchedule,
+  useMaintenanceChangeLogs
+} from "@/hooks/use-maintenance-data";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -41,6 +50,23 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 
 const localizer = dateFnsLocalizer({
   format,
@@ -52,40 +78,127 @@ const localizer = dateFnsLocalizer({
   },
 });
 
+// SidebarNav Component
+function SidebarNav() {
+  return (
+    <div className="w-64 border-r h-screen p-4">
+      <div className="mb-8">
+        <h2 className="text-xl font-bold mb-4">Maintenance Manager</h2>
+      </div>
+      <nav className="space-y-2">
+        <a href="/dashboard" className="block py-2 px-4 rounded hover:bg-accent">Dashboard</a>
+        <a href="/assets" className="block py-2 px-4 rounded hover:bg-accent">Assets</a>
+        <a href="/maintenance-schedules" className="block py-2 px-4 rounded bg-accent font-medium">Maintenance Schedules</a>
+        <a href="/maintenance-calendar" className="block py-2 px-4 rounded hover:bg-accent">Maintenance Calendar</a>
+        <a href="/work-orders" className="block py-2 px-4 rounded hover:bg-accent">Work Orders</a>
+      </nav>
+    </div>
+  );
+}
+
+// Change log component
+function ChangeLogList({ logs }: { logs: MaintenanceChangeLog[] }) {
+  if (!logs.length) {
+    return <p className="text-muted-foreground text-center my-4">No change history available</p>;
+  }
+
+  return (
+    <ScrollArea className="h-[400px]">
+      <div className="space-y-4 p-4">
+        {logs.map((log) => (
+          <Card key={log.id} className="border-l-4 border-primary">
+            <CardHeader className="py-3">
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-sm font-medium">
+                  {log.changeType} - {log.fieldName || "All Fields"}
+                </CardTitle>
+                <span className="text-xs text-muted-foreground">
+                  {formatDistanceToNow(new Date(log.changedAt), { addSuffix: true })}
+                </span>
+              </div>
+              <CardDescription className="text-xs">
+                {log.changedBy 
+                  ? `Changed by User ID: ${log.changedBy}` 
+                  : "System change"}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="py-2">
+              {log.changeType === "DELETE" ? (
+                <div className="text-sm">
+                  <p className="text-destructive font-medium">Record Deleted</p>
+                  <p className="text-muted-foreground mt-1 text-xs">
+                    Previously: {log.oldValue ? JSON.parse(log.oldValue).title : "N/A"}
+                  </p>
+                </div>
+              ) : log.changeType === "CREATE" ? (
+                <div className="text-sm">
+                  <p className="text-green-500 font-medium">New Record Created</p>
+                  <div className="mt-2 text-xs">
+                    <pre className="bg-muted p-2 rounded overflow-auto">
+                      {log.newValue ? formatJSON(log.newValue) : "N/A"}
+                    </pre>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <p className="font-medium">Previous value:</p>
+                    <pre className="bg-muted p-2 rounded mt-1 overflow-auto">
+                      {log.oldValue || "N/A"}
+                    </pre>
+                  </div>
+                  <div>
+                    <p className="font-medium">New value:</p>
+                    <pre className="bg-muted p-2 rounded mt-1 overflow-auto">
+                      {log.newValue || "N/A"}
+                    </pre>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </ScrollArea>
+  );
+}
+
+// Utility function to format JSON for display
+function formatJSON(jsonString: string): string {
+  try {
+    const obj = JSON.parse(jsonString);
+    return JSON.stringify(obj, null, 2);
+  } catch (e) {
+    return jsonString;
+  }
+}
+
 export default function MaintenanceSchedules() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isChangeLogDialogOpen, setIsChangeLogDialogOpen] = useState(false);
+  const [selectedSchedule, setSelectedSchedule] = useState<MaintenanceSchedule | null>(null);
   const { toast } = useToast();
 
-  const { data: schedules = [] } = useQuery<MaintenanceSchedule[]>({
-    queryKey: ["/api/maintenance-schedules"],
-  });
-
+  // Data fetching
   const { data: assets = [] } = useQuery<Asset[]>({
     queryKey: ["/api/assets"],
   });
-
-  const createMutation = useMutation({
-    mutationFn: async (data: InsertMaintenanceSchedule) => {
-      const res = await apiRequest("POST", "/api/maintenance-schedules", data);
-      return await res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/maintenance-schedules"] });
-      setIsCreateDialogOpen(false);
-      form.reset();
-      toast({
-        title: "Success",
-        description: "Maintenance schedule created successfully",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+  
+  const { 
+    schedulesQuery, 
+    createScheduleMutation, 
+    updateScheduleMutation, 
+    deleteScheduleMutation 
+  } = useMaintenanceSchedules();
+  
+  const schedules = schedulesQuery.data || [];
+  
+  // Fetch change logs for the selected schedule
+  const changeLogsQuery = useMaintenanceChangeLogs(
+    selectedSchedule?.id || 0, 
+    { enabled: isChangeLogDialogOpen && !!selectedSchedule }
+  );
 
   const form = useForm<InsertMaintenanceSchedule>({
     resolver: zodResolver(insertMaintenanceScheduleSchema),

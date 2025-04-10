@@ -142,6 +142,19 @@ export class DatabaseStorage implements IStorage {
     }
     return updatedUser;
   }
+  
+  // Update user default landing page
+  async updateUserDefaultLandingPage(userId: number, defaultLandingPage: string): Promise<User> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({ defaultLandingPage })
+      .where(eq(users.id, userId))
+      .returning();
+    if (!updatedUser) {
+      throw new Error("User not found");
+    }
+    return updatedUser;
+  }
 
   async getPendingUsers(): Promise<User[]> {
     return await db

@@ -66,6 +66,8 @@ import { DataCardView, DataField } from "@/components/ui/data-card-view";
 import { useLocation } from "wouter";
 
 export default function WorkOrders() {
+  const isMobile = useIsMobile();
+  const [, navigate] = useLocation();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<WorkOrder | null>(null);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
@@ -205,9 +207,6 @@ export default function WorkOrders() {
       </div>
     );
   }
-
-  const isMobile = useIsMobile();
-  const [, navigate] = useLocation();
   
   // Configure mobile card fields
   const cardFields: DataField[] = [

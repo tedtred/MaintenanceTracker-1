@@ -21,6 +21,12 @@ export const defaultButtonFormValues = {
   color: "#6b7280",
   icon: "none",
   active: true,
+  createWorkOrder: false,
+  workOrderTitle: "",
+  workOrderDescription: "",
+  workOrderPriority: "",
+  defaultAssetId: null,
+  defaultAssignedTo: null,
 };
 
 // Standard error handler for mutations
@@ -46,4 +52,10 @@ export type ButtonFormData = {
   color: string;
   icon?: string;
   active: boolean;
+  createWorkOrder?: boolean;
+  workOrderTitle?: string;
+  workOrderDescription?: string;
+  workOrderPriority?: string;
+  defaultAssetId?: number | null;
+  defaultAssignedTo?: number | null;
 };

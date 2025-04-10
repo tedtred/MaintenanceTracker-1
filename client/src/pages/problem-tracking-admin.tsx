@@ -82,6 +82,7 @@ export default function ProblemTrackingAdminNew() {
       defaultAssetId: null,
       defaultAssignedTo: null,
       notifyMaintenance: false,
+      skipDetailsForm: false,
     },
   });
   
@@ -100,6 +101,7 @@ export default function ProblemTrackingAdminNew() {
       defaultAssetId: null,
       defaultAssignedTo: null,
       notifyMaintenance: false,
+      skipDetailsForm: false,
     },
   });
   
@@ -120,6 +122,7 @@ export default function ProblemTrackingAdminNew() {
       defaultAssetId: button.defaultAssetId,
       defaultAssignedTo: button.defaultAssignedTo,
       notifyMaintenance: button.notifyMaintenance || false,
+      skipDetailsForm: button.skipDetailsForm || false,
     });
     
     setIsEditOpen(true);
@@ -217,6 +220,7 @@ export default function ProblemTrackingAdminNew() {
       defaultAssetId: null,
       defaultAssignedTo: null,
       notifyMaintenance: false,
+      skipDetailsForm: false,
     });
     setSelectedColor("#3B82F6");
     setIsCreateOpen(true);

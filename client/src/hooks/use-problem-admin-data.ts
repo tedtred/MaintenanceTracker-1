@@ -18,6 +18,7 @@ export const buttonFormSchema = z.object({
   defaultAssetId: z.number().nullable().optional(),
   defaultAssignedTo: z.number().nullable().optional(),
   notifyMaintenance: z.boolean().default(false),
+  skipDetailsForm: z.boolean().default(false),
 });
 
 export type ButtonFormData = z.infer<typeof buttonFormSchema>;

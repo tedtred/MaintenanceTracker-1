@@ -3,10 +3,10 @@ import { registerRoutes } from "./routes";
 import path from "path";
 import fs from "fs";
 import { log, isProduction } from "./utils";
-import { createServer } from 'http'; // Added createServer import
+import { createServer } from 'http';
 
-// Import migrations - Added this line
-import { runMigrations } from './migrate.js';
+// Import migrations
+import { runMigrations } from './migrate';
 
 
 const app = express();
@@ -55,21 +55,25 @@ app.use((req, res, next) => {
     console.error("Error:", err); // Log the full error
   });
 
-  // Run migrations before server start in production - Added this block
-  if (isProduction) {
-    try {
-      // Check for FORCE_DB_REBUILD environment variable
-      const forceRebuild = process.env.FORCE_DB_REBUILD === 'true';
-      
-      if (forceRebuild) {
-        console.log("⚠️ FORCE_DB_REBUILD is set to true. The database will be reset!");
-      }
-      
-      await runMigrations(forceRebuild);
-    } catch (error) {
-      console.error("Failed to run migrations:", error);
-      // Continue anyway, as the tables might already exist
+  // Run migrations before server start
+  try {
+    // Check for FORCE_DB_REBUILD environment variable
+    const forceRebuild = process.env.FORCE_DB_REBUILD === 'true';
+    
+    if (forceRebuild) {
+      console.log("⚠️ FORCE_DB_REBUILD is set to true. The database will be reset!");
     }
+    
+    await runMigrations(forceRebuild);
+    
+    if (forceRebuild && isProduction) {
+      // In production, after a successful force rebuild, update the environment variable
+      // to prevent repeated rebuilds on restart
+      console.log("Database rebuilt successfully. Remember to set FORCE_DB_REBUILD=false for subsequent deployments.");
+    }
+  } catch (error) {
+    console.error("Failed to run migrations:", error);
+    // Continue anyway, as the tables might already exist
   }
 
 

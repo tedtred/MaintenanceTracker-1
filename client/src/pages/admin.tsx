@@ -1,4 +1,5 @@
 import { useAuth } from "@/hooks/use-auth";
+import { usePermissions } from "@/hooks/use-permissions";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Table,

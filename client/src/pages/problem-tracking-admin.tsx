@@ -977,29 +977,31 @@ export default function ProblemTrackingAdminNew() {
               </Form>
             </ScrollArea>
             <DialogFooter className="flex items-center justify-between sm:justify-between">
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" disabled={updateButtonMutation.isPending || deleteButtonMutation.isPending}>
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Problem Button</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Are you sure you want to delete this problem button? 
-                      This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDeleteButton}>
+              {isAdmin && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" disabled={updateButtonMutation.isPending || deleteButtonMutation.isPending}>
+                      <Trash2 className="mr-2 h-4 w-4" />
                       Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Problem Button</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete this problem button? 
+                        This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDeleteButton}>
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
               
               <div className="flex gap-2">
                 <Button type="button" variant="outline" onClick={() => setIsEditOpen(false)}>

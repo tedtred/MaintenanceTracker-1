@@ -1,7 +1,7 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Settings, WeekDay, insertSettingsSchema } from "@shared/schema";
+import { Settings, WeekDay, UserRole, insertSettingsSchema, AvailablePages } from "@shared/schema";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -178,11 +178,37 @@ export default function SettingsPage() {
     setHolidays(holidays.filter(holiday => holiday.id !== id));
   };
 
-  // Update form with holidays before submit
+  // Role Default Pages Management
+  const addRoleDefaultPage = () => {
+    const newRoleDefaultPage: RoleDefaultPage = {
+      role: UserRole.TECHNICIAN, // Default to technician
+      defaultPage: "/work-orders" // Default to work orders
+    };
+    setRoleDefaultPages([...roleDefaultPages, newRoleDefaultPage]);
+  };
+
+  const updateRoleDefaultPage = (index: number, field: keyof RoleDefaultPage, value: string) => {
+    setRoleDefaultPages(roleDefaultPages.map((page, i) => 
+      i === index ? { ...page, [field]: value } : page
+    ));
+  };
+
+  const removeRoleDefaultPage = (index: number) => {
+    setRoleDefaultPages(roleDefaultPages.filter((_, i) => i !== index));
+  };
+
+  // Update form with holidays and role default pages before submit
   const prepareSubmitData = (formData: Settings) => {
+    // Convert role default pages from array to object format for storage
+    const roleDefaultPagesObj: Record<string, string> = {};
+    roleDefaultPages.forEach(item => {
+      roleDefaultPagesObj[item.role] = item.defaultPage;
+    });
+
     return {
       ...formData,
-      holidayCalendar: JSON.stringify(holidays)
+      holidayCalendar: JSON.stringify(holidays),
+      roleDefaultPages: JSON.stringify(roleDefaultPagesObj)
     };
   };
 
@@ -687,6 +713,93 @@ export default function SettingsPage() {
                               </FormItem>
                             )}
                           />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* User Access Section */}
+                  {activeTab === "access" && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Info className="h-5 w-5" />
+                          User Access
+                        </CardTitle>
+                        <CardDescription>
+                          Configure user role permissions and default landing pages
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-6">
+                        <div className="grid gap-4">
+                          <h3 className="text-lg font-medium">Default Landing Pages by Role</h3>
+                          <p className="text-sm text-muted-foreground">
+                            Set which page users with specific roles will see first when logging in.
+                            This is especially useful when a user does not have access to the dashboard.
+                          </p>
+                          
+                          {roleDefaultPages.map((page, index) => (
+                            <div key={index} className="grid grid-cols-12 gap-4 items-center border rounded-lg p-4">
+                              <div className="col-span-5">
+                                <label className="text-sm font-medium">Role</label>
+                                <Select 
+                                  value={page.role}
+                                  onValueChange={(value) => updateRoleDefaultPage(index, 'role', value)}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select role" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {Object.entries(UserRole).map(([key, value]) => (
+                                      <SelectItem key={value} value={value}>
+                                        {key}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              
+                              <div className="col-span-5">
+                                <label className="text-sm font-medium">Default Page</label>
+                                <Select 
+                                  value={page.defaultPage}
+                                  onValueChange={(value) => updateRoleDefaultPage(index, 'defaultPage', value)}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select default page" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {Object.entries(AvailablePages).map(([key, value]) => (
+                                      <SelectItem key={value} value={value}>
+                                        {key}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              
+                              <div className="col-span-2 flex justify-end">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => removeRoleDefaultPage(index)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                          
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="mt-2 w-full"
+                            onClick={addRoleDefaultPage}
+                          >
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Add Role Default Page
+                          </Button>
                         </div>
                       </CardContent>
                     </Card>

@@ -179,8 +179,8 @@ export default function Assets() {
     deleteScheduleMutation
   } = useMaintenanceSchedules();
   
-  const { updateScheduleMutation } = useUpdateSchedule();
-  const { changeLogsQuery } = useMaintenanceChangeLogs(
+  const updateScheduleMutation = useUpdateSchedule();
+  const changeLogsQuery = useMaintenanceChangeLogs(
     selectedSchedule?.id || 0,
     { enabled: selectedSchedule !== null }
   );

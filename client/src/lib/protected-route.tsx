@@ -67,13 +67,19 @@ export function ProtectedRoute({
   // Otherwise, show access denied with navigation options
   const { logoutMutation } = useAuth();
   
-  // Find the first accessible page for the user
+  // Find the appropriate landing page for the user
   const findFirstAccessiblePage = () => {
     if (!user || !user.pagePermissions) return "/";
     
     try {
       const userPermissions = JSON.parse(user.pagePermissions || '[]');
-      // If they have any permissions, return the first one as the default page
+      
+      // First, check if user has a default landing page and if they have permission to access it
+      if (user.defaultLandingPage && userPermissions.includes(user.defaultLandingPage)) {
+        return `/${user.defaultLandingPage}`;
+      }
+      
+      // If no default landing page or not permitted, fall back to the first permission 
       if (userPermissions.length > 0) {
         return `/${userPermissions[0]}`;
       }

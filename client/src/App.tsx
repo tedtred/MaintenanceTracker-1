@@ -30,10 +30,7 @@ function HomeRedirect() {
   const [, setLocation] = useLocation();
   const [redirectPath, setRedirectPath] = useState<string | null>(null);
   
-  // Get settings to check for default landing pages
-  const { data: settings } = useQuery({
-    queryKey: ['/api/settings']
-  });
+
   
   useEffect(() => {
     if (isLoading || !user) return;
@@ -48,19 +45,10 @@ function HomeRedirect() {
       // Parse user permissions
       const userPermissions = JSON.parse(user.pagePermissions || '[]');
       
-      // Get user-specific default landing page from settings
-      if (settings?.roleDefaultPages) {
-        try {
-          const defaultPages = JSON.parse(settings.roleDefaultPages || '{}');
-          
-          // Check if there's a role-specific default landing page
-          if (defaultPages[user.role] && userPermissions.includes(defaultPages[user.role])) {
-            setRedirectPath(`/${defaultPages[user.role]}`);
-            return;
-          }
-        } catch (e) {
-          console.error("Error parsing default pages:", e);
-        }
+      // Check user-specific default landing page
+      if (user.defaultLandingPage && userPermissions.includes(user.defaultLandingPage)) {
+        setRedirectPath(`/${user.defaultLandingPage}`);
+        return;
       }
       
       // Check if user has dashboard access as a fallback
@@ -82,7 +70,7 @@ function HomeRedirect() {
       console.error('Error determining default page:', error);
       setRedirectPath("/dashboard");
     }
-  }, [user, isLoading, settings, setLocation]);
+  }, [user, isLoading, setLocation]);
   
   if (isLoading || !redirectPath) {
     return (

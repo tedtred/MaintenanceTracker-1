@@ -27,7 +27,9 @@ export const users = pgTable("users", {
   role: text("role").notNull(),
   approved: boolean("approved").notNull().default(false),
   // Store page permissions as a JSON array of page IDs
-  pagePermissions: text("page_permissions").default("[]").notNull()
+  pagePermissions: text("page_permissions").default("[]").notNull(),
+  // Default landing page ID for this user
+  defaultLandingPage: text("default_landing_page")
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({

@@ -108,6 +108,42 @@ const LOCAL_MAINTENANCE_FREQUENCY = {
   CUSTOM: MaintenanceFrequency.CUSTOM
 };
 
+// Status constants for maintenance schedules
+const LOCAL_MAINTENANCE_STATUS = {
+  SCHEDULED: "SCHEDULED",
+  COMPLETED: "COMPLETED",
+  OVERDUE: "OVERDUE",
+  CANCELLED: "CANCELLED",
+};
+
+// Helper function to format log values for display
+const formatLogValue = (value: string | null): string => {
+  if (value === null) return "—";
+  
+  try {
+    // Check if it's a date
+    if (value.match(/^\d{4}-\d{2}-\d{2}T/)) {
+      return format(new Date(value), "MMM dd, yyyy");
+    }
+    
+    // Check if it's a boolean
+    if (value === "true" || value === "false") {
+      return value === "true" ? "Yes" : "No";
+    }
+    
+    // Try to parse as JSON
+    const parsed = JSON.parse(value);
+    if (typeof parsed === 'object') {
+      return JSON.stringify(parsed, null, 2);
+    }
+    
+    return value;
+  } catch (e) {
+    // If parsing fails, just return the string
+    return value;
+  }
+}
+
 export default function Assets() {
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -223,7 +259,7 @@ export default function Assets() {
   });
   
   // Edit maintenance form
-  const editMaintenanceForm = useForm<z.infer<typeof maintenanceFormSchema>>({
+  const updateMaintenanceForm = useForm<z.infer<typeof maintenanceFormSchema>>({
     resolver: zodResolver(maintenanceFormSchema),
     defaultValues: {
       title: "",
@@ -259,7 +295,7 @@ export default function Assets() {
   // Populate edit maintenance form when a schedule is selected
   useEffect(() => {
     if (selectedSchedule && isEditMaintenanceDialogOpen) {
-      editMaintenanceForm.reset({
+      updateMaintenanceForm.reset({
         title: selectedSchedule.title,
         description: selectedSchedule.description,
         frequency: selectedSchedule.frequency,
@@ -269,7 +305,7 @@ export default function Assets() {
         affectsAssetStatus: selectedSchedule.affectsAssetStatus,
       });
     }
-  }, [selectedSchedule, isEditMaintenanceDialogOpen, editMaintenanceForm]);
+  }, [selectedSchedule, isEditMaintenanceDialogOpen, updateMaintenanceForm]);
 
   // Handler functions
   const handleAssetClick = (asset: Asset) => {

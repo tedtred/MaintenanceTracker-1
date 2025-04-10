@@ -63,8 +63,8 @@ EXPOSE 5000
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:5000/api/health || exit 1
 
-# Run database migrations
-RUN if [ -n "$DATABASE_URL" ]; then npx drizzle-kit push:pg --yes; fi
+# Note: We won't run migrations here during image build anymore
+# They will be handled at startup time instead
 
 # Start command (use node directly to run the production server)
 CMD ["node", "dist/index.js"]

@@ -3,13 +3,55 @@ import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import pkg from 'pg';
 const { Pool } = pkg;
 import crypto from "crypto"; // Import crypto at the top level
+import readline from 'readline';
+
+// Function to create a readline interface for user prompts
+function createInterface() {
+  return readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+}
+
+// Function to prompt for user confirmation
+function askForConfirmation(question) {
+  const rl = createInterface();
+  return new Promise((resolve) => {
+    rl.question(question, (answer) => {
+      rl.close();
+      resolve(answer.toLowerCase() === 'y' || answer.toLowerCase() === 'yes');
+    });
+  });
+}
 
 // Function to run migrations
-export async function runMigrations() {
+export async function runMigrations(forceRebuild = false) {
   console.log("Running database migrations...");
 
   if (!process.env.DATABASE_URL) {
     throw new Error("DATABASE_URL environment variable is not set");
+  }
+
+  // Check if we should reset the database (when not coming from automated process)
+  const shouldPrompt = process.stdout.isTTY && !forceRebuild;
+  let shouldResetDb = forceRebuild;
+
+  if (shouldPrompt) {
+    console.log("\n⚠️  DATABASE RESET PROMPT ⚠️");
+    console.log("Would you like to reset the database? This will DELETE ALL DATA.");
+    shouldResetDb = await askForConfirmation("Reset database? (y/N): ");
+    
+    if (shouldResetDb) {
+      console.log("\n⚠️  FINAL WARNING ⚠️");
+      console.log("This will PERMANENTLY DELETE ALL DATA in the database.");
+      console.log("This action CANNOT be undone.");
+      const finalConfirmation = await askForConfirmation("Are you ABSOLUTELY SURE you want to proceed? (y/N): ");
+      
+      if (!finalConfirmation) {
+        console.log("Database reset cancelled.");
+        shouldResetDb = false;
+      }
+    }
   }
 
   // Create PostgreSQL connection pool
@@ -25,6 +67,13 @@ export async function runMigrations() {
     const client = await pool.connect();
     client.release();
     console.log("Successfully connected to database");
+
+    // Force rebuild if requested and confirmed
+    if (shouldResetDb) {
+      console.log("🔄 Force rebuilding database...");
+      await pool.query(`DROP SCHEMA public CASCADE; CREATE SCHEMA public;`);
+      console.log("✅ Database schema reset complete");
+    }
 
     // Create drizzle instance
     const db = drizzle(pool);

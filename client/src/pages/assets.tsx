@@ -10,7 +10,11 @@ import { format, addDays } from "date-fns";
 
 // Import our modular hooks
 import { useAssets } from "@/hooks/use-asset-data";
-import { useMaintenanceSchedules } from "@/hooks/use-maintenance-data";
+import { 
+  useMaintenanceSchedules, 
+  useUpdateSchedule,
+  useMaintenanceChangeLogs 
+} from "@/hooks/use-maintenance-data";
 import { DataLoader, MultiQueryLoader } from "@/components/data-loader";
 
 // UI Components

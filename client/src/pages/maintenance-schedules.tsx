@@ -11,6 +11,7 @@ import {
   MaintenanceStatus,
   Asset,
   MaintenanceChangeLog,
+  UserRole,
 } from "@shared/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -23,6 +24,7 @@ import {
   useDeleteSchedule,
   useMaintenanceChangeLogs
 } from "@/hooks/use-maintenance-data";
+import { useAuth } from "@/hooks/use-auth";
 import {
   Dialog,
   DialogContent,
@@ -180,6 +182,10 @@ export default function MaintenanceSchedules() {
   const [isChangeLogDialogOpen, setIsChangeLogDialogOpen] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState<MaintenanceSchedule | null>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
+  
+  // Check if user has admin privileges
+  const isAdmin = user?.role === UserRole.ADMIN;
 
   // Data fetching
   const { data: assets = [] } = useQuery<Asset[]>({
@@ -259,6 +265,17 @@ export default function MaintenanceSchedules() {
   // Open edit dialog with selected schedule
   const openEditDialog = (schedule: MaintenanceSchedule) => {
     setSelectedSchedule(schedule);
+    
+    // Check if user has admin privileges
+    if (!isAdmin) {
+      toast({
+        title: "Permission Denied",
+        description: "Only administrators can edit maintenance schedules.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     editForm.reset({
       title: schedule.title,
       description: schedule.description,
@@ -309,7 +326,7 @@ export default function MaintenanceSchedules() {
 
             <Dialog open={isCreateDialogOpen} onOpenChange={handleCreateDialogChange}>
               <DialogTrigger asChild>
-                <Button>Schedule Maintenance</Button>
+                <Button disabled={!isAdmin}>Schedule Maintenance</Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>

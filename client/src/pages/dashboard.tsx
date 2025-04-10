@@ -1,4 +1,3 @@
-import { SidebarNav } from "@/components/sidebar-nav";
 import { StatsCard } from "@/components/stats-card";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { 
@@ -270,7 +269,7 @@ export default function Dashboard() {
   return (
     <div className="flex h-screen">
       <SidebarNav />
-      <div className="flex-1 p-8 overflow-y-auto">
+      <div>
         <div className="max-w-6xl mx-auto space-y-8">
           <div>
             <h1 className="text-3xl font-bold">Dashboard</h1>

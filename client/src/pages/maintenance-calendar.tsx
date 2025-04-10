@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { SidebarNav } from "@/components/sidebar-nav";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Calendar, dateFnsLocalizer, Views } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay, addDays, addWeeks, addMonths, isFuture, isPast, isToday, differenceInDays } from "date-fns";
@@ -391,7 +390,7 @@ export default function MaintenanceCalendar() {
   return (
     <div className="flex h-screen">
       <SidebarNav />
-      <div className="flex-1 p-8 overflow-y-auto">
+      <div>
         <div className="max-w-6xl mx-auto space-y-8">
           <div>
             <h1 className="text-3xl font-bold">Maintenance Calendar</h1>

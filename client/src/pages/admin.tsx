@@ -29,7 +29,6 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { isNoIcon, processButtonData, defaultButtonFormValues, handleMutationError, handleMutationSuccess } from "@/lib/problem-utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { SidebarNav } from "@/components/sidebar-nav";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -1594,42 +1593,39 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="flex h-screen">
-      <SidebarNav />
-      <div className="flex-1 p-8 overflow-y-auto">
-        <div className="max-w-6xl mx-auto">
-          <h1 className="text-3xl font-bold mb-2">Administration Panel</h1>
-          <p className="text-muted-foreground mb-6">Manage all aspects of your application</p>
-          
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="mb-4">
-              <TabsTrigger value="users">
-                <UserCog className="h-4 w-4 mr-2" />
-                User Administration
-              </TabsTrigger>
-              <TabsTrigger value="problemButtons">
-                <AlertTriangle className="h-4 w-4 mr-2" />
-                Problem Tracking
-              </TabsTrigger>
-              <TabsTrigger value="settings">
-                <SettingsIcon className="h-4 w-4 mr-2" />
-                System Settings
-              </TabsTrigger>
-            </TabsList>
+    <div className="w-full">
+      <div className="max-w-6xl mx-auto">
+        <h1 className="text-3xl font-bold mb-2">Administration Panel</h1>
+        <p className="text-muted-foreground mb-6">Manage all aspects of your application</p>
+        
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="mb-4">
+            <TabsTrigger value="users">
+              <UserCog className="h-4 w-4 mr-2" />
+              User Administration
+            </TabsTrigger>
+            <TabsTrigger value="problemButtons">
+              <AlertTriangle className="h-4 w-4 mr-2" />
+              Problem Tracking
+            </TabsTrigger>
+            <TabsTrigger value="settings">
+              <SettingsIcon className="h-4 w-4 mr-2" />
+              System Settings
+            </TabsTrigger>
+          </TabsList>
             
-            <TabsContent value="users" className="space-y-4">
-              <UserManagementSection />
-            </TabsContent>
+          <TabsContent value="users" className="space-y-4">
+            <UserManagementSection />
+          </TabsContent>
             
-            <TabsContent value="problemButtons" className="space-y-4">
-              <ProblemButtonSection />
-            </TabsContent>
+          <TabsContent value="problemButtons" className="space-y-4">
+            <ProblemButtonSection />
+          </TabsContent>
             
-            <TabsContent value="settings" className="space-y-4">
-              <SystemSettingsSection />
-            </TabsContent>
-          </Tabs>
-        </div>
+          <TabsContent value="settings" className="space-y-4">
+            <SystemSettingsSection />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

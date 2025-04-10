@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { SidebarNav } from "@/components/sidebar-nav";
 import { useQuery } from "@tanstack/react-query";
 import {
   BarChart,
@@ -187,7 +186,7 @@ export default function MaintenanceAnalytics() {
   return (
     <div className="flex h-screen">
       <SidebarNav />
-      <div className="flex-1 p-8 overflow-y-auto">
+      <div>
         <div className="max-w-7xl mx-auto space-y-8">
           <div className="flex justify-between items-center">
             <div>

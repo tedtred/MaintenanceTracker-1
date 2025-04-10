@@ -61,6 +61,7 @@ export default function ProblemTrackingAdminNew() {
   const {
     buttonsQuery,
     assetsQuery,
+    usersQuery,
     createButtonMutation,
     updateButtonMutation,
     deleteButtonMutation,
@@ -79,6 +80,7 @@ export default function ProblemTrackingAdminNew() {
       workOrderDescription: "",
       workOrderPriority: "MEDIUM",
       defaultAssetId: null,
+      defaultAssignedTo: null,
       notifyMaintenance: false,
     },
   });
@@ -96,6 +98,7 @@ export default function ProblemTrackingAdminNew() {
       workOrderDescription: "",
       workOrderPriority: "MEDIUM",
       defaultAssetId: null,
+      defaultAssignedTo: null,
       notifyMaintenance: false,
     },
   });
@@ -115,6 +118,7 @@ export default function ProblemTrackingAdminNew() {
       workOrderDescription: button.workOrderDescription || "",
       workOrderPriority: button.workOrderPriority || "MEDIUM",
       defaultAssetId: button.defaultAssetId,
+      defaultAssignedTo: button.defaultAssignedTo,
       notifyMaintenance: button.notifyMaintenance || false,
     });
     
@@ -211,6 +215,7 @@ export default function ProblemTrackingAdminNew() {
       workOrderDescription: "",
       workOrderPriority: "MEDIUM",
       defaultAssetId: null,
+      defaultAssignedTo: null,
       notifyMaintenance: false,
     });
     setSelectedColor("#3B82F6");
@@ -547,6 +552,38 @@ export default function ProblemTrackingAdminNew() {
                       
                       <FormField
                         control={createForm.control}
+                        name="defaultAssignedTo"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Default Assignee</FormLabel>
+                            <Select
+                              onValueChange={(value) => field.onChange(value === "none" ? null : value ? parseInt(value) : null)}
+                              value={field.value?.toString()}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select a default assignee (optional)" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="none">None</SelectItem>
+                                {Array.isArray(usersQuery.data) && usersQuery.data.map(user => (
+                                  <SelectItem key={user.id} value={user.id.toString()}>
+                                    {user.username}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormDescription>
+                              Select a default user to assign the work order to
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={createForm.control}
                         name="notifyMaintenance"
                         render={({ field }) => (
                           <FormItem className="flex flex-row items-center justify-between">
@@ -827,6 +864,38 @@ export default function ProblemTrackingAdminNew() {
                             </Select>
                             <FormDescription>
                               Select a default asset for this problem type
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={editForm.control}
+                        name="defaultAssignedTo"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Default Assignee</FormLabel>
+                            <Select
+                              onValueChange={(value) => field.onChange(value === "none" ? null : value ? parseInt(value) : null)}
+                              value={field.value?.toString()}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select a default assignee (optional)" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="none">None</SelectItem>
+                                {Array.isArray(usersQuery.data) && usersQuery.data.map(user => (
+                                  <SelectItem key={user.id} value={user.id.toString()}>
+                                    {user.username}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormDescription>
+                              Select a default user to assign the work order to
                             </FormDescription>
                             <FormMessage />
                           </FormItem>

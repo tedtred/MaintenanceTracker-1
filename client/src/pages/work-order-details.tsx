@@ -28,7 +28,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, ArrowLeft, Wrench, AlertTriangle } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-import { ResponsiveLayout } from "@/components/responsive-layout";
+import { WorkOrderLayout } from "@/components/work-order-layout";
 
 export default function WorkOrderDetails() {
   const { id } = useParams<{ id: string }>();
@@ -173,7 +173,7 @@ export default function WorkOrderDetails() {
   }
 
   return (
-    <ResponsiveLayout>
+    <WorkOrderLayout>
       <div className="max-w-4xl mx-auto space-y-8">
         <div className="flex items-center justify-between">
           <div>
@@ -445,6 +445,6 @@ export default function WorkOrderDetails() {
           </CardContent>
         </Card>
       </div>
-    </ResponsiveLayout>
+    </WorkOrderLayout>
   );
 }

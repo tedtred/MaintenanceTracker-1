@@ -88,12 +88,20 @@ export default function WorkOrders() {
       try {
         console.log("Creating work order with data:", data);
         
+        // Set a default dueDate (24 hours from now) if not provided
+        if (!data.dueDate) {
+          const tomorrow = new Date();
+          tomorrow.setHours(tomorrow.getHours() + 24);
+          data.dueDate = tomorrow;
+        }
+        
         // Ensure proper date formatting
         const payload = {
           ...data,
           assignedTo: null,
           assetId: null,
           reportedDate: data.reportedDate ? new Date(data.reportedDate).toISOString() : new Date().toISOString(),
+          dueDate: data.dueDate ? new Date(data.dueDate).toISOString() : new Date(Date.now() + 86400000).toISOString(), // 24 hours in ms
           completedDate: null,
         };
         
@@ -207,6 +215,11 @@ export default function WorkOrders() {
       completedDate: null,
       assignedTo: null,
       assetId: null,
+      dueDate: null,
+      affectsAssetStatus: false,
+      partsRequired: "",
+      problemDetails: "",
+      solutionNotes: "",
     },
   });
 
@@ -535,10 +548,34 @@ export default function WorkOrders() {
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="dueDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Due Date (Optional)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="datetime-local" 
+                          onChange={(e) => {
+                            field.onChange(e.target.value ? new Date(e.target.value) : null);
+                          }}
+                          value={field.value ? new Date(field.value).toISOString().slice(0, 16) : ""}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <Button
                   type="submit"
                   className="w-full"
                   disabled={createMutation.isPending}
+                  onClick={() => {
+                    // Check form values before submission
+                    console.log("Form values before submission:", form.getValues());
+                    console.log("Form errors:", form.formState.errors);
+                  }}
                 >
                   {createMutation.isPending ? (
                     <Loader2 className="h-4 w-4 animate-spin" />

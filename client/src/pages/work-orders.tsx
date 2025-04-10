@@ -234,8 +234,9 @@ export default function WorkOrders() {
   
   // Generate card data for each work order
   const getWorkOrderCardData = (workOrders: WorkOrder[]) => {
-    return workOrders.map(wo => {
-      const fields: DataField[] = [
+    return workOrders.map(wo => ({
+      id: wo.id,
+      fields: [
         {
           label: "Title",
           value: wo.title,
@@ -270,9 +271,8 @@ export default function WorkOrders() {
           value: new Date(wo.reportedDate).toLocaleString(),
           type: "text"
         }
-      ];
-      return { ...wo, fields };
-    });
+      ]
+    }));
   };
   
   const handleWorkOrderClick = (workOrder: WorkOrder) => {

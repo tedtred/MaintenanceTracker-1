@@ -233,6 +233,34 @@ export const insertMaintenanceCompletionSchema = createInsertSchema(maintenanceC
 export type MaintenanceCompletion = typeof maintenanceCompletions.$inferSelect;
 export type InsertMaintenanceCompletion = z.infer<typeof insertMaintenanceCompletionSchema>;
 
+// Add table for maintenance schedule change logs
+export const maintenanceChangeLogs = pgTable("maintenance_change_logs", {
+  id: serial("id").primaryKey(),
+  scheduleId: integer("schedule_id").references(() => maintenanceSchedules.id).notNull(),
+  changedBy: integer("changed_by").references(() => users.id),
+  changedAt: timestamp("changed_at").notNull().defaultNow(),
+  changeType: text("change_type").notNull(), // "EDIT", "DELETE", "CREATE"
+  fieldName: text("field_name"), // Name of the field that was changed
+  oldValue: text("old_value"), // JSON string of old value
+  newValue: text("new_value"), // JSON string of new value
+  notes: text("notes"), // Optional notes about the change
+});
+
+export const insertMaintenanceChangeLogSchema = createInsertSchema(maintenanceChangeLogs)
+  .omit({ id: true })
+  .extend({
+    scheduleId: z.number().min(1, "Schedule is required"),
+    changedBy: z.number().nullable(),
+    changeType: z.enum(["CREATE", "EDIT", "DELETE"]),
+    fieldName: z.string().optional(),
+    oldValue: z.string().optional(),
+    newValue: z.string().optional(), 
+    notes: z.string().optional(),
+  });
+
+export type MaintenanceChangeLog = typeof maintenanceChangeLogs.$inferSelect;
+export type InsertMaintenanceChangeLog = z.infer<typeof insertMaintenanceChangeLogSchema>;
+
 // Add new enums
 export const MaintenanceFrequency = {
   DAILY: "DAILY",

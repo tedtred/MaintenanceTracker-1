@@ -1,5 +1,5 @@
-import { User, WorkOrder, Asset, MaintenanceSchedule, InsertUser, InsertWorkOrder, InsertAsset, InsertMaintenanceSchedule, WorkOrderAttachment, InsertWorkOrderAttachment, MaintenanceCompletion, InsertMaintenanceCompletion, ProblemButton, InsertProblemButton, ProblemEvent, InsertProblemEvent } from "@shared/schema";
-import { users, workOrders, assets, maintenanceSchedules, workOrderAttachments, maintenanceCompletions, problemButtons, problemEvents } from "@shared/schema";
+import { User, WorkOrder, Asset, MaintenanceSchedule, InsertUser, InsertWorkOrder, InsertAsset, InsertMaintenanceSchedule, WorkOrderAttachment, InsertWorkOrderAttachment, MaintenanceCompletion, InsertMaintenanceCompletion, ProblemButton, InsertProblemButton, ProblemEvent, InsertProblemEvent, MaintenanceChangeLog, InsertMaintenanceChangeLog } from "@shared/schema";
+import { users, workOrders, assets, maintenanceSchedules, workOrderAttachments, maintenanceCompletions, problemButtons, problemEvents, maintenanceChangeLogs } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, lte, gte, desc, asc } from "drizzle-orm";
 import session from "express-session";
@@ -53,16 +53,20 @@ export interface IStorage {
   deleteAsset(id: number): Promise<void>;
 
   // Maintenance Schedules
-  createMaintenanceSchedule(schedule: InsertMaintenanceSchedule): Promise<MaintenanceSchedule>;
+  createMaintenanceSchedule(schedule: InsertMaintenanceSchedule, userId?: number): Promise<MaintenanceSchedule>;
   getMaintenanceSchedules(): Promise<MaintenanceSchedule[]>;
   getMaintenanceSchedulesByDateRange(start: Date, end: Date): Promise<MaintenanceSchedule[]>;
   getMaintenanceSchedule(id: number): Promise<MaintenanceSchedule | undefined>;
-  updateMaintenanceSchedule(id: number, schedule: Partial<MaintenanceSchedule>): Promise<MaintenanceSchedule>;
+  updateMaintenanceSchedule(id: number, schedule: Partial<MaintenanceSchedule>, userId?: number): Promise<MaintenanceSchedule>;
+  deleteMaintenanceSchedule(id: number, userId?: number): Promise<void>;
 
+  // Maintenance Change Logs
+  createMaintenanceChangeLog(log: InsertMaintenanceChangeLog): Promise<MaintenanceChangeLog>;
+  getMaintenanceChangeLogs(scheduleId: number): Promise<MaintenanceChangeLog[]>;
+  
   // Maintenance Completions
   getMaintenanceCompletions(): Promise<MaintenanceCompletion[]>;
   createMaintenanceCompletion(completion: InsertMaintenanceCompletion): Promise<MaintenanceCompletion>;
-  deleteMaintenanceSchedule(id: number): Promise<void>;
   checkAndArchiveCompletedWorkOrders(): Promise<void>;
 
   // Settings
@@ -442,8 +446,14 @@ export class DatabaseStorage implements IStorage {
     return schedule;
   }
 
-  async updateMaintenanceSchedule(id: number, updates: Partial<MaintenanceSchedule>): Promise<MaintenanceSchedule> {
+  async updateMaintenanceSchedule(id: number, updates: Partial<MaintenanceSchedule>, userId?: number): Promise<MaintenanceSchedule> {
     try {
+      // Get the original schedule to compare for changes
+      const originalSchedule = await this.getMaintenanceSchedule(id);
+      if (!originalSchedule) {
+        throw new Error("Maintenance schedule not found");
+      }
+      
       // Clean up the updates object to ensure it only contains valid fields
       const cleanUpdates: Record<string, any> = {};
       
@@ -460,13 +470,7 @@ export class DatabaseStorage implements IStorage {
       
       // Handle case where there are no fields to update
       if (Object.keys(cleanUpdates).length === 0) {
-        // Just return the current schedule
-        const { rows } = await pool.query(
-          `SELECT * FROM maintenance_schedules WHERE id = $1`,
-          [id]
-        );
-        if (rows.length === 0) throw new Error("Maintenance schedule not found");
-        return rows[0];
+        return originalSchedule;
       }
       
       // Directly use SQL for more control and error handling
@@ -487,13 +491,32 @@ export class DatabaseStorage implements IStorage {
       if (rows.length === 0) throw new Error("Maintenance schedule not found");
       
       // Convert snake_case keys back to camelCase
-      const schedule: any = {};
+      const updatedSchedule: any = {};
       Object.keys(rows[0]).forEach(key => {
         const camelKey = key.replace(/_([a-z])/g, g => g[1].toUpperCase());
-        schedule[camelKey] = rows[0][key];
+        updatedSchedule[camelKey] = rows[0][key];
       });
       
-      return schedule as MaintenanceSchedule;
+      // Log changes to the maintenance change logs table
+      const changedFields = Object.keys(cleanUpdates);
+      for (const field of changedFields) {
+        const oldValue = originalSchedule[field as keyof MaintenanceSchedule];
+        const newValue = cleanUpdates[field];
+        
+        // Only log if values are different
+        if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
+          await this.createMaintenanceChangeLog({
+            scheduleId: id,
+            changedBy: userId || null,
+            changeType: "EDIT",
+            fieldName: field,
+            oldValue: JSON.stringify(oldValue),
+            newValue: JSON.stringify(newValue),
+          });
+        }
+      }
+      
+      return updatedSchedule as MaintenanceSchedule;
     } catch (error) {
       console.error("Error updating maintenance schedule:", error);
       throw error;

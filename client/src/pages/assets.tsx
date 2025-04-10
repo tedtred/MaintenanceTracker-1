@@ -304,9 +304,9 @@ export default function AssetsPage() {
 
   // Helper to get schedules for a specific asset
   const getAssetMaintenanceSchedules = (assetId: number) => {
-    return maintenanceSchedules.filter(
+    return Array.isArray(maintenanceSchedules) ? maintenanceSchedules.filter(
       (schedule) => schedule.assetId === assetId
-    );
+    ) : [];
   };
 
   // Icon for asset categories

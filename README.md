@@ -143,6 +143,39 @@ To view logs:
 docker-compose logs -f
 ```
 
+### Database Rebuild Feature
+
+This application includes a database rebuild feature for situations when:
+- The database schema has changed and needs to be synchronized
+- You want to reset to a fresh installation with default data
+- You're experiencing database-related errors (such as missing columns)
+
+#### For Production (Docker)
+
+1. Set the FORCE_DB_REBUILD environment variable to true in docker-compose.yml:
+   ```yaml
+   environment:
+     # Other environment variables...
+     - FORCE_DB_REBUILD=true
+   ```
+
+2. Rebuild and restart the containers:
+   ```bash
+   docker-compose down -v
+   docker-compose up -d
+   ```
+
+3. **IMPORTANT**: After successful deployment, set FORCE_DB_REBUILD=false to prevent data loss on future restarts.
+
+#### For Development
+
+You can use the included script for development environments:
+```bash
+node rebuild-database.js
+```
+
+This will prompt for confirmation before rebuilding the database.
+
 ### Manual Installation
 
 If you prefer to set up manually, follow these steps:

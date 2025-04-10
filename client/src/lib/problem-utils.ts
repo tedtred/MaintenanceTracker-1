@@ -21,6 +21,7 @@ export const defaultButtonFormValues = {
   color: "#6b7280",
   icon: "none",
   active: true,
+  skipDetailsForm: false,  // Default to showing the details form
   createWorkOrder: false,
   workOrderTitle: "",
   workOrderDescription: "",
@@ -52,6 +53,7 @@ export type ButtonFormData = {
   color: string;
   icon?: string;
   active: boolean;
+  skipDetailsForm?: boolean;  // Option to make it a confirmation-only button
   createWorkOrder?: boolean;
   workOrderTitle?: string;
   workOrderDescription?: string;

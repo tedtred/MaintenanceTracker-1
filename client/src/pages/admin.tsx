@@ -459,6 +459,7 @@ function ProblemButtonSection() {
     color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Must be a valid hex color"),
     icon: z.string().optional(),
     active: z.boolean().default(true),
+    skipDetailsForm: z.boolean().default(false),
     createWorkOrder: z.boolean().default(false),
     workOrderTitle: z.string().optional(),
     workOrderDescription: z.string().optional(),
@@ -622,6 +623,7 @@ function ProblemButtonSection() {
       color: button.color,
       icon: button.icon || "none",
       active: button.active,
+      skipDetailsForm: button.skipDetailsForm || false,
       createWorkOrder: button.createWorkOrder || false,
       workOrderTitle: button.workOrderTitle || "",
       workOrderDescription: button.workOrderDescription || "",
@@ -827,6 +829,27 @@ function ProblemButtonSection() {
                       <FormLabel>Active</FormLabel>
                       <FormDescription>
                         Whether this button is visible to users
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={createForm.control}
+                name="skipDetailsForm"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                    <div className="space-y-0.5">
+                      <FormLabel>Skip Details Form</FormLabel>
+                      <FormDescription>
+                        Make this a two-step confirmation button without additional details form
                       </FormDescription>
                     </div>
                     <FormControl>
@@ -1086,6 +1109,27 @@ function ProblemButtonSection() {
                       <FormLabel>Active</FormLabel>
                       <FormDescription>
                         Whether this button is visible to users
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={editForm.control}
+                name="skipDetailsForm"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                    <div className="space-y-0.5">
+                      <FormLabel>Skip Details Form</FormLabel>
+                      <FormDescription>
+                        Make this a two-step confirmation button without additional details form
                       </FormDescription>
                     </div>
                     <FormControl>

@@ -90,6 +90,7 @@ function PagePermissionsDialog({ user }: { user: User }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
+  const [defaultLandingPage, setDefaultLandingPage] = useState<string>("");
   const [open, setOpen] = useState(false);
 
   // Format page titles for better display
@@ -103,37 +104,80 @@ function PagePermissionsDialog({ user }: { user: User }) {
   // Page list from AvailablePages
   const pages = Object.values(AvailablePages);
 
+  // Fetch settings for default landing pages
+  const { data: settings } = useQuery({
+    queryKey: ['/api/settings']
+  });
+
   // Parse saved permissions when dialog opens
   const handleDialogOpen = () => {
     try {
       const userPermissions = JSON.parse(user.pagePermissions || '[]');
       setSelectedPermissions(userPermissions);
+      
+      // Try to get user's default landing page from settings
+      if (settings?.roleDefaultPages) {
+        try {
+          const defaultPages = JSON.parse(settings.roleDefaultPages || '{}');
+          const rolePage = defaultPages[user.role];
+          if (rolePage) {
+            setDefaultLandingPage(rolePage);
+          } else {
+            // If no default page for this role, set to first allowed page
+            setDefaultLandingPage(userPermissions.length > 0 ? userPermissions[0] : "");
+          }
+        } catch (e) {
+          console.error("Error parsing default pages:", e);
+          setDefaultLandingPage(userPermissions.length > 0 ? userPermissions[0] : "");
+        }
+      } else {
+        // If no settings available, use first permission as default
+        setDefaultLandingPage(userPermissions.length > 0 ? userPermissions[0] : "");
+      }
     } catch (error) {
       setSelectedPermissions([]);
+      setDefaultLandingPage("");
       console.error("Error parsing user permissions:", error);
     }
     setOpen(true);
   };
 
-  // Save permissions
+  // Save permissions and default landing page
   const handleSavePermissions = async () => {
     try {
+      // Save permissions
       await apiRequest("PATCH", `/api/admin/users/${user.id}/permissions`, {
         permissions: selectedPermissions
       });
       
+      // Save default landing page
+      if (defaultLandingPage && settings) {
+        try {
+          const defaultPages = JSON.parse(settings.roleDefaultPages || '{}');
+          defaultPages[user.role] = defaultLandingPage;
+          
+          await apiRequest("PATCH", `/api/settings`, {
+            ...settings,
+            roleDefaultPages: JSON.stringify(defaultPages)
+          });
+        } catch (e) {
+          console.error("Error updating default landing page:", e);
+        }
+      }
+      
       await queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
       
       toast({
         title: "Success",
-        description: "Page permissions updated successfully",
+        description: "User access settings updated successfully",
       });
       
       setOpen(false);
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to update page permissions",
+        description: "Failed to update user access settings",
         variant: "destructive",
       });
     }
@@ -141,11 +185,18 @@ function PagePermissionsDialog({ user }: { user: User }) {
 
   // Toggle a page permission
   const togglePermission = (pageId: string) => {
-    setSelectedPermissions(current => 
-      current.includes(pageId)
+    setSelectedPermissions(current => {
+      const newPermissions = current.includes(pageId)
         ? current.filter(id => id !== pageId)
-        : [...current, pageId]
-    );
+        : [...current, pageId];
+      
+      // If default landing page is no longer a permission, reset it
+      if (defaultLandingPage === pageId && !newPermissions.includes(pageId)) {
+        setDefaultLandingPage(newPermissions.length > 0 ? newPermissions[0] : "");
+      }
+      
+      return newPermissions;
+    });
   };
 
   return (
@@ -162,30 +213,64 @@ function PagePermissionsDialog({ user }: { user: User }) {
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Page Access for {user.username}</DialogTitle>
+          <DialogTitle>User Access Settings for {user.username}</DialogTitle>
+          <DialogDescription>
+            Configure page access permissions and default landing page.
+          </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 py-4">
-          <div className="flex flex-col gap-3 mt-2">
-            {pages.map(pageId => (
-              <div key={pageId} className="flex items-center space-x-2">
-                <Checkbox 
-                  id={`permission-${pageId}`}
-                  checked={selectedPermissions.includes(pageId)}
-                  onCheckedChange={() => togglePermission(pageId)}
-                />
-                <Label htmlFor={`permission-${pageId}`}>
-                  {formatPageTitle(pageId)}
-                </Label>
-              </div>
-            ))}
+        <div className="space-y-6 py-4">
+          <div>
+            <h3 className="text-sm font-medium mb-2">Page Access Permissions</h3>
+            <div className="flex flex-col gap-3 border rounded-md p-3 bg-background">
+              {pages.map(pageId => (
+                <div key={pageId} className="flex items-center space-x-2">
+                  <Checkbox 
+                    id={`permission-${pageId}`}
+                    checked={selectedPermissions.includes(pageId)}
+                    onCheckedChange={() => togglePermission(pageId)}
+                  />
+                  <Label htmlFor={`permission-${pageId}`} className="text-sm">
+                    {formatPageTitle(pageId)}
+                  </Label>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          <div>
+            <h3 className="text-sm font-medium mb-2">Default Landing Page</h3>
+            <p className="text-xs text-muted-foreground mb-2">
+              This page will be shown first when the user logs in.
+            </p>
+            <Select 
+              value={defaultLandingPage} 
+              onValueChange={setDefaultLandingPage}
+              disabled={selectedPermissions.length === 0}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select default page" />
+              </SelectTrigger>
+              <SelectContent>
+                {selectedPermissions.map(pageId => (
+                  <SelectItem key={pageId} value={pageId}>
+                    {formatPageTitle(pageId)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {selectedPermissions.length === 0 && (
+              <p className="text-xs text-destructive mt-1">
+                You must grant at least one page permission.
+              </p>
+            )}
           </div>
         </div>
         <div className="flex justify-end gap-3">
           <Button variant="outline" onClick={() => setOpen(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSavePermissions}>
-            Save Permissions
+          <Button onClick={handleSavePermissions} disabled={selectedPermissions.length === 0}>
+            Save Settings
           </Button>
         </div>
       </DialogContent>

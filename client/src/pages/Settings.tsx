@@ -54,11 +54,7 @@ const settingsSections = [
     title: "Company Profile",
     icon: <Building className="mr-2 h-4 w-4" />,
   },
-  {
-    id: "access",
-    title: "User Access",
-    icon: <Info className="mr-2 h-4 w-4" />,
-  },
+
   {
     id: "holidays",
     title: "Holiday Calendar",
@@ -723,92 +719,7 @@ export default function SettingsPage() {
                     </Card>
                   )}
 
-                  {/* User Access Section */}
-                  {activeTab === "access" && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <Info className="h-5 w-5" />
-                          User Access
-                        </CardTitle>
-                        <CardDescription>
-                          Configure user role permissions and default landing pages
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-6">
-                        <div className="grid gap-4">
-                          <h3 className="text-lg font-medium">Default Landing Pages by Role</h3>
-                          <p className="text-sm text-muted-foreground">
-                            Set which page users with specific roles will see first when logging in.
-                            This is especially useful when a user does not have access to the dashboard.
-                          </p>
-                          
-                          {roleDefaultPages.map((page, index) => (
-                            <div key={index} className="grid grid-cols-12 gap-4 items-center border rounded-lg p-4">
-                              <div className="col-span-5">
-                                <label className="text-sm font-medium">Role</label>
-                                <Select 
-                                  value={page.role}
-                                  onValueChange={(value) => updateRoleDefaultPage(index, 'role', value)}
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select role" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {Object.entries(UserRole).map(([key, value]) => (
-                                      <SelectItem key={value} value={value}>
-                                        {key}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              
-                              <div className="col-span-5">
-                                <label className="text-sm font-medium">Default Page</label>
-                                <Select 
-                                  value={page.defaultPage}
-                                  onValueChange={(value) => updateRoleDefaultPage(index, 'defaultPage', value)}
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select default page" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {Object.entries(AvailablePages).map(([key, value]) => (
-                                      <SelectItem key={value} value={value}>
-                                        {key}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              
-                              <div className="col-span-2 flex justify-end">
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => removeRoleDefaultPage(index)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </div>
-                          ))}
-                          
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className="mt-2 w-full"
-                            onClick={addRoleDefaultPage}
-                          >
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            Add Role Default Page
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
+
 
                   {/* Holiday Calendar Section */}
                   {activeTab === "holidays" && (

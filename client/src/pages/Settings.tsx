@@ -25,7 +25,8 @@ import {
   PlusCircle,
   CalendarDays
 } from "lucide-react";
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { SidebarNav } from "@/components/sidebar-nav";
 
 const settingsSections = [
   {
@@ -89,13 +90,17 @@ export default function SettingsPage() {
   const [holidays, setHolidays] = useState<HolidayDate[]>([]);
   const [roleDefaultPages, setRoleDefaultPages] = useState<RoleDefaultPage[]>([]);
 
-  const { data: settings, isLoading } = useQuery({
-    queryKey: ['/api/settings'],
-    onSuccess: (data) => {
+  const { data: settings, isLoading } = useQuery<Settings>({
+    queryKey: ['/api/settings']
+  });
+  
+  // Process settings data when it's loaded
+  useEffect(() => {
+    if (settings) {
       // Parse holiday calendar data when settings load
-      if (data?.holidayCalendar) {
+      if (settings.holidayCalendar) {
         try {
-          const parsedHolidays = JSON.parse(data.holidayCalendar);
+          const parsedHolidays = JSON.parse(settings.holidayCalendar);
           if (Array.isArray(parsedHolidays)) {
             setHolidays(parsedHolidays);
           }
@@ -105,9 +110,9 @@ export default function SettingsPage() {
       }
       
       // Parse role default pages data when settings load
-      if (data?.roleDefaultPages) {
+      if (settings.roleDefaultPages) {
         try {
-          const parsedRoleDefaultPages = JSON.parse(data.roleDefaultPages);
+          const parsedRoleDefaultPages = JSON.parse(settings.roleDefaultPages);
           if (typeof parsedRoleDefaultPages === 'object') {
             // Convert object to array for easier UI handling
             const roleDefaults = Object.entries(parsedRoleDefaultPages).map(([role, defaultPage]) => ({
@@ -121,7 +126,7 @@ export default function SettingsPage() {
         }
       }
     }
-  });
+  }, [settings]);
 
   const form = useForm({
     resolver: zodResolver(insertSettingsSchema),

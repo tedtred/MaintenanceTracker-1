@@ -120,9 +120,28 @@ export default function WorkOrders() {
 
   const updateMutation = useMutation({
     mutationFn: async (data: Partial<WorkOrder> & { id: number }) => {
-      const { id, ...updates } = data;
-      const res = await apiRequest("PATCH", `/api/work-orders/${id}`, updates);
-      return await res.json();
+      const { id, reportedDate, completedDate, ...otherUpdates } = data;
+      
+      // Format dates properly for API
+      const updates = {
+        ...otherUpdates,
+        reportedDate: reportedDate ? new Date(reportedDate).toISOString() : undefined,
+        completedDate: completedDate ? new Date(completedDate).toISOString() : null,
+      };
+      
+      console.log("Updating work order with data:", { id, updates });
+      
+      try {
+        const res = await apiRequest("PATCH", `/api/work-orders/${id}`, updates);
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.message || `Failed to update work order: ${res.statusText}`);
+        }
+        return await res.json();
+      } catch (error) {
+        console.error("Error updating work order:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/work-orders"] });
@@ -133,9 +152,10 @@ export default function WorkOrders() {
       });
     },
     onError: (error: Error) => {
+      console.error("Update mutation error:", error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to update work order",
         variant: "destructive",
       });
     },
@@ -196,7 +216,13 @@ export default function WorkOrders() {
 
   useEffect(() => {
     if (selectedWorkOrder) {
-      detailsForm.reset(selectedWorkOrder);
+      // Format dates properly when resetting the form
+      detailsForm.reset({
+        ...selectedWorkOrder,
+        reportedDate: new Date(selectedWorkOrder.reportedDate),
+        completedDate: selectedWorkOrder.completedDate ? new Date(selectedWorkOrder.completedDate) : null,
+        // Add any other date fields that need conversion
+      });
     }
   }, [selectedWorkOrder, detailsForm]);
 

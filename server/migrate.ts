@@ -100,7 +100,11 @@ export async function runMigrations(forceRebuild = false) {
         assigned_to INTEGER REFERENCES users(id),
         asset_id INTEGER,
         reported_date TIMESTAMP NOT NULL DEFAULT NOW(),
-        completed_date TIMESTAMP
+        completed_date TIMESTAMP,
+        due_date TIMESTAMP,
+        created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+        updated_at TIMESTAMP DEFAULT NOW() NOT NULL,
+        created_by INTEGER REFERENCES users(id)
       );
 
       CREATE TABLE IF NOT EXISTS assets (
@@ -110,6 +114,7 @@ export async function runMigrations(forceRebuild = false) {
         location TEXT NOT NULL,
         status TEXT NOT NULL,
         category TEXT NOT NULL,
+        asset_tag TEXT,
         model_number TEXT,
         serial_number TEXT,
         manufacturer TEXT,
@@ -135,7 +140,8 @@ export async function runMigrations(forceRebuild = false) {
         end_date TIMESTAMP,
         frequency TEXT NOT NULL,
         last_completed TIMESTAMP,
-        status TEXT NOT NULL
+        status TEXT NOT NULL,
+        affects_asset_status BOOLEAN DEFAULT false NOT NULL
       );
 
       CREATE TABLE IF NOT EXISTS maintenance_completions (

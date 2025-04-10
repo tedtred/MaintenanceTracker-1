@@ -1,0 +1,88 @@
+ line: '3665',
+app_1      |   routine: 'errorMissingColumn'
+app_1      | }
+app_1      | Serving index.html for path: /favicon.ico
+app_1      | 8:17:33 PM [express] GET /api/work-orders 500 in 88ms :: {"message":"column \"due_date\" does not ex…
+db_1       | 2025-04-10 20:17:34.771 UTC [539] ERROR:  column "affects_asset_status" does not exist at character 117
+db_1       | 2025-04-10 20:17:34.771 UTC [539] STATEMENT:  select "id", "title", "description", "asset_id", "start_date", "end_date", "frequency", "last_completed", "status", "affects_asset_status" from "maintenance_schedules"
+db_1       | 2025-04-10 20:17:34.773 UTC [540] ERROR:  column "due_date" does not exist at character 104
+db_1       | 2025-04-10 20:17:34.773 UTC [540] STATEMENT:  select "id", "title", "description", "status", "priority", "assigned_to", "asset_id", "reported_date", "due_date", "completed_date", "affects_asset_status", "parts_required", "problem_details", "solution_notes", "created_by", "created_at", "updated_at" from "work_orders" where ("work_orders"."status" = $1 and "work_orders"."completed_date" <= $2)
+app_1      | Error: error: column "affects_asset_status" does not exist
+app_1      |     at /app/node_modules/pg-pool/index.js:45:11
+app_1      |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+app_1      |     at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22
+app_1      |     at async DatabaseStorage.getMaintenanceSchedules (file:///app/dist/index.js:846:12)
+app_1      |     at async file:///app/dist/index.js:1730:21 {
+app_1      |   length: 121,
+app_1      |   severity: 'ERROR',
+app_1      |   code: '42703',
+app_1      |   detail: undefined,
+app_1      |   hint: undefined,
+app_1      |   position: '117',
+app_1      |   internalPosition: undefined,
+app_1      |   internalQuery: undefined,
+app_1      |   where: undefined,
+app_1      |   schema: undefined,
+app_1      |   table: undefined,
+app_1      |   column: undefined,
+app_1      |   dataType: undefined,
+app_1      |   constraint: undefined,
+app_1      |   file: 'parse_relation.c',
+app_1      |   line: '3665',
+app_1      |   routine: 'errorMissingColumn'
+app_1      | }
+app_1      | Error: error: column "due_date" does not exist
+app_1      |     at /app/node_modules/pg-pool/index.js:45:11
+app_1      |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+app_1      |     at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22
+app_1      |     at async DatabaseStorage.checkAndArchiveCompletedWorkOrders (file:///app/dist/index.js:959:29)
+app_1      |     at async file:///app/dist/index.js:1526:7 {
+app_1      |   length: 109,
+app_1      |   severity: 'ERROR',
+app_1      |   code: '42703',
+app_1      |   detail: undefined,
+app_1      |   hint: undefined,
+app_1      |   position: '104',
+app_1      |   internalPosition: undefined,
+app_1      |   internalQuery: undefined,
+app_1      |   where: undefined,
+app_1      |   schema: undefined,
+app_1      |   table: undefined,
+app_1      |   column: undefined,
+app_1      |   dataType: undefined,
+app_1      |   constraint: undefined,
+app_1      |   file: 'parse_relation.c',
+app_1      |   line: '3665',
+app_1      |   routine: 'errorMissingColumn'
+app_1      | }
+app_1      | 8:17:34 PM [express] GET /api/work-orders 500 in 93ms :: {"message":"column \"due_date\" does not ex…
+app_1      | 8:17:34 PM [express] GET /api/maintenance-schedules 500 in 99ms :: {"message":"column \"affects_asse…
+db_1       | 2025-04-10 20:17:34.867 UTC [541] ERROR:  column "asset_tag" does not exist at character 71
+db_1       | 2025-04-10 20:17:34.867 UTC [541] STATEMENT:  select "id", "name", "description", "location", "status", "category", "asset_tag", "model_number", "serial_number", "manufacturer", "commissioned_date", "last_maintenance" from "assets"
+app_1      | Error: error: column "asset_tag" does not exist
+app_1      |     at /app/node_modules/pg-pool/index.js:45:11
+app_1      |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+app_1      |     at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22
+app_1      |     at async DatabaseStorage.getAssets (file:///app/dist/index.js:764:12)
+app_1      |     at async file:///app/dist/index.js:1618:23 {
+app_1      |   length: 109,
+app_1      |   severity: 'ERROR',
+app_1      |   code: '42703',
+app_1      |   detail: undefined,
+app_1      |   hint: undefined,
+app_1      |   position: '71',
+app_1      |   internalPosition: undefined,
+app_1      |   internalQuery: undefined,
+app_1      |   where: undefined,
+app_1      |   schema: undefined,
+app_1      |   table: undefined,
+app_1      |   column: undefined,
+app_1      |   dataType: undefined,
+app_1      |   constraint: undefined,
+app_1      |   file: 'parse_relation.c',
+app_1      |   line: '3665',
+app_1      |   routine: 'errorMissingColumn'
+app_1      | }
+app_1      | 8:17:34 PM [express] GET /api/assets 500 in 119ms :: {"message":"column \"asset_tag\" does not exist…
+app_1      | Serving index.html for path: /favicon.ico
+app_1      | 8:17:40 PM [express] GET /api/health 404 in 5ms

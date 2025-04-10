@@ -71,6 +71,7 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import React, { useState } from "react";
+import { Link } from "wouter";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -1986,12 +1987,22 @@ function SystemSettingsSection() {
 
 export default function AdminPage() {
   const { user: currentUser } = useAuth();
+  const { isAdmin } = usePermissions();
   const [activeTab, setActiveTab] = useState("users");
 
-  if (!currentUser || currentUser.role !== UserRole.ADMIN) {
+  if (!isAdmin) {
     return (
-      <div className="flex h-screen items-center justify-center">
+      <div className="flex h-screen items-center justify-center flex-col gap-4">
         <h1 className="text-2xl font-bold text-destructive">Access Denied</h1>
+        <p className="text-muted-foreground">You need administrator privileges to access this page.</p>
+        <div className="flex gap-2">
+          <Button variant="outline" asChild>
+            <Link href="/">Go to Home</Link>
+          </Button>
+          <Button variant="default" onClick={() => window.location.href = "/auth/logout"}>
+            Logout
+          </Button>
+        </div>
       </div>
     );
   }

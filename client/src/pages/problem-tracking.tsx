@@ -90,7 +90,29 @@ export default function ProblemTracking() {
   const handleButtonClick = (button: ProblemButton) => {
     setSelectedButton(button);
     form.setValue("buttonId", button.id);
-    setIsReportOpen(true);
+    
+    // Check if we should skip the details form
+    if (button.skipDetailsForm) {
+      // If skipDetailsForm is true, submit the problem immediately
+      const defaultData = {
+        buttonId: button.id,
+        notes: "",
+        problemDetails: "",
+        locationName: "",
+        assetId: button.defaultAssetId,
+        timestamp: new Date(),
+      };
+      
+      // Submit with minimal data
+      onSubmit(defaultData);
+      toast({
+        title: "Problem Reported",
+        description: `${button.label} has been reported successfully`,
+      });
+    } else {
+      // Show the details form as usual
+      setIsReportOpen(true);
+    }
   };
   
   // Handle form submit for problem reporting
@@ -248,7 +270,7 @@ export default function ProblemTracking() {
                         <Button
                           key={button.id}
                           variant="outline"
-                          className="h-16 flex justify-start px-4"
+                          className={`h-16 flex justify-start px-4 ${button.skipDetailsForm ? 'border-dashed' : ''}`}
                           style={{ 
                             borderColor: button.color,
                             background: `${button.color}10`
@@ -264,7 +286,12 @@ export default function ProblemTracking() {
                           ) : (
                             <AlertCircle className="mr-2 h-5 w-5" style={{ color: button.color }} />
                           )}
-                          <span className="font-medium">{button.label}</span>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{button.label}</span>
+                            {button.skipDetailsForm && (
+                              <span className="text-xs text-muted-foreground">Quick report - no details needed</span>
+                            )}
+                          </div>
                         </Button>
                       ))}
                     </div>

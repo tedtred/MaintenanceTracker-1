@@ -181,22 +181,34 @@ export default function MaintenanceCalendar() {
 
   const schedulesQuery = useQuery<MaintenanceSchedule[]>({
     queryKey: ["/api/maintenance-schedules"],
-    queryFn: () => apiRequest("GET", "/api/maintenance-schedules"),
+    async queryFn() {
+      const res = await apiRequest("GET", "/api/maintenance-schedules");
+      return await res.json() as MaintenanceSchedule[];
+    },
   });
 
   const assetsQuery = useQuery<Asset[]>({
     queryKey: ["/api/assets"],
-    queryFn: () => apiRequest("GET", "/api/assets"),
+    async queryFn() {
+      const res = await apiRequest("GET", "/api/assets");
+      return await res.json() as Asset[];
+    },
   });
 
   const completionsQuery = useQuery<MaintenanceCompletion[]>({
     queryKey: ["/api/maintenance-completions"],
-    queryFn: () => apiRequest("GET", "/api/maintenance-completions"),
+    async queryFn() {
+      const res = await apiRequest("GET", "/api/maintenance-completions");
+      return await res.json() as MaintenanceCompletion[];
+    },
   });
   
   const settingsQuery = useQuery<Settings>({
     queryKey: ['/api/settings'],
-    queryFn: () => apiRequest("GET", "/api/settings"),
+    async queryFn() {
+      const res = await apiRequest("GET", "/api/settings");
+      return await res.json() as Settings;
+    },
   });
 
   const completeMaintenanceMutation = useMutation({
@@ -392,6 +404,20 @@ export default function MaintenanceCalendar() {
     day: true,
     agenda: true
   };
+
+  // Check if data is loading
+  if (
+    schedulesQuery.isLoading ||
+    assetsQuery.isLoading ||
+    completionsQuery.isLoading ||
+    settingsQuery.isLoading
+  ) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
   
   return (
     <div className="flex h-screen">
@@ -452,7 +478,7 @@ export default function MaintenanceCalendar() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Assets</SelectItem>
-                        {Array.isArray(assets) ? assets.map(asset => (
+                        {Array.isArray(assetsQuery.data) ? assetsQuery.data.map(asset => (
                           <SelectItem key={asset.id} value={asset.id.toString()}>{asset.name}</SelectItem>
                         )) : null}
                       </SelectContent>
@@ -521,7 +547,7 @@ export default function MaintenanceCalendar() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Assets</SelectItem>
-                        {Array.isArray(assets) ? assets.map(asset => (
+                        {Array.isArray(assetsQuery.data) ? assetsQuery.data.map(asset => (
                           <SelectItem key={asset.id} value={asset.id.toString()}>{asset.name}</SelectItem>
                         )) : null}
                       </SelectContent>

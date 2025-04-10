@@ -74,17 +74,13 @@ interface HolidayDate {
   isRecurringYearly: boolean;
 }
 
-// Define interface for role default pages
-interface RoleDefaultPage {
-  role: string;
-  defaultPage: string;
-}
+
 
 export default function SettingsPage() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("schedule");
   const [holidays, setHolidays] = useState<HolidayDate[]>([]);
-  const [roleDefaultPages, setRoleDefaultPages] = useState<RoleDefaultPage[]>([]);
+
 
   const { data: settings, isLoading } = useQuery<Settings>({
     queryKey: ['/api/settings']
@@ -105,22 +101,7 @@ export default function SettingsPage() {
         }
       }
       
-      // Parse role default pages data when settings load
-      if (settings.roleDefaultPages) {
-        try {
-          const parsedRoleDefaultPages = JSON.parse(settings.roleDefaultPages);
-          if (typeof parsedRoleDefaultPages === 'object') {
-            // Convert object to array for easier UI handling
-            const roleDefaults = Object.entries(parsedRoleDefaultPages).map(([role, defaultPage]) => ({
-              role,
-              defaultPage: defaultPage as string
-            }));
-            setRoleDefaultPages(roleDefaults);
-          }
-        } catch (error) {
-          console.error("Failed to parse role default pages data:", error);
-        }
-      }
+
     }
   }, [settings]);
 
@@ -179,37 +160,15 @@ export default function SettingsPage() {
     setHolidays(holidays.filter(holiday => holiday.id !== id));
   };
 
-  // Role Default Pages Management
-  const addRoleDefaultPage = () => {
-    const newRoleDefaultPage: RoleDefaultPage = {
-      role: UserRole.TECHNICIAN, // Default to technician
-      defaultPage: "/work-orders" // Default to work orders
-    };
-    setRoleDefaultPages([...roleDefaultPages, newRoleDefaultPage]);
-  };
+  
 
-  const updateRoleDefaultPage = (index: number, field: keyof RoleDefaultPage, value: string) => {
-    setRoleDefaultPages(roleDefaultPages.map((page, i) => 
-      i === index ? { ...page, [field]: value } : page
-    ));
-  };
-
-  const removeRoleDefaultPage = (index: number) => {
-    setRoleDefaultPages(roleDefaultPages.filter((_, i) => i !== index));
-  };
-
-  // Update form with holidays and role default pages before submit
+  // Update form with holidays before submit
   const prepareSubmitData = (formData: Settings) => {
-    // Convert role default pages from array to object format for storage
-    const roleDefaultPagesObj: Record<string, string> = {};
-    roleDefaultPages.forEach(item => {
-      roleDefaultPagesObj[item.role] = item.defaultPage;
-    });
-
     return {
       ...formData,
       holidayCalendar: JSON.stringify(holidays),
-      roleDefaultPages: JSON.stringify(roleDefaultPagesObj)
+      // Keep the existing roleDefaultPages setting
+      roleDefaultPages: settings?.roleDefaultPages || "{}"
     };
   };
 

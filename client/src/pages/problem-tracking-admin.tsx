@@ -3,7 +3,6 @@ import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { SidebarNav } from "@/components/sidebar-nav";
 import { ProblemButton, WorkOrderPriority, Asset, User } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,33 +18,35 @@ import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { AlertTriangle, Wrench, BarChart2, AlertCircle, Trash2, Plus, ArrowUp, ArrowDown, PencilIcon, Save, X, ClipboardList } from "lucide-react";
+import { AlertTriangle, BarChart2, CheckCircle, ClipboardList, Edit, Paintbrush, Plus, RefreshCw, Save, Trash2, Wrench, X } from "lucide-react";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from "@/components/ui/alert-dialog";
 
-// Define form schema
 const buttonFormSchema = z.object({
-  label: z.string().min(1, "Label is required"),
-  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Must be a valid hex color"),
+  label: z.string().min(2, "Label must be at least 2 characters").max(50, "Label must be less than 50 characters"),
+  color: z.string().regex(/^#([0-9A-F]{3}){1,2}$/i, "Must be a valid hex color code"),
   icon: z.string().optional(),
   active: z.boolean().default(true),
-  // Work order template fields
+  
+  // Work order integration
   createWorkOrder: z.boolean().default(false),
   workOrderTitle: z.string().optional(),
   workOrderDescription: z.string().optional(),
-  workOrderPriority: z.enum(["LOW", "MEDIUM", "HIGH"]).optional(),
+  workOrderPriority: z.string().optional(),
   defaultAssetId: z.number().nullable().optional(),
-  defaultAssignedTo: z.number().nullable().optional(),
   notifyMaintenance: z.boolean().default(false),
 });
 
 type ButtonFormData = z.infer<typeof buttonFormSchema>;
-
-// Icons available for selection
-const availableIcons = [
-  { value: "AlertTriangle", label: "Alert Triangle", icon: <AlertTriangle className="h-4 w-4" /> },
-  { value: "Wrench", label: "Wrench", icon: <Wrench className="h-4 w-4" /> },
-  { value: "BarChart2", label: "Bar Chart", icon: <BarChart2 className="h-4 w-4" /> },
-  { value: "AlertCircle", label: "Alert Circle", icon: <AlertCircle className="h-4 w-4" /> },
-];
 
 export default function ProblemTrackingAdmin() {
   const { toast } = useToast();
@@ -53,19 +54,20 @@ export default function ProblemTrackingAdmin() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedButton, setSelectedButton] = useState<ProblemButton | null>(null);
-  
-  // Redirect non-admin users
-  if (user?.role !== "ADMIN") {
-    typeof window !== "undefined" && (window.location.href = "/problem-tracking");
-    return null;
-  }
+  const [selectedColor, setSelectedColor] = useState("#3B82F6");
+  const [selectedEditColor, setSelectedEditColor] = useState("#3B82F6");
   
   // Query for problem buttons
   const { data: buttons = [], isLoading } = useQuery<ProblemButton[]>({
     queryKey: ["/api/problem-buttons"],
   });
   
-  // Create button mutation
+  // Query for assets (for work order integration)
+  const { data: assets = [] } = useQuery<Asset[]>({
+    queryKey: ["/api/assets"],
+  });
+  
+  // Handle create button mutation
   const createMutation = useMutation({
     mutationFn: async (data: ButtonFormData) => {
       const response = await apiRequest("POST", "/api/problem-buttons", data);
@@ -75,10 +77,9 @@ export default function ProblemTrackingAdmin() {
     onSuccess: () => {
       toast({
         title: "Button created",
-        description: "The problem button has been created successfully",
+        description: "The problem button has been created successfully"
       });
       setIsCreateOpen(false);
-      createForm.reset();
       queryClient.invalidateQueries({ queryKey: ["/api/problem-buttons"] });
     },
     onError: (error: Error) => {
@@ -90,9 +91,9 @@ export default function ProblemTrackingAdmin() {
     },
   });
   
-  // Update button mutation
+  // Handle update button mutation
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: Partial<ProblemButton> }) => {
+    mutationFn: async ({ id, data }: { id: number, data: ButtonFormData }) => {
       const response = await apiRequest("PATCH", `/api/problem-buttons/${id}`, data);
       const button = await response.json();
       return button;
@@ -100,7 +101,7 @@ export default function ProblemTrackingAdmin() {
     onSuccess: () => {
       toast({
         title: "Button updated",
-        description: "The problem button has been updated successfully",
+        description: "The problem button has been updated successfully"
       });
       setIsEditOpen(false);
       setSelectedButton(null);
@@ -115,17 +116,18 @@ export default function ProblemTrackingAdmin() {
     },
   });
   
-  // Delete button mutation
+  // Handle delete button mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
       await apiRequest("DELETE", `/api/problem-buttons/${id}`);
-      return id;
     },
     onSuccess: () => {
       toast({
         title: "Button deleted",
-        description: "The problem button has been deleted successfully",
+        description: "The problem button has been deleted successfully"
       });
+      setIsEditOpen(false);
+      setSelectedButton(null);
       queryClient.invalidateQueries({ queryKey: ["/api/problem-buttons"] });
     },
     onError: (error: Error) => {
@@ -137,243 +139,189 @@ export default function ProblemTrackingAdmin() {
     },
   });
   
-  // Reorder button mutation
-  const reorderMutation = useMutation({
-    mutationFn: async ({ id, direction }: { id: number; direction: "up" | "down" }) => {
-      const currentButton = buttons.find(b => b.id === id);
-      
-      if (!currentButton) {
-        throw new Error("Button not found");
-      }
-      
-      const currentIndex = buttons.findIndex(b => b.id === id);
-      const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
-      
-      // Make sure we're not going out of bounds
-      if (targetIndex < 0 || targetIndex >= buttons.length) {
-        return { success: false };
-      }
-      
-      const targetButton = buttons[targetIndex];
-      
-      // Swap orders
-      await updateMutation.mutateAsync({
-        id: currentButton.id,
-        data: { order: targetButton.order }
-      });
-      
-      await updateMutation.mutateAsync({
-        id: targetButton.id,
-        data: { order: currentButton.order }
-      });
-      
-      return { success: true };
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/problem-buttons"] });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-  
-  // Form setup for create button
+  // Create button form setup
   const createForm = useForm<ButtonFormData>({
     resolver: zodResolver(buttonFormSchema),
     defaultValues: {
       label: "",
-      color: "#6b7280",
-      icon: undefined,
+      color: "#3B82F6",
+      icon: "AlertTriangle",
       active: true,
-      // Work order fields
       createWorkOrder: false,
       workOrderTitle: "",
       workOrderDescription: "",
-      workOrderPriority: "HIGH",
+      workOrderPriority: "MEDIUM",
+      defaultAssetId: null,
       notifyMaintenance: false,
     },
   });
   
-  // Form setup for edit button
+  // Edit button form setup
   const editForm = useForm<ButtonFormData>({
     resolver: zodResolver(buttonFormSchema),
     defaultValues: {
       label: "",
-      color: "#6b7280",
-      icon: undefined,
+      color: "#3B82F6",
+      icon: "AlertTriangle",
       active: true,
-      // Work order fields
       createWorkOrder: false,
       workOrderTitle: "",
       workOrderDescription: "",
-      workOrderPriority: "HIGH",
+      workOrderPriority: "MEDIUM",
+      defaultAssetId: null,
       notifyMaintenance: false,
     },
   });
   
-  // Handle creating a new button
-  const handleCreateButton = (data: ButtonFormData) => {
-    // Convert "none" to null/undefined for the backend
-    if (data.icon === "none") {
-      data.icon = undefined;
-    }
-    createMutation.mutate(data);
-  };
-  
-  // Handle editing a button
-  const handleEditButton = (data: ButtonFormData) => {
-    // Convert "none" to null/undefined for the backend
-    if (data.icon === "none") {
-      data.icon = undefined;
-    }
-    if (selectedButton) {
-      updateMutation.mutate({
-        id: selectedButton.id,
-        data
-      });
-    }
-  };
-  
-  // Open edit dialog
-  const openEditDialog = (button: ProblemButton) => {
+  // Handle opening the edit dialog
+  const handleEditButton = (button: ProblemButton) => {
     setSelectedButton(button);
+    setSelectedEditColor(button.color);
+    
     editForm.reset({
       label: button.label,
       color: button.color,
-      icon: button.icon || "none", // Use "none" instead of empty string
+      icon: button.icon || undefined,
       active: button.active,
-      // Work order fields
       createWorkOrder: button.createWorkOrder || false,
       workOrderTitle: button.workOrderTitle || "",
       workOrderDescription: button.workOrderDescription || "",
-      workOrderPriority: button.workOrderPriority as any || "HIGH",
-      defaultAssetId: button.defaultAssetId || undefined,
-      defaultAssignedTo: button.defaultAssignedTo || undefined,
+      workOrderPriority: button.workOrderPriority || "MEDIUM",
+      defaultAssetId: button.defaultAssetId,
       notifyMaintenance: button.notifyMaintenance || false,
     });
+    
     setIsEditOpen(true);
   };
   
-  // Sort buttons by order
-  const sortedButtons = [...buttons].sort((a, b) => a.order - b.order);
+  // Handle creating a new button
+  const handleCreateButton = (data: ButtonFormData) => {
+    createMutation.mutate(data);
+  };
+  
+  // Handle updating a button
+  const handleEditButtonSubmit = (data: ButtonFormData) => {
+    if (selectedButton) {
+      updateMutation.mutate({ id: selectedButton.id, data });
+    }
+  };
+  
+  // Handle deleting a button
+  const handleDeleteButton = () => {
+    if (selectedButton) {
+      deleteMutation.mutate(selectedButton.id);
+    }
+  };
+  
+  // Handle color change in create form
+  const handleColorChange = (color: string) => {
+    setSelectedColor(color);
+    createForm.setValue("color", color, { shouldValidate: true });
+  };
+  
+  // Handle color change in edit form
+  const handleEditColorChange = (color: string) => {
+    setSelectedEditColor(color);
+    editForm.setValue("color", color, { shouldValidate: true });
+  };
+  
+  // Open the create dialog
+  const openCreateDialog = () => {
+    createForm.reset({
+      label: "",
+      color: "#3B82F6",
+      icon: "AlertTriangle",
+      active: true,
+      createWorkOrder: false,
+      workOrderTitle: "",
+      workOrderDescription: "",
+      workOrderPriority: "MEDIUM",
+      defaultAssetId: null,
+      notifyMaintenance: false,
+    });
+    setSelectedColor("#3B82F6");
+    setIsCreateOpen(true);
+  };
+  
+  // Function to get appropriate icon component
+  const getIconComponent = (iconName?: string, className = "h-5 w-5") => {
+    switch (iconName) {
+      case "AlertTriangle":
+        return <AlertTriangle className={className} />;
+      case "Wrench":
+        return <Wrench className={className} />;
+      case "BarChart2":
+        return <BarChart2 className={className} />;
+      default:
+        return <AlertTriangle className={className} />;
+    }
+  };
   
   return (
-    <div className="flex h-screen">
-      <SidebarNav />
-      <div className="flex-1 p-6 overflow-y-auto">
-        <div className="max-w-4xl mx-auto space-y-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold">Problem Button Configuration</h1>
-              <p className="text-muted-foreground">Manage the problem reporting buttons</p>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => window.location.href = "/problem-tracking"}>
-                Back to Problem Tracking
-              </Button>
-              <Button onClick={() => setIsCreateOpen(true)}>
-                <Plus className="mr-2 h-4 w-4" />
-                New Button
-              </Button>
-            </div>
+    <div className="w-full">
+      <div className="space-y-8">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Problem Button Configuration</h1>
+            <p className="text-muted-foreground">
+              Manage problem reporting buttons and work order integration
+            </p>
           </div>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Problem Buttons</CardTitle>
-              <CardDescription>
-                Configure buttons that users will see when reporting problems
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <p className="text-center py-8">Loading buttons...</p>
-              ) : sortedButtons.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground mb-4">No problem buttons have been created yet</p>
-                  <Button onClick={() => setIsCreateOpen(true)}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Create First Button
+          <Button onClick={openCreateDialog}>
+            <Plus className="mr-2 h-4 w-4" />
+            Create Button
+          </Button>
+        </div>
+        
+        {/* Button List */}
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {buttons.map((button) => (
+            <Card key={button.id} className="overflow-hidden">
+              <CardHeader className="pb-2">
+                <div className="flex justify-between items-center">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full" style={{ backgroundColor: button.color + "20" }}>
+                      <span style={{ color: button.color }}>
+                        {getIconComponent(button.icon)}
+                      </span>
+                    </span>
+                    {button.label}
+                  </CardTitle>
+                  <Button variant="ghost" size="icon" onClick={() => handleEditButton(button)}>
+                    <Edit className="h-4 w-4" />
                   </Button>
                 </div>
-              ) : (
-                <ScrollArea className="h-[500px]">
-                  <div className="space-y-4">
-                    {sortedButtons.map((button) => (
-                      <Card key={button.id} className="overflow-hidden">
-                        <div className="flex items-center p-4">
-                          <div 
-                            className="w-8 h-8 rounded-md mr-4 flex items-center justify-center" 
-                            style={{ backgroundColor: button.color }}
-                          >
-                            {button.icon === "AlertTriangle" && <AlertTriangle className="h-4 w-4 text-white" />}
-                            {button.icon === "Wrench" && <Wrench className="h-4 w-4 text-white" />}
-                            {button.icon === "BarChart2" && <BarChart2 className="h-4 w-4 text-white" />}
-                            {button.icon === "AlertCircle" && <AlertCircle className="h-4 w-4 text-white" />}
-                            {!button.icon && <AlertCircle className="h-4 w-4 text-white" />}
-                          </div>
-                          <div className="flex-1">
-                            <h3 className="font-medium">{button.label}</h3>
-                            <div className="text-sm text-muted-foreground flex items-center gap-4">
-                              <div>Color: {button.color}</div>
-                              {button.icon && <div>Icon: {button.icon}</div>}
-                              <div>Status: {button.active ? 'Active' : 'Inactive'}</div>
-                              {button.createWorkOrder && (
-                                <div className="flex items-center">
-                                  <ClipboardList className="h-4 w-4 mr-1" />
-                                  Creates Work Order
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => reorderMutation.mutate({ id: button.id, direction: "up" })}
-                              disabled={sortedButtons.indexOf(button) === 0}
-                            >
-                              <ArrowUp className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => reorderMutation.mutate({ id: button.id, direction: "down" })}
-                              disabled={sortedButtons.indexOf(button) === sortedButtons.length - 1}
-                            >
-                              <ArrowDown className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => openEditDialog(button)}
-                            >
-                              <PencilIcon className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                if (confirm(`Are you sure you want to delete "${button.label}"?`)) {
-                                  deleteMutation.mutate(button.id);
-                                }
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      </Card>
-                    ))}
+                <CardDescription>
+                  {button.active ? (
+                    <span className="flex items-center text-xs text-green-500">
+                      <CheckCircle className="mr-1 h-3 w-3" /> Active
+                    </span>
+                  ) : (
+                    <span className="flex items-center text-xs text-muted-foreground">
+                      Inactive
+                    </span>
+                  )}
+                </CardDescription>
+              </CardHeader>
+              <div className="h-2" style={{ backgroundColor: button.color }}></div>
+              <CardContent className="pt-4 space-y-2">
+                {button.createWorkOrder && (
+                  <div className="text-sm">
+                    <p className="flex items-center text-muted-foreground">
+                      <ClipboardList className="mr-2 h-4 w-4" />
+                      Creates work order on report
+                    </p>
+                    {button.workOrderPriority && (
+                      <p className="text-xs ml-6 mt-1 text-muted-foreground">
+                        Priority: {button.workOrderPriority}
+                      </p>
+                    )}
                   </div>
-                </ScrollArea>
-              )}
-            </CardContent>
-          </Card>
+                )}
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
       
@@ -382,6 +330,9 @@ export default function ProblemTrackingAdmin() {
         <DialogContent className="sm:max-w-[500px] max-h-[85vh]">
           <DialogHeader>
             <DialogTitle>Create Problem Button</DialogTitle>
+            <DialogDescription>
+              Configure a new button for problem reporting
+            </DialogDescription>
           </DialogHeader>
           <ScrollArea className="max-h-[65vh] pr-4">
             <Form {...createForm}>
@@ -393,8 +344,11 @@ export default function ProblemTrackingAdmin() {
                     <FormItem>
                       <FormLabel>Button Label</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., Equipment Failure" {...field} />
+                        <Input placeholder="e.g., Machine Failure" {...field} />
                       </FormControl>
+                      <FormDescription>
+                        Choose a clear and concise label for the problem button
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -408,8 +362,22 @@ export default function ProblemTrackingAdmin() {
                       <FormLabel>Button Color</FormLabel>
                       <FormControl>
                         <div className="space-y-2">
-                          <Input {...field} />
-                          <HexColorPicker color={field.value} onChange={(color) => field.onChange(color)} />
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="h-10 w-10 rounded-md border"
+                              style={{ backgroundColor: selectedColor }}
+                            />
+                            <Input
+                              {...field}
+                              value={selectedColor}
+                              onChange={(e) => handleColorChange(e.target.value)}
+                            />
+                          </div>
+                          <HexColorPicker
+                            color={selectedColor}
+                            onChange={handleColorChange}
+                            className="w-full"
+                          />
                         </div>
                       </FormControl>
                       <FormMessage />
@@ -422,10 +390,10 @@ export default function ProblemTrackingAdmin() {
                   name="icon"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Icon (Optional)</FormLabel>
+                      <FormLabel>Icon</FormLabel>
                       <Select
                         onValueChange={field.onChange}
-                        defaultValue={field.value || "none"}
+                        defaultValue={field.value}
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -433,17 +401,29 @@ export default function ProblemTrackingAdmin() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="none">None</SelectItem>
-                          {availableIcons.map((icon) => (
-                            <SelectItem key={icon.value} value={icon.value}>
-                              <div className="flex items-center">
-                                {icon.icon}
-                                <span className="ml-2">{icon.label}</span>
-                              </div>
-                            </SelectItem>
-                          ))}
+                          <SelectItem value="AlertTriangle">
+                            <div className="flex items-center">
+                              <AlertTriangle className="mr-2 h-4 w-4" />
+                              Alert Triangle
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="Wrench">
+                            <div className="flex items-center">
+                              <Wrench className="mr-2 h-4 w-4" />
+                              Wrench
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="BarChart2">
+                            <div className="flex items-center">
+                              <BarChart2 className="mr-2 h-4 w-4" />
+                              Chart
+                            </div>
+                          </SelectItem>
                         </SelectContent>
                       </Select>
+                      <FormDescription>
+                        Choose an icon that visually represents the problem type
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -457,7 +437,7 @@ export default function ProblemTrackingAdmin() {
                       <div className="space-y-0.5">
                         <FormLabel>Active</FormLabel>
                         <FormDescription>
-                          Whether this button is visible to users
+                          Only active buttons will be shown on the problem reporting page
                         </FormDescription>
                       </div>
                       <FormControl>
@@ -470,13 +450,6 @@ export default function ProblemTrackingAdmin() {
                   )}
                 />
                 
-                <div className="mt-6 p-4 border rounded-lg bg-slate-50 dark:bg-slate-900">
-                  <h3 className="text-lg font-bold text-blue-600 dark:text-blue-400">Work Order Template Settings</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Configure this button to automatically create a work order with predefined fields when pressed
-                  </p>
-                </div>
-                
                 <FormField
                   control={createForm.control}
                   name="createWorkOrder"
@@ -485,7 +458,7 @@ export default function ProblemTrackingAdmin() {
                       <div className="space-y-0.5">
                         <FormLabel>Create Work Order</FormLabel>
                         <FormDescription>
-                          Automatically generate a work order when this problem is reported
+                          Automatically create a work order when this problem is reported
                         </FormDescription>
                       </div>
                       <FormControl>
@@ -505,12 +478,15 @@ export default function ProblemTrackingAdmin() {
                       name="workOrderTitle"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Work Order Title Template</FormLabel>
+                          <FormLabel>Work Order Title</FormLabel>
                           <FormControl>
-                            <Input placeholder="e.g., [asset] Issue - Needs Repair" {...field} />
+                            <Input 
+                              placeholder="e.g., [Button] repair needed" 
+                              {...field} 
+                            />
                           </FormControl>
                           <FormDescription>
-                            Use [asset] to include the asset name automatically
+                            Default title for created work orders. Use [button] to include button label.
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -550,15 +526,49 @@ export default function ProblemTrackingAdmin() {
                           >
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="Select priority" />
+                                <SelectValue placeholder="Select a priority" />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="LOW">Low</SelectItem>
-                              <SelectItem value="MEDIUM">Medium</SelectItem>
-                              <SelectItem value="HIGH">High</SelectItem>
+                              {Object.values(WorkOrderPriority).map((priority) => (
+                                <SelectItem key={priority} value={priority}>
+                                  {priority}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={createForm.control}
+                      name="defaultAssetId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Default Asset (Optional)</FormLabel>
+                          <Select
+                            onValueChange={(value) => field.onChange(value ? parseInt(value) : null)}
+                            value={field.value?.toString() || ""}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select an asset" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="">None</SelectItem>
+                              {assets.map((asset) => (
+                                <SelectItem key={asset.id} value={asset.id.toString()}>
+                                  {asset.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormDescription>
+                            User can override this when reporting
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -611,10 +621,13 @@ export default function ProblemTrackingAdmin() {
         <DialogContent className="sm:max-w-[500px] max-h-[85vh]">
           <DialogHeader>
             <DialogTitle>Edit Problem Button</DialogTitle>
+            <DialogDescription>
+              Modify button settings and work order integration
+            </DialogDescription>
           </DialogHeader>
           <ScrollArea className="max-h-[65vh] pr-4">
             <Form {...editForm}>
-              <form onSubmit={editForm.handleSubmit(handleEditButton)} className="space-y-4">
+              <form onSubmit={editForm.handleSubmit(handleEditButtonSubmit)} className="space-y-4">
                 <FormField
                   control={editForm.control}
                   name="label"
@@ -622,8 +635,11 @@ export default function ProblemTrackingAdmin() {
                     <FormItem>
                       <FormLabel>Button Label</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input placeholder="e.g., Machine Failure" {...field} />
                       </FormControl>
+                      <FormDescription>
+                        Choose a clear and concise label for the problem button
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -637,8 +653,22 @@ export default function ProblemTrackingAdmin() {
                       <FormLabel>Button Color</FormLabel>
                       <FormControl>
                         <div className="space-y-2">
-                          <Input {...field} />
-                          <HexColorPicker color={field.value} onChange={(color) => field.onChange(color)} />
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="h-10 w-10 rounded-md border"
+                              style={{ backgroundColor: selectedEditColor }}
+                            />
+                            <Input
+                              {...field}
+                              value={selectedEditColor}
+                              onChange={(e) => handleEditColorChange(e.target.value)}
+                            />
+                          </div>
+                          <HexColorPicker
+                            color={selectedEditColor}
+                            onChange={handleEditColorChange}
+                            className="w-full"
+                          />
                         </div>
                       </FormControl>
                       <FormMessage />
@@ -651,10 +681,10 @@ export default function ProblemTrackingAdmin() {
                   name="icon"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Icon (Optional)</FormLabel>
+                      <FormLabel>Icon</FormLabel>
                       <Select
                         onValueChange={field.onChange}
-                        defaultValue={field.value || "none"}
+                        defaultValue={field.value}
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -662,17 +692,29 @@ export default function ProblemTrackingAdmin() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="none">None</SelectItem>
-                          {availableIcons.map((icon) => (
-                            <SelectItem key={icon.value} value={icon.value}>
-                              <div className="flex items-center">
-                                {icon.icon}
-                                <span className="ml-2">{icon.label}</span>
-                              </div>
-                            </SelectItem>
-                          ))}
+                          <SelectItem value="AlertTriangle">
+                            <div className="flex items-center">
+                              <AlertTriangle className="mr-2 h-4 w-4" />
+                              Alert Triangle
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="Wrench">
+                            <div className="flex items-center">
+                              <Wrench className="mr-2 h-4 w-4" />
+                              Wrench
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="BarChart2">
+                            <div className="flex items-center">
+                              <BarChart2 className="mr-2 h-4 w-4" />
+                              Chart
+                            </div>
+                          </SelectItem>
                         </SelectContent>
                       </Select>
+                      <FormDescription>
+                        Choose an icon that visually represents the problem type
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -686,7 +728,7 @@ export default function ProblemTrackingAdmin() {
                       <div className="space-y-0.5">
                         <FormLabel>Active</FormLabel>
                         <FormDescription>
-                          Whether this button is visible to users
+                          Only active buttons will be shown on the problem reporting page
                         </FormDescription>
                       </div>
                       <FormControl>
@@ -699,13 +741,6 @@ export default function ProblemTrackingAdmin() {
                   )}
                 />
                 
-                <div className="mt-6 p-4 border rounded-lg bg-slate-50 dark:bg-slate-900">
-                  <h3 className="text-lg font-bold text-blue-600 dark:text-blue-400">Work Order Template Settings</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Configure this button to automatically create a work order with predefined fields when pressed
-                  </p>
-                </div>
-                
                 <FormField
                   control={editForm.control}
                   name="createWorkOrder"
@@ -714,7 +749,7 @@ export default function ProblemTrackingAdmin() {
                       <div className="space-y-0.5">
                         <FormLabel>Create Work Order</FormLabel>
                         <FormDescription>
-                          Automatically generate a work order when this problem is reported
+                          Automatically create a work order when this problem is reported
                         </FormDescription>
                       </div>
                       <FormControl>
@@ -734,12 +769,15 @@ export default function ProblemTrackingAdmin() {
                       name="workOrderTitle"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Work Order Title Template</FormLabel>
+                          <FormLabel>Work Order Title</FormLabel>
                           <FormControl>
-                            <Input placeholder="e.g., [asset] Issue - Needs Repair" {...field} />
+                            <Input 
+                              placeholder="e.g., [Button] repair needed" 
+                              {...field} 
+                            />
                           </FormControl>
                           <FormDescription>
-                            Use [asset] to include the asset name automatically
+                            Default title for created work orders. Use [button] to include button label.
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -779,15 +817,49 @@ export default function ProblemTrackingAdmin() {
                           >
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="Select priority" />
+                                <SelectValue placeholder="Select a priority" />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="LOW">Low</SelectItem>
-                              <SelectItem value="MEDIUM">Medium</SelectItem>
-                              <SelectItem value="HIGH">High</SelectItem>
+                              {Object.values(WorkOrderPriority).map((priority) => (
+                                <SelectItem key={priority} value={priority}>
+                                  {priority}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={editForm.control}
+                      name="defaultAssetId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Default Asset (Optional)</FormLabel>
+                          <Select
+                            onValueChange={(value) => field.onChange(value ? parseInt(value) : null)}
+                            value={field.value?.toString() || ""}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select an asset" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="">None</SelectItem>
+                              {assets.map((asset) => (
+                                <SelectItem key={asset.id} value={asset.id.toString()}>
+                                  {asset.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormDescription>
+                            User can override this when reporting
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -825,7 +897,7 @@ export default function ProblemTrackingAdmin() {
             </Button>
             <Button 
               type="submit" 
-              onClick={editForm.handleSubmit(handleEditButton)}
+              onClick={editForm.handleSubmit(handleEditButtonSubmit)}
               disabled={updateMutation.isPending}
             >
               <Save className="mr-2 h-4 w-4" />
@@ -834,6 +906,41 @@ export default function ProblemTrackingAdmin() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Button Dialog */}
+      {selectedButton && (
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button 
+              variant="destructive" 
+              size="sm"
+              className="absolute top-4 right-20"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Problem Button</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this problem button? This action cannot be undone.
+                Any existing problem reports using this button will be kept, but new reports cannot be created.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleDeleteButton}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </div>
   );
 }

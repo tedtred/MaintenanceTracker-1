@@ -4,7 +4,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { SidebarNav } from "@/components/sidebar-nav";
 import { ProblemButton, ProblemEvent, Asset } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -218,264 +217,261 @@ export default function ProblemTracking() {
   };
   
   return (
-    <div className="flex h-screen">
-      <SidebarNav />
-      <div className="flex-1 p-6 overflow-y-auto">
-        <div className="max-w-6xl mx-auto space-y-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold">Problem Tracking</h1>
-              <p className="text-muted-foreground">Report and monitor operational issues</p>
-            </div>
-            {user?.role === "ADMIN" && (
-              <Button variant="outline" onClick={() => setIsAdminOpen(true)}>
-                <Settings className="mr-2 h-4 w-4" /> Configure Buttons
-              </Button>
-            )}
+    <div className="w-full">
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold">Problem Tracking</h1>
+            <p className="text-muted-foreground">Report and monitor operational issues</p>
           </div>
-          
-          <div className="grid gap-4 md:grid-cols-3">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle>Open Problems</CardTitle>
-                <CardDescription>Issues requiring attention</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold flex items-center">
-                  <AlertCircle className="mr-2 h-5 w-5 text-amber-500" />
-                  {openProblems}
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle>Critical Issues</CardTitle>
-                <CardDescription>High priority problems</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold flex items-center">
-                  <AlertTriangle className="mr-2 h-5 w-5 text-destructive" />
-                  {highPriorityProblems}
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle>Resolved Problems</CardTitle>
-                <CardDescription>Issues fixed this week</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold flex items-center">
-                  <Check className="mr-2 h-5 w-5 text-green-500" />
-                  {resolvedProblems}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-          
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
-            <TabsList>
-              <TabsTrigger value="report">Report Problem</TabsTrigger>
-              <TabsTrigger value="active">Active Problems</TabsTrigger>
-              <TabsTrigger value="resolved">Resolved</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="report">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Quick Problem Reporting</CardTitle>
-                  <CardDescription>
-                    Tap/click a button to report a problem
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {buttonRows.map((row, rowIndex) => (
-                    <div key={rowIndex} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {row.map((button) => (
-                        <Button
-                          key={button.id}
-                          variant="outline"
-                          className="h-16 flex justify-start px-4"
-                          style={{ 
-                            borderColor: button.color,
-                            background: `${button.color}10`
-                          }}
-                          onClick={() => handleButtonClick(button)}
-                        >
-                          {button.icon ? (
-                            <span className="mr-2 flex items-center justify-center text-lg">
-                              {button.icon === "AlertTriangle" && <AlertTriangle className="h-5 w-5" />}
-                              {button.icon === "Wrench" && <Wrench className="h-5 w-5" />}
-                              {button.icon === "BarChart2" && <BarChart2 className="h-5 w-5" />}
-                            </span>
-                          ) : (
-                            <AlertCircle className="mr-2 h-5 w-5" style={{ color: button.color }} />
-                          )}
-                          <span className="font-medium">{button.label}</span>
-                        </Button>
-                      ))}
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="active">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Active Problems</CardTitle>
-                  <CardDescription>
-                    Current issues requiring attention
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ScrollArea className="h-[400px]">
-                    <div className="space-y-4">
-                      {events.filter(event => !event.resolved).length === 0 ? (
-                        <p className="text-center text-muted-foreground py-8">
-                          No active problems
-                        </p>
-                      ) : (
-                        events
-                          .filter(event => !event.resolved)
-                          .map(event => {
-                            const button = buttons.find(b => b.id === event.buttonId);
-                            return (
-                              <Card key={event.id} className="overflow-hidden">
-                                <CardHeader className="py-3" 
-                                  style={{ 
-                                    borderBottom: `1px solid ${button?.color || '#e5e7eb'}`, 
-                                    backgroundColor: `${button?.color || '#f3f4f6'}10` 
-                                  }}
-                                >
-                                  <div className="flex justify-between items-start">
-                                    <CardTitle className="text-base flex items-center">
-                                      <AlertCircle className="mr-2 h-4 w-4" style={{ color: button?.color }} />
-                                      {getButtonLabel(event.buttonId)}
-                                    </CardTitle>
-                                    <div className="text-xs text-muted-foreground">
-                                      {format(new Date(event.timestamp), "MMM d, h:mm a")}
-                                    </div>
-                                  </div>
-                                </CardHeader>
-                                <CardContent className="py-3">
-                                  {event.notes && (
-                                    <p className="text-sm mb-2">{event.notes}</p>
-                                  )}
-                                  <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                                    {event.locationName && (
-                                      <div>
-                                        Location: <span className="font-medium">{event.locationName}</span>
-                                      </div>
-                                    )}
-                                    {event.assetId && (
-                                      <div>
-                                        Asset: <span className="font-medium">{getAssetName(event.assetId)}</span>
-                                      </div>
-                                    )}
-                                    <div>
-                                      Reported by: <span className="font-medium">{getUserName(event.userId)}</span>
-                                    </div>
-                                  </div>
-                                </CardContent>
-                                <CardFooter className="border-t bg-muted/30 py-2">
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    className="ml-auto"
-                                    onClick={() => setSelectedEvent(event)}
-                                  >
-                                    <Wrench className="mr-2 h-4 w-4" />
-                                    Manage
-                                  </Button>
-                                </CardFooter>
-                              </Card>
-                            );
-                          })
-                      )}
-                    </div>
-                  </ScrollArea>
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="resolved">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Resolved Problems</CardTitle>
-                  <CardDescription>
-                    Issues that have been fixed
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ScrollArea className="h-[400px]">
-                    <div className="space-y-4">
-                      {events.filter(event => event.resolved).length === 0 ? (
-                        <p className="text-center text-muted-foreground py-8">
-                          No resolved problems
-                        </p>
-                      ) : (
-                        events
-                          .filter(event => event.resolved)
-                          .map(event => {
-                            const button = buttons.find(b => b.id === event.buttonId);
-                            return (
-                              <Card key={event.id} className="overflow-hidden">
-                                <CardHeader className="py-3" 
-                                  style={{ 
-                                    borderBottom: `1px solid ${button?.color || '#e5e7eb'}`, 
-                                    backgroundColor: `${button?.color || '#f3f4f6'}10` 
-                                  }}
-                                >
-                                  <div className="flex justify-between items-start">
-                                    <CardTitle className="text-base flex items-center">
-                                      <Check className="mr-2 h-4 w-4" style={{ color: button?.color }} />
-                                      {getButtonLabel(event.buttonId)}
-                                    </CardTitle>
-                                    <div className="text-xs text-muted-foreground">
-                                      {format(new Date(event.timestamp), "MMM d, h:mm a")}
-                                    </div>
-                                  </div>
-                                </CardHeader>
-                                <CardContent className="py-3">
-                                  {event.notes && (
-                                    <p className="text-sm mb-2">{event.notes}</p>
-                                  )}
-                                  <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                                    {event.locationName && (
-                                      <div>
-                                        Location: <span className="font-medium">{event.locationName}</span>
-                                      </div>
-                                    )}
-                                    {event.assetId && (
-                                      <div>
-                                        Asset: <span className="font-medium">{getAssetName(event.assetId)}</span>
-                                      </div>
-                                    )}
-                                    <div>
-                                      Reported by: <span className="font-medium">{getUserName(event.userId)}</span>
-                                    </div>
-                                    <div>
-                                      Resolved by: <span className="font-medium">{event.resolvedBy ? getUserName(event.resolvedBy) : 'Unknown'}</span>
-                                    </div>
-                                    {event.resolvedAt && (
-                                      <div>
-                                        Resolved at: <span className="font-medium">{format(new Date(event.resolvedAt), "MMM d, h:mm a")}</span>
-                                      </div>
-                                    )}
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            );
-                          })
-                      )}
-                    </div>
-                  </ScrollArea>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+          {user?.role === "ADMIN" && (
+            <Button variant="outline" onClick={() => setIsAdminOpen(true)}>
+              <Settings className="mr-2 h-4 w-4" /> Configure Buttons
+            </Button>
+          )}
         </div>
+          
+        <div className="grid gap-4 md:grid-cols-3">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle>Open Problems</CardTitle>
+              <CardDescription>Issues requiring attention</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold flex items-center">
+                <AlertCircle className="mr-2 h-5 w-5 text-amber-500" />
+                {openProblems}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle>Critical Issues</CardTitle>
+              <CardDescription>High priority problems</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold flex items-center">
+                <AlertTriangle className="mr-2 h-5 w-5 text-destructive" />
+                {highPriorityProblems}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle>Resolved Problems</CardTitle>
+              <CardDescription>Issues fixed this week</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold flex items-center">
+                <Check className="mr-2 h-5 w-5 text-green-500" />
+                {resolvedProblems}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+          
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
+          <TabsList>
+            <TabsTrigger value="report">Report Problem</TabsTrigger>
+            <TabsTrigger value="active">Active Problems</TabsTrigger>
+            <TabsTrigger value="resolved">Resolved</TabsTrigger>
+          </TabsList>
+            
+          <TabsContent value="report">
+            <Card>
+              <CardHeader>
+                <CardTitle>Quick Problem Reporting</CardTitle>
+                <CardDescription>
+                  Tap/click a button to report a problem
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {buttonRows.map((row, rowIndex) => (
+                  <div key={rowIndex} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {row.map((button) => (
+                      <Button
+                        key={button.id}
+                        variant="outline"
+                        className="h-16 flex justify-start px-4"
+                        style={{ 
+                          borderColor: button.color,
+                          background: `${button.color}10`
+                        }}
+                        onClick={() => handleButtonClick(button)}
+                      >
+                        {button.icon ? (
+                          <span className="mr-2 flex items-center justify-center text-lg">
+                            {button.icon === "AlertTriangle" && <AlertTriangle className="h-5 w-5" />}
+                            {button.icon === "Wrench" && <Wrench className="h-5 w-5" />}
+                            {button.icon === "BarChart2" && <BarChart2 className="h-5 w-5" />}
+                          </span>
+                        ) : (
+                          <AlertCircle className="mr-2 h-5 w-5" style={{ color: button.color }} />
+                        )}
+                        <span className="font-medium">{button.label}</span>
+                      </Button>
+                    ))}
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </TabsContent>
+            
+          <TabsContent value="active">
+            <Card>
+              <CardHeader>
+                <CardTitle>Active Problems</CardTitle>
+                <CardDescription>
+                  Current issues requiring attention
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-[400px]">
+                  <div className="space-y-4">
+                    {events.filter(event => !event.resolved).length === 0 ? (
+                      <p className="text-center text-muted-foreground py-8">
+                        No active problems
+                      </p>
+                    ) : (
+                      events
+                        .filter(event => !event.resolved)
+                        .map(event => {
+                          const button = buttons.find(b => b.id === event.buttonId);
+                          return (
+                            <Card key={event.id} className="overflow-hidden">
+                              <CardHeader className="py-3" 
+                                style={{ 
+                                  borderBottom: `1px solid ${button?.color || '#e5e7eb'}`, 
+                                  backgroundColor: `${button?.color || '#f3f4f6'}10` 
+                                }}
+                              >
+                                <div className="flex justify-between items-start">
+                                  <CardTitle className="text-base flex items-center">
+                                    <AlertCircle className="mr-2 h-4 w-4" style={{ color: button?.color }} />
+                                    {getButtonLabel(event.buttonId)}
+                                  </CardTitle>
+                                  <div className="text-xs text-muted-foreground">
+                                    {format(new Date(event.timestamp), "MMM d, h:mm a")}
+                                  </div>
+                                </div>
+                              </CardHeader>
+                              <CardContent className="py-3">
+                                {event.notes && (
+                                  <p className="text-sm mb-2">{event.notes}</p>
+                                )}
+                                <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                                  {event.locationName && (
+                                    <div>
+                                      Location: <span className="font-medium">{event.locationName}</span>
+                                    </div>
+                                  )}
+                                  {event.assetId && (
+                                    <div>
+                                      Asset: <span className="font-medium">{getAssetName(event.assetId)}</span>
+                                    </div>
+                                  )}
+                                  <div>
+                                    Reported by: <span className="font-medium">{getUserName(event.userId)}</span>
+                                  </div>
+                                </div>
+                              </CardContent>
+                              <CardFooter className="border-t bg-muted/30 py-2">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="ml-auto"
+                                  onClick={() => setSelectedEvent(event)}
+                                >
+                                  <Wrench className="mr-2 h-4 w-4" />
+                                  Manage
+                                </Button>
+                              </CardFooter>
+                            </Card>
+                          );
+                        })
+                    )}
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </TabsContent>
+            
+          <TabsContent value="resolved">
+            <Card>
+              <CardHeader>
+                <CardTitle>Resolved Problems</CardTitle>
+                <CardDescription>
+                  Issues that have been fixed
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-[400px]">
+                  <div className="space-y-4">
+                    {events.filter(event => event.resolved).length === 0 ? (
+                      <p className="text-center text-muted-foreground py-8">
+                        No resolved problems
+                      </p>
+                    ) : (
+                      events
+                        .filter(event => event.resolved)
+                        .map(event => {
+                          const button = buttons.find(b => b.id === event.buttonId);
+                          return (
+                            <Card key={event.id} className="overflow-hidden">
+                              <CardHeader className="py-3" 
+                                style={{ 
+                                  borderBottom: `1px solid ${button?.color || '#e5e7eb'}`, 
+                                  backgroundColor: `${button?.color || '#f3f4f6'}10` 
+                                }}
+                              >
+                                <div className="flex justify-between items-start">
+                                  <CardTitle className="text-base flex items-center">
+                                    <Check className="mr-2 h-4 w-4" style={{ color: button?.color }} />
+                                    {getButtonLabel(event.buttonId)}
+                                  </CardTitle>
+                                  <div className="text-xs text-muted-foreground">
+                                    {format(new Date(event.timestamp), "MMM d, h:mm a")}
+                                  </div>
+                                </div>
+                              </CardHeader>
+                              <CardContent className="py-3">
+                                {event.notes && (
+                                  <p className="text-sm mb-2">{event.notes}</p>
+                                )}
+                                <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                                  {event.locationName && (
+                                    <div>
+                                      Location: <span className="font-medium">{event.locationName}</span>
+                                    </div>
+                                  )}
+                                  {event.assetId && (
+                                    <div>
+                                      Asset: <span className="font-medium">{getAssetName(event.assetId)}</span>
+                                    </div>
+                                  )}
+                                  <div>
+                                    Reported by: <span className="font-medium">{getUserName(event.userId)}</span>
+                                  </div>
+                                  <div>
+                                    Resolved by: <span className="font-medium">{event.resolvedBy ? getUserName(event.resolvedBy) : 'Unknown'}</span>
+                                  </div>
+                                  {event.resolvedAt && (
+                                    <div>
+                                      Resolved at: <span className="font-medium">{format(new Date(event.resolvedAt), "MMM d, h:mm a")}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </CardContent>
+                            </Card>
+                          );
+                        })
+                    )}
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
       
       {/* Problem Report Dialog */}
@@ -554,12 +550,8 @@ export default function ProblemTracking() {
                       <FormItem>
                         <FormLabel className="text-base">Related Asset</FormLabel>
                         <Select
-                          onValueChange={(value) => {
-                            // Handle "none" selection with explicit null
-                            // This ensures it's serialized correctly when sent to server
-                            field.onChange(value === "0" ? null : parseInt(value))
-                          }}
-                          defaultValue={field.value?.toString() || "0"}
+                          onValueChange={(value) => field.onChange(value ? parseInt(value) : null)}
+                          value={field.value?.toString() || ""}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -567,8 +559,8 @@ export default function ProblemTracking() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="0">None</SelectItem>
-                            {assets.map(asset => (
+                            <SelectItem value="">None</SelectItem>
+                            {assets.map((asset) => (
                               <SelectItem key={asset.id} value={asset.id.toString()}>
                                 {asset.name}
                               </SelectItem>
@@ -582,16 +574,15 @@ export default function ProblemTracking() {
                 </form>
               </Form>
             </div>
-            <DrawerFooter className="border-t pt-4">
-              <Button 
-                type="submit" 
+            <DrawerFooter className="border-t">
+              <Button
                 onClick={form.handleSubmit(onSubmit)}
                 disabled={reportMutation.isPending}
-                className="w-full mb-2"
+                className="w-full"
               >
-                {reportMutation.isPending ? "Submitting..." : "Submit Report"}
+                {reportMutation.isPending ? "Reporting..." : "Submit Report"}
               </Button>
-              <Button variant="outline" onClick={() => setIsReportOpen(false)} className="w-full">
+              <Button variant="outline" onClick={() => setIsReportOpen(false)}>
                 Cancel
               </Button>
             </DrawerFooter>
@@ -606,21 +597,55 @@ export default function ProblemTracking() {
                 Add details about the issue you're experiencing
               </DialogDescription>
             </DialogHeader>
-            <div className="max-h-[60vh] overflow-y-auto pr-2 py-4">
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Brief Description</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Describe the problem briefly..."
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="problemDetails"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Detailed Information</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Provide additional details about the problem..."
+                          className="min-h-[100px]"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Include specific symptoms, error messages, or troubleshooting steps already tried
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
-                    name="notes"
+                    name="locationName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Brief Description</FormLabel>
+                        <FormLabel>Location</FormLabel>
                         <FormControl>
-                          <Textarea
-                            placeholder="Describe the problem briefly..."
-                            className="min-h-[80px]"
-                            {...field}
-                          />
+                          <Input placeholder="e.g. Building A, Room 101" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -629,151 +654,122 @@ export default function ProblemTracking() {
                   
                   <FormField
                     control={form.control}
-                    name="problemDetails"
+                    name="assetId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Technical Details</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="Provide additional details or troubleshooting information..."
-                            className="min-h-[100px]"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <div className="grid gap-6 sm:grid-cols-2">
-                    <FormField
-                      control={form.control}
-                      name="locationName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Location</FormLabel>
+                        <FormLabel>Related Asset</FormLabel>
+                        <Select
+                          onValueChange={(value) => field.onChange(value ? parseInt(value) : null)}
+                          value={field.value?.toString() || ""}
+                        >
                           <FormControl>
-                            <Input
-                              placeholder="e.g. Building A, Room 101"
-                              {...field}
-                            />
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select asset (optional)" />
+                            </SelectTrigger>
                           </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="assetId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Related Asset</FormLabel>
-                          <Select
-                            onValueChange={(value) => {
-                              // Handle "none" selection with explicit null
-                              // This ensures it's serialized correctly when sent to server
-                              field.onChange(value === "0" ? null : parseInt(value))
-                            }}
-                            defaultValue={field.value?.toString() || "0"}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select an asset (optional)" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="0">None</SelectItem>
-                              {assets.map((asset) => (
-                                <SelectItem key={asset.id} value={asset.id.toString()}>
-                                  {asset.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </form>
-              </Form>
-            </div>
-            <DialogFooter className="mt-6 pt-4 border-t">
-              <Button 
-                type="submit" 
-                onClick={form.handleSubmit(onSubmit)}
-                disabled={reportMutation.isPending}
-              >
-                {reportMutation.isPending ? "Submitting..." : "Submit Report"}
-              </Button>
-              <Button 
-                variant="outline" 
+                          <SelectContent>
+                            <SelectItem value="">None</SelectItem>
+                            {assets.map(asset => (
+                              <SelectItem key={asset.id} value={asset.id.toString()}>
+                                {asset.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </form>
+            </Form>
+            <DialogFooter className="mt-6">
+              <Button
+                variant="outline"
                 onClick={() => setIsReportOpen(false)}
               >
                 Cancel
+              </Button>
+              <Button
+                onClick={form.handleSubmit(onSubmit)}
+                disabled={reportMutation.isPending}
+              >
+                {reportMutation.isPending ? "Reporting..." : "Submit Report"}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       )}
       
-      {/* Event Management Dialog */}
+      {/* Problem Management Dialog */}
       <Dialog open={!!selectedEvent} onOpenChange={(open) => !open && setSelectedEvent(null)}>
         <DialogContent className="sm:max-w-[600px] md:max-w-[650px] max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Manage Problem</DialogTitle>
+            <DialogDescription>Review and resolve the reported issue</DialogDescription>
           </DialogHeader>
           {selectedEvent && (
-            <div className="space-y-4">
-              <div>
-                <h3 className="font-medium">Problem Type</h3>
-                <p>{getButtonLabel(selectedEvent.buttonId)}</p>
+            <div className="space-y-6">
+              <div className="flex flex-col md:flex-row justify-between md:items-center gap-3">
+                <div>
+                  <h2 className="text-xl font-semibold">{getButtonLabel(selectedEvent.buttonId)}</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Reported on {format(new Date(selectedEvent.timestamp), "PPp")}
+                  </p>
+                </div>
+                {!selectedEvent.resolved && (
+                  <Button
+                    variant="outline"
+                    className="w-full md:w-auto"
+                    onClick={() => {
+                      solutionForm.reset();
+                      solutionForm.setValue("solutionNotes", "");
+                    }}
+                  >
+                    <Check className="mr-2 h-4 w-4" />
+                    Mark as Resolved
+                  </Button>
+                )}
               </div>
               
-              {selectedEvent.notes && (
+              <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <h3 className="font-medium">Description</h3>
-                  <p>{selectedEvent.notes}</p>
+                  <h3 className="font-medium">Problem Notes</h3>
+                  <p className="text-sm mt-1">{selectedEvent.notes || "No notes provided"}</p>
                 </div>
-              )}
-              
-              {selectedEvent.problemDetails && (
-                <div>
-                  <h3 className="font-medium">Problem Details</h3>
-                  <p>{selectedEvent.problemDetails}</p>
-                </div>
-              )}
-              
-              <div className="grid grid-cols-2 gap-4">
+                {selectedEvent.problemDetails && (
+                  <div>
+                    <h3 className="font-medium">Technical Details</h3>
+                    <p className="text-sm mt-1">{selectedEvent.problemDetails}</p>
+                  </div>
+                )}
                 {selectedEvent.locationName && (
                   <div>
                     <h3 className="font-medium">Location</h3>
-                    <p>{selectedEvent.locationName}</p>
+                    <p className="text-sm mt-1">{selectedEvent.locationName}</p>
                   </div>
                 )}
-                
-                {selectedEvent.assetId && (
-                  <div>
-                    <h3 className="font-medium">Related Asset</h3>
-                    <p>{getAssetName(selectedEvent.assetId)}</p>
-                  </div>
-                )}
-                
                 <div>
-                  <h3 className="font-medium">Reported By</h3>
-                  <p>{getUserName(selectedEvent.userId)}</p>
-                </div>
-                
-                <div>
-                  <h3 className="font-medium">Reported At</h3>
-                  <p>{format(new Date(selectedEvent.timestamp), "MMM d, h:mm a")}</p>
+                  <h3 className="font-medium">Related Asset</h3>
+                  <p>{getAssetName(selectedEvent.assetId)}</p>
                 </div>
               </div>
               
-              {/* Solution Notes Form */}
-              <div className="border-t pt-4 mt-4">
-                <h3 className="font-medium mb-2">Resolution Notes</h3>
+              {selectedEvent.resolved ? (
+                <div className="border rounded-md p-4 bg-muted/40">
+                  <h3 className="font-medium flex items-center gap-2 mb-2">
+                    <Check className="h-4 w-4 text-green-500" />
+                    Resolution Details
+                  </h3>
+                  <p className="text-sm">{selectedEvent.solutionNotes || "No solution notes provided"}</p>
+                  <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
+                    <span>Resolved by: {selectedEvent.resolvedBy ? getUserName(selectedEvent.resolvedBy) : "System"}</span>
+                    {selectedEvent.resolvedAt && (
+                      <span>On {format(new Date(selectedEvent.resolvedAt), "PP")}</span>
+                    )}
+                  </div>
+                </div>
+              ) : (
                 <Form {...solutionForm}>
                   <form className="space-y-4">
                     <FormField
@@ -781,42 +777,56 @@ export default function ProblemTracking() {
                       name="solutionNotes"
                       render={({ field }) => (
                         <FormItem>
+                          <FormLabel>Resolution Notes</FormLabel>
                           <FormControl>
                             <Textarea
-                              placeholder="Enter solution details or notes about how the problem was resolved"
+                              placeholder="Describe how this problem was resolved..."
                               className="min-h-[100px]"
                               {...field}
                             />
                           </FormControl>
                           <FormDescription>
-                            Provide details about how this problem was resolved
+                            Document the steps taken to fix the issue and any preventive measures for the future
                           </FormDescription>
+                          <FormMessage />
                         </FormItem>
                       )}
                     />
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        if (selectedEvent) {
+                          resolveMutation.mutate({
+                            id: selectedEvent.id,
+                            solutionNotes: solutionForm.getValues().solutionNotes,
+                          });
+                        }
+                      }}
+                      disabled={resolveMutation.isPending}
+                      className="w-full sm:w-auto"
+                    >
+                      {resolveMutation.isPending ? (
+                        <span className="flex items-center">
+                          Resolving...
+                        </span>
+                      ) : (
+                        <span className="flex items-center">
+                          <Check className="mr-2 h-4 w-4" />
+                          Mark as Resolved
+                        </span>
+                      )}
+                    </Button>
                   </form>
                 </Form>
-              </div>
+              )}
             </div>
           )}
-          <DialogFooter className="mt-6 pt-4 border-t gap-2">
-            <Button 
-              variant="outline" 
+          <DialogFooter>
+            <Button
+              variant="outline"
               onClick={() => setSelectedEvent(null)}
             >
-              <X className="mr-2 h-4 w-4" />
               Close
-            </Button>
-            <Button 
-              variant="default" 
-              onClick={() => selectedEvent && resolveMutation.mutate({
-                id: selectedEvent.id,
-                solutionNotes: solutionForm.getValues().solutionNotes
-              })}
-              disabled={resolveMutation.isPending}
-            >
-              <Check className="mr-2 h-4 w-4" />
-              {resolveMutation.isPending ? "Resolving..." : "Mark as Resolved"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -828,30 +838,18 @@ export default function ProblemTracking() {
           <DialogHeader>
             <DialogTitle>Configure Problem Buttons</DialogTitle>
             <DialogDescription>
-              Manage the quick problem reporting buttons
+              Manage problem reporting buttons and their associated work orders
             </DialogDescription>
           </DialogHeader>
-          
           <div>
-            <Button 
-              className="mb-4" 
-              variant="outline" 
-              onClick={() => window.location.href = "/problem-tracking-admin"}
-            >
-              <Settings className="mr-2 h-4 w-4" />
-              Open Button Configuration
+            <Button variant="outline" size="sm" className="mb-4" onClick={() => window.location.href = '/problem-tracking-admin'}>
+              <Settings className="mr-2 h-4 w-4" /> 
+              Open Problem Button Configuration
             </Button>
-            
             <p className="text-sm text-muted-foreground">
-              Configure the problem reporting buttons, including their labels, colors, and icons. Changes will be reflected immediately in the problem reporting interface.
+              Configure button labels, colors, and work order integration in the full configuration panel.
             </p>
           </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAdminOpen(false)}>
-              Close
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

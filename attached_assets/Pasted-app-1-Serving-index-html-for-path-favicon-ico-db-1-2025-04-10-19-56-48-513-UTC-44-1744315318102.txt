@@ -1,0 +1,50 @@
+app_1      | Serving index.html for path: /favicon.ico
+db_1       | 2025-04-10 19:56:48.513 UTC [449] ERROR:  column "page_permissions" does not exist at character 58
+db_1       | 2025-04-10 19:56:48.513 UTC [449] STATEMENT:  select "id", "username", "password", "role", "approved", "page_permissions", "default_landing_page" from "users" where "users"."username" = $1
+app_1      | /app/node_modules/pg-pool/index.js:45
+app_1      |     Error.captureStackTrace(err)
+app_1      |           ^
+app_1      |
+app_1      | error: column "page_permissions" does not exist
+app_1      |     at /app/node_modules/pg-pool/index.js:45:11
+app_1      |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+app_1      |     at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22
+app_1      |     at async DatabaseStorage.getUserByUsername (file:///app/dist/index.js:604:20)
+app_1      |     at async Strategy._verify (file:///app/dist/index.js:1156:20) {
+app_1      |   length: 116,
+app_1      |   severity: 'ERROR',
+app_1      |   code: '42703',
+app_1      |   detail: undefined,
+app_1      |   hint: undefined,
+app_1      |   position: '58',
+app_1      |   internalPosition: undefined,
+app_1      |   internalQuery: undefined,
+app_1      |   where: undefined,
+app_1      |   schema: undefined,
+app_1      |   table: undefined,
+app_1      |   column: undefined,
+app_1      |   dataType: undefined,
+app_1      |   constraint: undefined,
+app_1      |   file: 'parse_relation.c',
+app_1      |   line: '3665',
+app_1      |   routine: 'errorMissingColumn'
+app_1      | }
+app_1      |
+app_1      | Node.js v18.20.7
+app_1      | Running database migrations...
+app_1      | Successfully connected to database
+app_1      | Applying schema...
+app_1      | Database migration completed successfully
+app_1      | Checking for existing admin user...
+app_1      | Admin user already exists, skipping default admin creation
+app_1      | Running in production mode
+app_1      | Serving static files from: /app/dist/public
+app_1      | Found required static files
+app_1      | Environment Configuration:
+app_1      | - NODE_ENV: production
+app_1      | - PORT: 5000
+app_1      | - HOST: 0.0.0.0
+app_1      | - DATABASE_URL exists: true
+app_1      | 7:56:51 PM [express] Server started successfully and is serving on port 5000
+db_1       | 2025-04-10 19:56:55.448 UTC [27] LOG:  checkpoint starting: time
+db_1       | 2025-04-10 19:56:55.482 UTC [27] LOG:  checkpoint complete: wrote 3 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.010 s, sync=0.005 s, total=0.034 s; sync files=2, longest=0.003 s, average=0.003 s; distance=0 kB, estimate=0 kB

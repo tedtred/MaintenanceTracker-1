@@ -14,7 +14,7 @@ function createInterface() {
 }
 
 // Function to prompt for user confirmation
-function askForConfirmation(question) {
+function askForConfirmation(question: string): Promise<boolean> {
   const rl = createInterface();
   return new Promise((resolve) => {
     rl.question(question, (answer) => {
@@ -87,7 +87,8 @@ export async function runMigrations(forceRebuild = false) {
         password TEXT NOT NULL,
         role TEXT NOT NULL,
         approved BOOLEAN NOT NULL DEFAULT false,
-        page_permissions TEXT NOT NULL DEFAULT '[]'
+        page_permissions TEXT NOT NULL DEFAULT '[]',
+        default_landing_page TEXT
       );
 
       CREATE TABLE IF NOT EXISTS work_orders (
@@ -142,6 +143,54 @@ export async function runMigrations(forceRebuild = false) {
         schedule_id INTEGER REFERENCES maintenance_schedules(id) NOT NULL,
         completed_date TIMESTAMP NOT NULL,
         notes TEXT
+      );
+      
+      CREATE TABLE IF NOT EXISTS maintenance_change_logs (
+        id SERIAL PRIMARY KEY,
+        schedule_id INTEGER REFERENCES maintenance_schedules(id) NOT NULL,
+        changed_by INTEGER REFERENCES users(id),
+        changed_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        change_type TEXT NOT NULL,
+        previous_value TEXT,
+        new_value TEXT
+      );
+      
+      CREATE TABLE IF NOT EXISTS settings (
+        id INTEGER PRIMARY KEY DEFAULT 1,
+        company_name TEXT,
+        company_logo TEXT,
+        default_priority TEXT,
+        default_asset_id INTEGER REFERENCES assets(id),
+        default_assigned_to INTEGER REFERENCES users(id),
+        notify_maintenance BOOLEAN DEFAULT false,
+        skip_details_form BOOLEAN DEFAULT false
+      );
+      
+      CREATE TABLE IF NOT EXISTS problem_buttons (
+        id SERIAL PRIMARY KEY,
+        label TEXT NOT NULL,
+        color TEXT NOT NULL,
+        icon TEXT,
+        default_notes TEXT,
+        default_location TEXT,
+        requires_asset BOOLEAN DEFAULT false,
+        creates_work_order BOOLEAN DEFAULT false
+      );
+      
+      CREATE TABLE IF NOT EXISTS problem_events (
+        id SERIAL PRIMARY KEY,
+        button_id INTEGER REFERENCES problem_buttons(id) NOT NULL,
+        user_id INTEGER REFERENCES users(id) NOT NULL,
+        timestamp TIMESTAMP NOT NULL DEFAULT NOW(),
+        notes TEXT,
+        location_name TEXT,
+        asset_id INTEGER REFERENCES assets(id),
+        resolved BOOLEAN NOT NULL DEFAULT false,
+        resolved_at TIMESTAMP,
+        resolved_by INTEGER REFERENCES users(id),
+        work_order_id INTEGER REFERENCES work_orders(id),
+        problem_details TEXT,
+        solution_notes TEXT
       );
     `);
 

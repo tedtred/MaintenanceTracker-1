@@ -67,7 +67,7 @@ const localizer = dateFnsLocalizer({
   },
 });
 
-const generateRecurringEvents = (schedule: MaintenanceSchedule, assetName: string, completions: MaintenanceCompletion[]) => {
+const generateRecurringEvents = (schedule: MaintenanceSchedule, assetName: string, completions: MaintenanceCompletion[] | undefined) => {
   const events = [];
   const start = new Date(schedule.startDate);
   start.setHours(0, 0, 0, 0);
@@ -79,7 +79,7 @@ const generateRecurringEvents = (schedule: MaintenanceSchedule, assetName: strin
   today.setHours(0, 0, 0, 0);
 
   while (currentDate <= end) {
-    const isCompleted = completions.some(
+    const isCompleted = Array.isArray(completions) && completions.some(
       completion =>
         completion.scheduleId === schedule.id &&
         format(new Date(completion.completedDate), 'yyyy-MM-dd') === format(currentDate, 'yyyy-MM-dd')

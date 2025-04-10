@@ -457,6 +457,13 @@ function ProblemButtonSection() {
     color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Must be a valid hex color"),
     icon: z.string().optional(),
     active: z.boolean().default(true),
+    createWorkOrder: z.boolean().default(false),
+    workOrderTitle: z.string().optional(),
+    workOrderDescription: z.string().optional(),
+    workOrderPriority: z.string().optional(),
+    defaultAssetId: z.number().nullable().optional(),
+    defaultAssignedTo: z.number().nullable().optional(),
+    notifyMaintenance: z.boolean().default(false),
   });
   
   type ButtonFormData = z.infer<typeof buttonFormSchema>;
@@ -813,6 +820,92 @@ function ProblemButtonSection() {
                   </FormItem>
                 )}
               />
+              
+              <FormField
+                control={createForm.control}
+                name="createWorkOrder"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                    <div className="space-y-0.5">
+                      <FormLabel>Create Work Order</FormLabel>
+                      <FormDescription>
+                        Automatically create a work order when this problem is reported
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              
+              {createForm.watch("createWorkOrder") && (
+                <div className="space-y-4 rounded-lg border p-4">
+                  <h3 className="text-sm font-medium">Work Order Details</h3>
+                  
+                  <FormField
+                    control={createForm.control}
+                    name="workOrderTitle"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Work Order Title</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., Repair Machine Failure" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={createForm.control}
+                    name="workOrderDescription"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Details about the work to be done"
+                            className="resize-none"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={createForm.control}
+                    name="workOrderPriority"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Priority</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select priority" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="LOW">Low</SelectItem>
+                            <SelectItem value="MEDIUM">Medium</SelectItem>
+                            <SelectItem value="HIGH">High</SelectItem>
+                            <SelectItem value="CRITICAL">Critical</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              )}
             </form>
           </Form>
           <DialogFooter>

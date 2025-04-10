@@ -82,7 +82,7 @@ import {
   Truck,
   Server,
   Cpu,
-  Tools,
+  Tool,
   Printer,
   HardDrive,
   Zap,

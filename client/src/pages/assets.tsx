@@ -1,30 +1,30 @@
-import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import {
-  Asset,
-  InsertAsset,
-  AssetStatus,
-  AssetCategory,
-  MaintenanceSchedule,
-  InsertMaintenanceSchedule,
-  MaintenanceFrequency,
-  MaintenanceStatus,
-} from "@shared/schema";
-import { queryClient, apiRequest } from "@/lib/queryClient";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useState, useRef, useEffect } from "react";
+import { AssetCategory, AssetStatus, Asset, InsertAsset, MaintenanceFrequency, InsertMaintenanceSchedule } from "@shared/schema";
 import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
-import { insertAssetSchema, insertMaintenanceScheduleSchema } from "@shared/schema";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { format, addDays } from "date-fns";
+
+// Import our modular hooks
+import { useAssets } from "@/hooks/use-asset-data";
+import { useMaintenanceSchedules } from "@/hooks/use-maintenance-data";
+import { DataLoader, MultiQueryLoader } from "@/components/data-loader";
+
+// UI Components
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -38,6 +38,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
   Card,
   CardContent,
   CardDescription,
@@ -45,14 +54,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -64,1063 +72,1164 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import {
-  Search,
-  Calendar,
-  Download,
-  Upload,
-  Edit2,
-  Trash2,
-  Factory,
-  Wrench,
-  Truck,
-  Server,
-  Cpu,
-  Tool,
-  Printer,
-  HardDrive,
-  Zap,
-  Box,
-  LayoutGrid,
-} from "lucide-react";
-import { Link } from "wouter";
-import { z } from "zod";
-import { format } from "date-fns";
+import { CalendarIcon, Loader2, PlusCircle, ToyBrick, UploadCloud, Wrench, FileUp, Download } from "lucide-react";
+import { DataCardView, DataField } from "@/components/ui/data-card-view";
 
-// This is the main component for the Assets page
-export default function AssetsPage() {
+// Define local constants to ensure correct enum usage
+const LOCAL_ASSET_CATEGORY = {
+  MACHINERY: AssetCategory.MACHINERY,
+  VEHICLE: AssetCategory.VEHICLE, 
+  TOOL: AssetCategory.TOOL,
+  COMPUTER: AssetCategory.COMPUTER,
+  OTHER: AssetCategory.OTHER
+};
+
+// Maintenance frequency enum for local use
+const LOCAL_MAINTENANCE_FREQUENCY = {
+  DAILY: MaintenanceFrequency.DAILY,
+  WEEKLY: MaintenanceFrequency.WEEKLY,
+  MONTHLY: MaintenanceFrequency.MONTHLY,
+  QUARTERLY: MaintenanceFrequency.QUARTERLY,
+  BIANNUAL: MaintenanceFrequency.BIANNUAL,
+  YEARLY: MaintenanceFrequency.YEARLY
+};
+
+export default function Assets() {
   const { toast } = useToast();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("ALL");
+  const isMobile = useIsMobile();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Local state management
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [isMaintenanceDialogOpen, setIsMaintenanceDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
-  const [selectedAsset, setSelectedAsset] = useState<number | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importResults, setImportResults] = useState<any | null>(null);
 
-  // Query to fetch assets
-  const assetsQuery = useQuery({
-    queryKey: ["/api/assets"],
-    queryFn: () => apiRequest<Asset[]>("GET", "/api/assets"),
-  });
+  // Use our modular hooks
+  const {
+    assetsQuery,
+    createAssetMutation,
+    updateAssetMutation,
+    deleteAssetMutation,
+    importAssetsMutation,
+    exportAssetsMutation
+  } = useAssets();
 
-  // Mutations
-  const createMutation = useMutation({
-    mutationFn: (data: InsertAsset) => apiRequest("POST", "/api/assets", data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/assets"] });
-      setIsCreateDialogOpen(false);
-      toast({
-        title: "Asset Created",
-        description: "Asset has been created successfully",
-      });
-      form.reset();
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const updateStatusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: number; status: string }) =>
-      apiRequest("PATCH", `/api/assets/${id}`, { status }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/assets"] });
-      toast({
-        title: "Status Updated",
-        description: "Asset status has been updated",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => apiRequest("DELETE", `/api/assets/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/assets"] });
-      toast({
-        title: "Asset Deleted",
-        description: "Asset has been deleted successfully",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const createMaintenanceScheduleMutation = useMutation({
-    mutationFn: (data: InsertMaintenanceSchedule) =>
-      apiRequest("POST", "/api/maintenance-schedules", data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/maintenance-schedules"] });
-      setIsMaintenanceDialogOpen(false);
-      toast({
-        title: "Schedule Created",
-        description: "Maintenance schedule has been created",
-      });
-      maintenanceForm.reset();
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const deleteMaintenanceScheduleMutation = useMutation({
-    mutationFn: (id: number) =>
-      apiRequest("DELETE", `/api/maintenance-schedules/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/maintenance-schedules"] });
-      toast({
-        title: "Schedule Deleted",
-        description: "Maintenance schedule has been deleted",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const importMutation = useMutation({
-    mutationFn: (file: File) => {
-      const formData = new FormData();
-      formData.append("file", file);
-      return apiRequest<{
-        success: boolean;
-        totalRows: number;
-        successfulImports: number;
-      }>("POST", "/api/assets/import", formData);
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/assets"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/maintenance-schedules"] });
-      setIsImportDialogOpen(false);
-      toast({
-        title: "Import Completed",
-        description: `Successfully imported ${data.successfulImports} of ${data.totalRows} assets`,
-      });
-      setSelectedFile(null);
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Import Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+  const {
+    schedulesQuery,
+    createScheduleMutation,
+    deleteScheduleMutation
+  } = useMaintenanceSchedules();
 
   // Forms
-  const assetFormSchema = insertAssetSchema.extend({
+  const assetFormSchema = z.object({
+    name: z.string().min(1, "Name is required"),
+    description: z.string().optional(),
+    location: z.string().optional(),
+    category: z.string().min(1, "Category is required"),
+    status: z.string().default(AssetStatus.OPERATIONAL),
+    manufacturer: z.string().optional().nullable(),
+    modelNumber: z.string().optional().nullable(),
+    serialNumber: z.string().optional().nullable(),
     purchaseDate: z.date().optional().nullable(),
+    purchaseCost: z.number().optional().nullable(),
+    currentValue: z.number().optional().nullable(),
+    lifeExpectancy: z.number().optional().nullable(),
+    commissionedDate: z.date().optional().nullable(),
+    lastMaintenance: z.date().optional().nullable(),
+    nextMaintenance: z.date().optional().nullable(),
   });
-  
+
+  const maintenanceFormSchema = z.object({
+    title: z.string().min(1, "Title is required"),
+    status: z.string(),
+    description: z.string().optional(),
+    frequency: z.string(),
+    startDate: z.date(),
+    endDate: z.date().nullable(),
+    affectsAssetStatus: z.boolean().default(false),
+  });
+
+  // Create form
   const form = useForm<z.infer<typeof assetFormSchema>>({
     resolver: zodResolver(assetFormSchema),
     defaultValues: {
       name: "",
       description: "",
       location: "",
+      category: LOCAL_ASSET_CATEGORY.MACHINERY,
       status: AssetStatus.OPERATIONAL,
-      category: AssetCategory.MACHINERY,
       manufacturer: "",
       modelNumber: "",
       serialNumber: "",
-      commissionedDate: null,
-      lastMaintenance: null,
-      purchaseDate: null,
     },
   });
 
-  const maintenanceFormSchema = insertMaintenanceScheduleSchema.extend({
-    startDate: z.date(),
-    endDate: z.date().optional().nullable(),
+  // Details form
+  const detailsForm = useForm<z.infer<typeof assetFormSchema>>({
+    resolver: zodResolver(assetFormSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      location: "",
+      category: LOCAL_ASSET_CATEGORY.MACHINERY,
+      status: AssetStatus.OPERATIONAL,
+      manufacturer: "",
+      modelNumber: "",
+      serialNumber: "",
+    },
   });
 
+  // Maintenance form
   const maintenanceForm = useForm<z.infer<typeof maintenanceFormSchema>>({
     resolver: zodResolver(maintenanceFormSchema),
     defaultValues: {
       title: "",
       description: "",
-      assetId: 0,
-      frequency: MaintenanceFrequency.MONTHLY,
-      status: MaintenanceStatus.ACTIVE,
+      status: "SCHEDULED",
+      frequency: LOCAL_MAINTENANCE_FREQUENCY.MONTHLY,
       startDate: new Date(),
       endDate: null,
-      affectsAssetStatus: true,
-      lastCompleted: null,
+      affectsAssetStatus: false,
     },
   });
 
-  // Data handling
-  const assets = assetsQuery.data || [];
-  
-  const maintenanceSchedulesQuery = useQuery({
-    queryKey: ["/api/maintenance-schedules"],
-    queryFn: () => apiRequest("GET", "/api/maintenance-schedules"),
-  });
-  
-  const maintenanceSchedules = maintenanceSchedulesQuery.data || [];
+  // Update details form when asset is selected
+  useEffect(() => {
+    if (selectedAsset) {
+      detailsForm.reset({
+        ...selectedAsset,
+        purchaseDate: selectedAsset.purchaseDate ? new Date(selectedAsset.purchaseDate) : null,
+        commissionedDate: selectedAsset.commissionedDate ? new Date(selectedAsset.commissionedDate) : null,
+        lastMaintenance: selectedAsset.lastMaintenance ? new Date(selectedAsset.lastMaintenance) : null,
+        nextMaintenance: selectedAsset.nextMaintenance ? new Date(selectedAsset.nextMaintenance) : null,
+      });
+    }
+  }, [selectedAsset, detailsForm]);
 
-  // Filtered assets based on search query and category
-  const filteredAssets = Array.isArray(assets) ? assets.filter((asset) => {
-    const matchesSearch =
-      asset.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      asset.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      asset.location.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesCategory =
-      selectedCategory === "ALL" || asset.category === selectedCategory;
-    
-    return matchesSearch && matchesCategory;
-  }) : [];
+  // Set asset ID in maintenance form when dialog opens
+  useEffect(() => {
+    if (isMaintenanceDialogOpen && selectedAsset) {
+      maintenanceForm.setValue("startDate", new Date());
+    }
+  }, [isMaintenanceDialogOpen, selectedAsset, maintenanceForm]);
 
-  // Helper to get schedules for a specific asset
+  // Handler functions
+  const handleAssetClick = (asset: Asset) => {
+    setSelectedAsset(asset);
+    setIsDetailsDialogOpen(true);
+  };
+
+  const handleCreateSubmit = (data: z.infer<typeof assetFormSchema>) => {
+    createAssetMutation.mutate(data, {
+      onSuccess: () => {
+        setIsCreateDialogOpen(false);
+        form.reset();
+        toast({
+          title: "Success",
+          description: "Asset created successfully",
+        });
+      }
+    });
+  };
+
+  const handleUpdateSubmit = (data: z.infer<typeof assetFormSchema>) => {
+    if (!selectedAsset) return;
+    
+    updateAssetMutation.mutate({
+      id: selectedAsset.id,
+      updates: data
+    }, {
+      onSuccess: () => {
+        setIsDetailsDialogOpen(false);
+        toast({
+          title: "Success",
+          description: "Asset updated successfully",
+        });
+      }
+    });
+  };
+
+  const handleDeleteAsset = () => {
+    if (!selectedAsset) return;
+    
+    deleteAssetMutation.mutate(selectedAsset.id, {
+      onSuccess: () => {
+        setIsDetailsDialogOpen(false);
+        toast({
+          title: "Success",
+          description: "Asset deleted successfully",
+        });
+      }
+    });
+  };
+
+  const handleMaintenanceSubmit = (data: z.infer<typeof maintenanceFormSchema>) => {
+    if (!selectedAsset) return;
+    
+    const schedule = {
+      ...data,
+      assetId: selectedAsset.id,
+    };
+    
+    createScheduleMutation.mutate(schedule, {
+      onSuccess: () => {
+        setIsMaintenanceDialogOpen(false);
+        maintenanceForm.reset({
+          title: "",
+          description: "",
+          status: "SCHEDULED",
+          frequency: LOCAL_MAINTENANCE_FREQUENCY.MONTHLY,
+          startDate: new Date(),
+          endDate: null,
+          affectsAssetStatus: false,
+        });
+        toast({
+          title: "Success",
+          description: "Maintenance schedule created successfully",
+        });
+      }
+    });
+  };
+
+  const handleDeleteSchedule = (scheduleId: number) => {
+    deleteScheduleMutation.mutate(scheduleId, {
+      onSuccess: () => {
+        toast({
+          title: "Success",
+          description: "Maintenance schedule deleted successfully",
+        });
+      }
+    });
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setImportFile(e.target.files[0]);
+      setIsImportDialogOpen(true);
+    }
+  };
+
+  const handleImportSubmit = async () => {
+    if (!importFile) return;
+    
+    const formData = new FormData();
+    formData.append('file', importFile);
+    
+    setIsImporting(true);
+    
+    importAssetsMutation.mutate(formData, {
+      onSuccess: (data) => {
+        setImportResults(data);
+        setIsImporting(false);
+        toast({
+          title: "Success",
+          description: `Imported ${data.successfulImports} of ${data.totalRows} assets`,
+        });
+      },
+      onError: (error) => {
+        setIsImporting(false);
+        toast({
+          title: "Import Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+    });
+  };
+
+  const handleExportClick = async () => {
+    exportAssetsMutation.mutate(null, {
+      onSuccess: (data) => {
+        // Create a blob from the data
+        const blob = new Blob([data], { type: "text/csv" });
+        
+        // Create a link and trigger download
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.style.display = "none";
+        a.href = url;
+        a.download = `assets-export-${format(new Date(), "yyyy-MM-dd")}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        toast({
+          title: "Success",
+          description: "Assets exported successfully",
+        });
+      },
+      onError: (error) => {
+        toast({
+          title: "Export Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+    });
+  };
+
+  // Filter maintenance schedules for the selected asset
   const getAssetMaintenanceSchedules = (assetId: number) => {
-    return Array.isArray(maintenanceSchedules) ? maintenanceSchedules.filter(
-      (schedule) => schedule.assetId === assetId
-    ) : [];
+    if (!Array.isArray(schedulesQuery.data)) return [];
+    return schedulesQuery.data.filter(schedule => schedule.assetId === assetId);
   };
 
-  // Icon for asset categories
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case AssetCategory.MACHINERY:
-        return <Factory className="h-5 w-5 text-primary" />;
-      case AssetCategory.EQUIPMENT:
-        return <Wrench className="h-5 w-5 text-primary" />;
-      case AssetCategory.VEHICLE:
-        return <Truck className="h-5 w-5 text-primary" />;
-      case AssetCategory.IT_HARDWARE:
-        return <Server className="h-5 w-5 text-primary" />;
-      case AssetCategory.ELECTRONICS:
-        return <Cpu className="h-5 w-5 text-primary" />;
-      case AssetCategory.TOOLS:
-        return <Wrench className="h-5 w-5 text-primary" />;
-      case AssetCategory.OFFICE_EQUIPMENT:
-        return <Printer className="h-5 w-5 text-primary" />;
-      case AssetCategory.STORAGE:
-        return <HardDrive className="h-5 w-5 text-primary" />;
-      case AssetCategory.UTILITIES:
-        return <Zap className="h-5 w-5 text-primary" />;
-      case AssetCategory.INVENTORY:
-        return <Box className="h-5 w-5 text-primary" />;
-      default:
-        return <LayoutGrid className="h-5 w-5 text-primary" />;
+  // Configure mobile card view fields
+  const cardFields: DataField[] = [
+    {
+      label: "Name",
+      value: "",
+      type: "text"
+    },
+    {
+      label: "Category",
+      value: "",
+      type: "text"
+    },
+    {
+      label: "Status",
+      value: "",
+      type: "badge"
+    },
+    {
+      label: "Location",
+      value: "",
+      type: "text"
     }
-  };
+  ];
 
-  // CSV export handler
-  const handleExport = async () => {
-    try {
-      const response = await apiRequest<string>("GET", "/api/assets/export", null, {
-        responseType: "text",
-      });
-      
-      // Create blob and download link
-      const blob = new Blob([response], { type: "text/csv" });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `asset-export-${format(new Date(), "yyyy-MM-dd")}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      
-      // Clean up
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      
-      toast({
-        title: "Export Successful",
-        description: "Asset data has been exported to CSV",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+  // Generate card data for mobile view
+  const getAssetCardData = (assets: Asset[] | undefined) => {
+    if (!Array.isArray(assets) || assets.length === 0) {
+      return [];
     }
+    
+    return assets.map(asset => ({
+      id: asset.id,
+      fields: [
+        {
+          label: "Name",
+          value: asset.name,
+          type: "text"
+        },
+        {
+          label: "Category",
+          value: asset.category,
+          type: "text"
+        },
+        {
+          label: "Status",
+          value: asset.status,
+          type: "badge",
+          badgeVariant: 
+            asset.status === AssetStatus.OPERATIONAL 
+              ? "default" 
+              : asset.status === AssetStatus.NEEDS_MAINTENANCE 
+                ? "secondary" 
+                : "destructive"
+        },
+        {
+          label: "Location",
+          value: asset.location || "N/A",
+          type: "text"
+        }
+      ]
+    }));
   };
 
-  // Main component render
-  return (
-    <>
-      <div className="w-full">
-        <div className="max-w-7xl mx-auto space-y-8">
-          <div className="flex justify-between items-center">
+  // Render function for the asset list
+  const renderAssetList = () => {
+    if (!Array.isArray(assetsQuery.data) || assetsQuery.data.length === 0) {
+      return (
+        <div className="text-center p-8 text-muted-foreground">
+          No assets found. Create your first asset to get started.
+        </div>
+      );
+    }
+
+    return isMobile ? (
+      <DataCardView
+        data={getAssetCardData(assetsQuery.data)}
+        fields={cardFields}
+        keyField="id"
+        onRowClick={(asset) => handleAssetClick(asset as Asset)}
+        isLoading={assetsQuery.isLoading}
+        emptyMessage="No assets found. Create one to get started."
+      />
+    ) : (
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Category</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Location</TableHead>
+              <TableHead>Last Maintenance</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {assetsQuery.data.map((asset) => (
+              <TableRow
+                key={asset.id}
+                className="cursor-pointer hover:bg-accent/50"
+                onClick={() => handleAssetClick(asset)}
+              >
+                <TableCell className="font-medium">{asset.name}</TableCell>
+                <TableCell>{asset.category}</TableCell>
+                <TableCell>
+                  <Badge
+                    variant={
+                      asset.status === AssetStatus.OPERATIONAL
+                        ? "default"
+                        : asset.status === AssetStatus.NEEDS_MAINTENANCE
+                        ? "secondary"
+                        : "destructive"
+                    }
+                  >
+                    {asset.status}
+                  </Badge>
+                </TableCell>
+                <TableCell>{asset.location || "—"}</TableCell>
+                <TableCell>
+                  {asset.lastMaintenance
+                    ? format(new Date(asset.lastMaintenance), "MMM dd, yyyy")
+                    : "—"}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    );
+  };
+
+  // Render the main content
+  const renderContent = () => {
+    return (
+      <div className="flex-1 px-4 py-6 sm:p-8">
+        <div className="max-w-6xl mx-auto space-y-6">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
             <div>
-              <h1 className="text-3xl font-bold">Assets</h1>
-              <p className="text-muted-foreground">
-                Manage and track equipment status
+              <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
+                <ToyBrick className="h-6 w-6 sm:h-7 sm:w-7" />
+                Assets
+              </h1>
+              <p className="text-sm sm:text-base text-muted-foreground">
+                Manage and track your equipment and machinery
               </p>
             </div>
-
-            <div className="flex gap-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search assets..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 w-[280px]"
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size={isMobile ? "icon-lg" : "icon"}
+                  onClick={handleExportClick}
+                  disabled={!Array.isArray(assetsQuery.data) || assetsQuery.data.length === 0}
+                >
+                  <Download className="h-4 w-4" />
+                  <span className="sr-only">Export</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size={isMobile ? "icon-lg" : "icon"}
+                  onClick={handleImportClick}
+                >
+                  <UploadCloud className="h-4 w-4" />
+                  <span className="sr-only">Import</span>
+                </Button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  accept=".csv"
+                  className="hidden"
                 />
               </div>
-              <Select
-                value={selectedCategory}
-                onValueChange={setSelectedCategory}
+              <Button
+                onClick={() => setIsCreateDialogOpen(true)}
+                className="w-full sm:w-auto"
+                size={isMobile ? "lg" : "default"}
               >
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Filter by category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">All Categories</SelectItem>
-                  {Object.values(AssetCategory).map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Button onClick={handleExport} variant="outline">
-                <Download className="h-4 w-4 mr-2" />
-                Export CSV
-              </Button>
-
-              <Button onClick={() => setIsImportDialogOpen(true)} variant="outline">
-                <Upload className="h-4 w-4 mr-2" />
-                Import CSV
-              </Button>
-              <Button onClick={() => setIsCreateDialogOpen(true)}>
+                <PlusCircle className="mr-2 h-4 w-4" />
                 Add Asset
               </Button>
             </div>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {filteredAssets.map((asset) => (
-              <Card key={asset.id}>
-                <CardHeader className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      {getCategoryIcon(asset.category)}
-                      <CardTitle className="text-xl">{asset.name}</CardTitle>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Select
-                        value={asset.status}
-                        onValueChange={(status) =>
-                          updateStatusMutation.mutate({ id: asset.id, status })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.values(AssetStatus).map((status) => (
-                            <SelectItem key={status} value={status}>
-                              {status}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+          {renderAssetList()}
 
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="destructive" size="icon">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete Asset</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This will permanently delete this asset and all its maintenance schedules.
-                              This action cannot be undone.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => deleteMutation.mutate(asset.id)}
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                            >
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
+          {/* Create Dialog */}
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <DialogContent className="max-w-md sm:max-w-xl">
+              <DialogHeader>
+                <DialogTitle>Add New Asset</DialogTitle>
+                <DialogDescription>
+                  Enter the details of the asset you want to add to the system.
+                </DialogDescription>
+              </DialogHeader>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(handleCreateSubmit)} className="space-y-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Name *</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="category"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Category *</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select category" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value={LOCAL_ASSET_CATEGORY.MACHINERY}>Machinery</SelectItem>
+                              <SelectItem value={LOCAL_ASSET_CATEGORY.VEHICLE}>Vehicle</SelectItem>
+                              <SelectItem value={LOCAL_ASSET_CATEGORY.TOOL}>Tool</SelectItem>
+                              <SelectItem value={LOCAL_ASSET_CATEGORY.COMPUTER}>Computer</SelectItem>
+                              <SelectItem value={LOCAL_ASSET_CATEGORY.OTHER}>Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <p className="text-sm text-muted-foreground">
-                      {asset.description}
-                    </p>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div>
-                        <strong>Location:</strong> {asset.location}
-                      </div>
-                      <div>
-                        <strong>Category:</strong> {asset.category}
-                      </div>
-                      {asset.manufacturer && (
-                        <div>
-                          <strong>Manufacturer:</strong> {asset.manufacturer}
-                        </div>
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="location"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Location</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
                       )}
-                      {asset.modelNumber && (
-                        <div>
-                          <strong>Model:</strong> {asset.modelNumber}
-                        </div>
+                    />
+                    <FormField
+                      control={form.control}
+                      name="status"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Status</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select status" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value={AssetStatus.OPERATIONAL}>Operational</SelectItem>
+                              <SelectItem value={AssetStatus.NEEDS_MAINTENANCE}>Needs Maintenance</SelectItem>
+                              <SelectItem value={AssetStatus.OUT_OF_SERVICE}>Out of Service</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
                       )}
-                      {asset.serialNumber && (
-                        <div>
-                          <strong>Serial:</strong> {asset.serialNumber}
-                        </div>
-                      )}
-                      {asset.lastMaintenance && (
-                        <div>
-                          <strong>Last Maintenance:</strong>{" "}
-                          {new Date(asset.lastMaintenance).toLocaleDateString()}
-                        </div>
-                      )}
-                      {asset.commissionedDate && (
-                        <div>
-                          <strong>Commissioned:</strong>{" "}
-                          {new Date(asset.commissionedDate).toLocaleDateString()}
-                        </div>
-                      )}
-                    </div>
+                    />
                   </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="manufacturer"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Manufacturer</FormLabel>
+                          <FormControl>
+                            <Input {...field} value={field.value || ""} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="modelNumber"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Model Number</FormLabel>
+                          <FormControl>
+                            <Input {...field} value={field.value || ""} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name="serialNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Serial Number</FormLabel>
+                        <FormControl>
+                          <Input {...field} value={field.value || ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="pt-3 flex justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={createAssetMutation.isPending}>
+                      {createAssetMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Creating...
+                        </>
+                      ) : (
+                        'Create Asset'
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
 
-                  <div className="space-y-2 mt-4">
-                    <div className="flex justify-between items-center">
-                      <h3 className="font-semibold">Maintenance Schedules</h3>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedAsset(asset.id);
-                          maintenanceForm.setValue("assetId", asset.id);
-                          setIsMaintenanceDialogOpen(true);
-                        }}
-                      >
-                        <Calendar className="h-4 w-4 mr-2" />
-                        Add Schedule
+          {/* Details Dialog */}
+          {selectedAsset && (
+            <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Asset Details</DialogTitle>
+                </DialogHeader>
+                <Tabs defaultValue="details" className="w-full">
+                  <TabsList className="mb-4">
+                    <TabsTrigger value="details">Details</TabsTrigger>
+                    <TabsTrigger value="maintenance">Maintenance Schedules</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="details">
+                    <Form {...detailsForm}>
+                      <form onSubmit={detailsForm.handleSubmit(handleUpdateSubmit)} className="space-y-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <FormField
+                            control={detailsForm.control}
+                            name="name"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Name *</FormLabel>
+                                <FormControl>
+                                  <Input {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={detailsForm.control}
+                            name="category"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Category *</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select category" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value={LOCAL_ASSET_CATEGORY.MACHINERY}>Machinery</SelectItem>
+                                    <SelectItem value={LOCAL_ASSET_CATEGORY.VEHICLE}>Vehicle</SelectItem>
+                                    <SelectItem value={LOCAL_ASSET_CATEGORY.TOOL}>Tool</SelectItem>
+                                    <SelectItem value={LOCAL_ASSET_CATEGORY.COMPUTER}>Computer</SelectItem>
+                                    <SelectItem value={LOCAL_ASSET_CATEGORY.OTHER}>Other</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        <FormField
+                          control={detailsForm.control}
+                          name="description"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Description</FormLabel>
+                              <FormControl>
+                                <Textarea {...field} value={field.value || ""} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <FormField
+                            control={detailsForm.control}
+                            name="location"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Location</FormLabel>
+                                <FormControl>
+                                  <Input {...field} value={field.value || ""} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={detailsForm.control}
+                            name="status"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Status</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select status" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value={AssetStatus.OPERATIONAL}>Operational</SelectItem>
+                                    <SelectItem value={AssetStatus.NEEDS_MAINTENANCE}>Needs Maintenance</SelectItem>
+                                    <SelectItem value={AssetStatus.OUT_OF_SERVICE}>Out of Service</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <FormField
+                            control={detailsForm.control}
+                            name="manufacturer"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Manufacturer</FormLabel>
+                                <FormControl>
+                                  <Input {...field} value={field.value || ""} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={detailsForm.control}
+                            name="modelNumber"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Model Number</FormLabel>
+                                <FormControl>
+                                  <Input {...field} value={field.value || ""} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        <FormField
+                          control={detailsForm.control}
+                          name="serialNumber"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Serial Number</FormLabel>
+                              <FormControl>
+                                <Input {...field} value={field.value || ""} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <div className="pt-6 flex justify-between">
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button type="button" variant="destructive">Delete Asset</Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This action cannot be undone. This will permanently delete the asset
+                                  and all related maintenance schedules.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleDeleteAsset}>
+                                  {deleteAssetMutation.isPending ? (
+                                    <>
+                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                      Deleting...
+                                    </>
+                                  ) : (
+                                    'Delete'
+                                  )}
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                          <div className="flex gap-2">
+                            <Button type="button" variant="outline" onClick={() => setIsDetailsDialogOpen(false)}>
+                              Cancel
+                            </Button>
+                            <Button type="submit" disabled={updateAssetMutation.isPending}>
+                              {updateAssetMutation.isPending ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Saving...
+                                </>
+                              ) : (
+                                'Save Changes'
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      </form>
+                    </Form>
+                  </TabsContent>
+                  <TabsContent value="maintenance">
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <h3 className="text-lg font-medium">Maintenance Schedules</h3>
+                        <Button onClick={() => setIsMaintenanceDialogOpen(true)}>
+                          <PlusCircle className="mr-2 h-4 w-4" />
+                          Add Schedule
+                        </Button>
+                      </div>
+                      {Array.isArray(schedulesQuery.data) && selectedAsset && (
+                        <div className="rounded-md border">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Title</TableHead>
+                                <TableHead>Frequency</TableHead>
+                                <TableHead>Start Date</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {getAssetMaintenanceSchedules(selectedAsset.id).length > 0 ? (
+                                getAssetMaintenanceSchedules(selectedAsset.id).map((schedule) => (
+                                  <TableRow key={schedule.id}>
+                                    <TableCell className="font-medium">{schedule.title}</TableCell>
+                                    <TableCell>{schedule.frequency}</TableCell>
+                                    <TableCell>
+                                      {format(new Date(schedule.startDate), "MMM dd, yyyy")}
+                                    </TableCell>
+                                    <TableCell>
+                                      <Badge>{schedule.status}</Badge>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                      <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                          <Button variant="ghost" size="sm">
+                                            <Trash2 className="h-4 w-4" />
+                                            <span className="sr-only">Delete</span>
+                                          </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                          <AlertDialogHeader>
+                                            <AlertDialogTitle>Delete Maintenance Schedule</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                              Are you sure you want to delete this maintenance schedule?
+                                              This action cannot be undone.
+                                            </AlertDialogDescription>
+                                          </AlertDialogHeader>
+                                          <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => handleDeleteSchedule(schedule.id)}>
+                                              Delete
+                                            </AlertDialogAction>
+                                          </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                      </AlertDialog>
+                                    </TableCell>
+                                  </TableRow>
+                                ))
+                              ) : (
+                                <TableRow>
+                                  <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                                    No maintenance schedules for this asset
+                                  </TableCell>
+                                </TableRow>
+                              )}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      )}
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              </DialogContent>
+            </Dialog>
+          )}
+
+          {/* Maintenance Dialog */}
+          {selectedAsset && (
+            <Dialog open={isMaintenanceDialogOpen} onOpenChange={setIsMaintenanceDialogOpen}>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Add Maintenance Schedule</DialogTitle>
+                  <DialogDescription>
+                    Set up a regular maintenance schedule for {selectedAsset.name}
+                  </DialogDescription>
+                </DialogHeader>
+                <Form {...maintenanceForm}>
+                  <form onSubmit={maintenanceForm.handleSubmit(handleMaintenanceSubmit)} className="space-y-4">
+                    <FormField
+                      control={maintenanceForm.control}
+                      name="title"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Title *</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={maintenanceForm.control}
+                      name="description"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Description</FormLabel>
+                          <FormControl>
+                            <Textarea {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={maintenanceForm.control}
+                      name="frequency"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Frequency *</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select frequency" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value={LOCAL_MAINTENANCE_FREQUENCY.DAILY}>Daily</SelectItem>
+                              <SelectItem value={LOCAL_MAINTENANCE_FREQUENCY.WEEKLY}>Weekly</SelectItem>
+                              <SelectItem value={LOCAL_MAINTENANCE_FREQUENCY.MONTHLY}>Monthly</SelectItem>
+                              <SelectItem value={LOCAL_MAINTENANCE_FREQUENCY.QUARTERLY}>Quarterly</SelectItem>
+                              <SelectItem value={LOCAL_MAINTENANCE_FREQUENCY.BIANNUAL}>Semi-Annually</SelectItem>
+                              <SelectItem value={LOCAL_MAINTENANCE_FREQUENCY.YEARLY}>Yearly</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={maintenanceForm.control}
+                      name="startDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Start Date *</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="date"
+                              value={field.value ? format(field.value, "yyyy-MM-dd") : ""}
+                              onChange={(e) => {
+                                const date = e.target.value
+                                  ? new Date(e.target.value)
+                                  : new Date();
+                                field.onChange(date);
+                              }}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={maintenanceForm.control}
+                      name="endDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>End Date (Optional)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="date"
+                              value={field.value ? format(field.value, "yyyy-MM-dd") : ""}
+                              onChange={(e) => {
+                                const date = e.target.value
+                                  ? new Date(e.target.value)
+                                  : null;
+                                field.onChange(date);
+                              }}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={maintenanceForm.control}
+                      name="affectsAssetStatus"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>
+                              Update Asset Status
+                            </FormLabel>
+                            <FormDescription>
+                              When overdue, set asset status to "Needs Maintenance"
+                            </FormDescription>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                    <div className="pt-3 flex justify-end gap-2">
+                      <Button type="button" variant="outline" onClick={() => setIsMaintenanceDialogOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button type="submit" disabled={createScheduleMutation.isPending}>
+                        {createScheduleMutation.isPending ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Creating...
+                          </>
+                        ) : (
+                          'Create Schedule'
+                        )}
                       </Button>
                     </div>
-                    {getAssetMaintenanceSchedules(asset.id).map((schedule) => (
-                      <div
-                        key={schedule.id}
-                        className="p-2 bg-muted rounded-lg text-sm space-y-2"
-                      >
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <div className="font-medium">{schedule.title}</div>
-                            <div className="text-muted-foreground">
-                              {schedule.frequency} |{" "}
-                              {new Date(schedule.startDate).toLocaleDateString()}
-                            </div>
-                            <div className="text-sm mt-1">{schedule.description}</div>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                setSelectedAsset(asset.id);
-                                maintenanceForm.reset({
-                                  ...schedule,
-                                  startDate: new Date(schedule.startDate),
-                                  endDate: schedule.endDate ? new Date(schedule.endDate) : null,
-                                });
-                                setIsMaintenanceDialogOpen(true);
-                              }}
-                            >
-                              <Edit2 className="h-4 w-4" />
-                            </Button>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Delete Maintenance Schedule</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    This will permanently delete this maintenance schedule.
-                                    This action cannot be undone.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                    onClick={() => deleteMaintenanceScheduleMutation.mutate(schedule.id)}
-                                  >
-                                    Delete
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
+          )}
+
+          {/* Import Dialog */}
+          <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Import Assets</DialogTitle>
+                <DialogDescription>
+                  Upload a CSV file to import assets into the system.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                {importFile && (
+                  <div className="border rounded-md p-4">
+                    <p className="text-sm font-medium">Selected File:</p>
+                    <p className="text-sm">{importFile.name}</p>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                )}
+                {importResults && (
+                  <div className="border rounded-md p-4 space-y-2">
+                    <p className="text-sm font-medium">Import Results:</p>
+                    <p className="text-sm">Total Rows: {importResults.totalRows}</p>
+                    <p className="text-sm">Successful Imports: {importResults.successfulImports}</p>
+                    <p className="text-sm">Failed Imports: {importResults.failedImports}</p>
+                    {importResults.errors && importResults.errors.length > 0 && (
+                      <div>
+                        <p className="text-sm font-medium text-destructive">Errors:</p>
+                        <ul className="text-xs space-y-1 text-destructive">
+                          {importResults.errors.slice(0, 5).map((error: any, i: number) => (
+                            <li key={i}>Row {error.row}: {error.error}</li>
+                          ))}
+                          {importResults.errors.length > 5 && (
+                            <li>...and {importResults.errors.length - 5} more errors</li>
+                          )}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+                <div className="pt-3 flex justify-end gap-2">
+                  <Button type="button" variant="outline" onClick={() => {
+                    setIsImportDialogOpen(false);
+                    setImportFile(null);
+                    setImportResults(null);
+                  }}>
+                    {importResults ? 'Close' : 'Cancel'}
+                  </Button>
+                  {!importResults && (
+                    <Button
+                      onClick={handleImportSubmit}
+                      disabled={!importFile || isImporting}
+                    >
+                      {isImporting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Importing...
+                        </>
+                      ) : (
+                        'Import'
+                      )}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
+    );
+  };
 
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Add New Asset</DialogTitle>
-          </DialogHeader>
-          <Form {...form}>
-            <form
-              onSubmit={form.handleSubmit((data) => createMutation.mutate(data))}
-              className="space-y-4"
-            >
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Name</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="category"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Category</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select category" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {Object.values(AssetCategory).map((category) => (
-                          <SelectItem key={category} value={category}>
-                            {category}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="manufacturer"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Manufacturer</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="modelNumber"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Model Number</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <FormField
-                control={form.control}
-                name="serialNumber"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Serial Number</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Textarea {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="location"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Location</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {Object.values(AssetStatus).map((status) => (
-                          <SelectItem key={status} value={status}>
-                            {status}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="commissionedDate"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Commissioned Date</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant={"outline"}
-                            className={`w-full pl-3 text-left font-normal ${
-                              !field.value && "text-muted-foreground"
-                            }`}
-                          >
-                            {field.value ? (
-                              format(field.value, "PPP")
-                            ) : (
-                              <span>Pick a date</span>
-                            )}
-                            <Calendar className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <CalendarComponent
-                          mode="single"
-                          selected={field.value as Date}
-                          onSelect={field.onChange}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="pt-2 space-x-2 flex justify-end">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsCreateDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={createMutation.isPending}>
-                  {createMutation.isPending ? "Creating..." : "Create Asset"}
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isMaintenanceDialogOpen} onOpenChange={setIsMaintenanceDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>
-              {maintenanceForm.getValues().id
-                ? "Edit Maintenance Schedule"
-                : "Create Maintenance Schedule"}
-            </DialogTitle>
-            <DialogDescription>
-              Schedule regular maintenance for this asset
-            </DialogDescription>
-          </DialogHeader>
-          <Form {...maintenanceForm}>
-            <form
-              onSubmit={maintenanceForm.handleSubmit((data) => {
-                // Check if we're editing or creating
-                if (data.id) {
-                  // Edit existing schedule
-                  apiRequest("PATCH", `/api/maintenance-schedules/${data.id}`, data)
-                    .then(() => {
-                      queryClient.invalidateQueries({ queryKey: ["/api/maintenance-schedules"] });
-                      setIsMaintenanceDialogOpen(false);
-                      toast({
-                        title: "Schedule Updated",
-                        description: "Maintenance schedule has been updated",
-                      });
-                      maintenanceForm.reset();
-                    })
-                    .catch((error) => {
-                      toast({
-                        title: "Error",
-                        description: error.message,
-                        variant: "destructive",
-                      });
-                    });
-                } else {
-                  // Create new schedule
-                  createMaintenanceScheduleMutation.mutate(data);
-                }
-              })}
-              className="space-y-4"
-            >
-              <FormField
-                control={maintenanceForm.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Title</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={maintenanceForm.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Textarea {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={maintenanceForm.control}
-                name="frequency"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Frequency</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select frequency" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {Object.values(MaintenanceFrequency).map((frequency) => (
-                          <SelectItem key={frequency} value={frequency}>
-                            {frequency}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={maintenanceForm.control}
-                  name="startDate"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel>Start Date</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant={"outline"}
-                              className={`w-full pl-3 text-left font-normal ${
-                                !field.value && "text-muted-foreground"
-                              }`}
-                            >
-                              {field.value ? (
-                                format(field.value, "PPP")
-                              ) : (
-                                <span>Pick a date</span>
-                              )}
-                              <Calendar className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <CalendarComponent
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={maintenanceForm.control}
-                  name="endDate"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel>End Date (Optional)</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant={"outline"}
-                              className={`w-full pl-3 text-left font-normal ${
-                                !field.value && "text-muted-foreground"
-                              }`}
-                            >
-                              {field.value ? (
-                                format(field.value, "PPP")
-                              ) : (
-                                <span>No end date</span>
-                              )}
-                              <Calendar className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <CalendarComponent
-                            mode="single"
-                            selected={field.value || undefined}
-                            onSelect={field.onChange}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <FormField
-                control={maintenanceForm.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {Object.values(MaintenanceStatus).map((status) => (
-                          <SelectItem key={status} value={status}>
-                            {status}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={maintenanceForm.control}
-                name="affectsAssetStatus"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>Affects Asset Status</FormLabel>
-                      <FormDescription>
-                        If checked, overdue maintenance will change the asset status
-                      </FormDescription>
-                    </div>
-                  </FormItem>
-                )}
-              />
-              <div className="pt-2 space-x-2 flex justify-end">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setIsMaintenanceDialogOpen(false);
-                    maintenanceForm.reset();
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={createMaintenanceScheduleMutation.isPending}>
-                  {createMaintenanceScheduleMutation.isPending
-                    ? "Saving..."
-                    : maintenanceForm.getValues().id
-                    ? "Update Schedule"
-                    : "Create Schedule"}
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Import Assets</DialogTitle>
-            <DialogDescription>
-              Upload a CSV file to import assets and maintenance schedules
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="border rounded-md p-4">
-              <div className="space-y-2">
-                <label className="block font-medium">Select CSV File</label>
-                <Input
-                  type="file"
-                  accept=".csv"
-                  onChange={(e) => {
-                    if (e.target.files && e.target.files.length > 0) {
-                      setSelectedFile(e.target.files[0]);
-                    }
-                  }}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Download the{" "}
-                <a
-                  href="/asset-import-template.csv"
-                  download
-                  className="text-primary underline"
-                >
-                  template CSV
-                </a>{" "}
-                to see the required format.
-              </p>
-            </div>
-            <div className="space-y-2">
-              <h3 className="font-medium">CSV Format Requirements</h3>
-              <p className="text-sm text-muted-foreground">
-                The CSV must include the following columns:
-              </p>
-              <ul className="text-sm text-muted-foreground list-disc pl-5 space-y-1">
-                <li>Asset Name (required)</li>
-                <li>Description (required)</li>
-                <li>Location (required)</li>
-                <li>Category (must match one of the system categories)</li>
-                <li>Status (must match one of the system statuses)</li>
-                <li>Manufacturer (optional)</li>
-                <li>Model Number (optional)</li>
-                <li>Serial Number (optional)</li>
-                <li>
-                  Maintenance Title, Frequency, and Start Date (for maintenance
-                  schedules)
-                </li>
-              </ul>
-            </div>
-            <div className="pt-2 space-x-2 flex justify-end">
-              <Button
-                variant="outline"
-                onClick={() => setIsImportDialogOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                disabled={!selectedFile || importMutation.isPending}
-                onClick={() => {
-                  if (selectedFile) {
-                    importMutation.mutate(selectedFile);
-                  }
-                }}
-              >
-                {importMutation.isPending ? "Importing..." : "Import"}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </>
+  // Use MultiQueryLoader to handle loading states for all queries
+  return (
+    <MultiQueryLoader
+      queries={[assetsQuery, schedulesQuery]}
+      loadingComponent={
+        <div className="flex items-center justify-center min-h-screen">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      }
+    >
+      {renderContent()}
+    </MultiQueryLoader>
   );
 }

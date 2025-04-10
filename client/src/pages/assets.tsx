@@ -284,13 +284,13 @@ export default function AssetsPage() {
   
   const maintenanceSchedulesQuery = useQuery({
     queryKey: ["/api/maintenance-schedules"],
-    queryFn: () => apiRequest<MaintenanceSchedule[]>("GET", "/api/maintenance-schedules"),
+    queryFn: () => apiRequest("GET", "/api/maintenance-schedules"),
   });
   
   const maintenanceSchedules = maintenanceSchedulesQuery.data || [];
 
   // Filtered assets based on search query and category
-  const filteredAssets = assets.filter((asset) => {
+  const filteredAssets = Array.isArray(assets) ? assets.filter((asset) => {
     const matchesSearch =
       asset.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       asset.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -300,7 +300,7 @@ export default function AssetsPage() {
       selectedCategory === "ALL" || asset.category === selectedCategory;
     
     return matchesSearch && matchesCategory;
-  });
+  }) : [];
 
   // Helper to get schedules for a specific asset
   const getAssetMaintenanceSchedules = (assetId: number) => {
@@ -323,7 +323,7 @@ export default function AssetsPage() {
       case AssetCategory.ELECTRONICS:
         return <Cpu className="h-5 w-5 text-primary" />;
       case AssetCategory.TOOLS:
-        return <Tool className="h-5 w-5 text-primary" />;
+        return <Wrench className="h-5 w-5 text-primary" />;
       case AssetCategory.OFFICE_EQUIPMENT:
         return <Printer className="h-5 w-5 text-primary" />;
       case AssetCategory.STORAGE:

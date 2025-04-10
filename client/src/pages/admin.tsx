@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   User, 
   UserRole, 
@@ -23,7 +24,8 @@ import {
   ProblemButton, 
   WeekDay, 
   Settings, 
-  insertSettingsSchema 
+  insertSettingsSchema,
+  Asset
 } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -477,8 +479,18 @@ function ProblemButtonSection() {
   ];
   
   // Query for problem buttons
-  const { data: buttons = [], isLoading } = useQuery<ProblemButton[]>({
+  const { data: buttons = [], isLoading: isLoadingButtons } = useQuery<ProblemButton[]>({
     queryKey: ["/api/problem-buttons"],
+  });
+  
+  // Query for assets (needed for defaultAssetId field)
+  const { data: assets = [], isLoading: isLoadingAssets } = useQuery<Asset[]>({
+    queryKey: ["/api/assets"],
+  });
+  
+  // Query for users (needed for defaultAssignedTo field)
+  const { data: users = [], isLoading: isLoadingUsers } = useQuery<User[]>({
+    queryKey: ["/api/admin/users"],
   });
   
   // Create button mutation
@@ -610,6 +622,12 @@ function ProblemButtonSection() {
       color: button.color,
       icon: button.icon || "none",
       active: button.active,
+      createWorkOrder: button.createWorkOrder || false,
+      workOrderTitle: button.workOrderTitle || "",
+      workOrderDescription: button.workOrderDescription || "",
+      workOrderPriority: button.workOrderPriority || "",
+      defaultAssetId: button.defaultAssetId || null,
+      defaultAssignedTo: button.defaultAssignedTo || null,
     });
     setIsEditOpen(true);
   };
@@ -617,7 +635,7 @@ function ProblemButtonSection() {
   // Sort buttons by order
   const sortedButtons = [...buttons].sort((a, b) => a.order - b.order);
   
-  if (isLoading) {
+  if (isLoadingButtons || isLoadingAssets || isLoadingUsers) {
     return <div className="animate-pulse space-y-4">
       <div className="h-8 w-1/4 bg-muted rounded"></div>
       <div className="h-64 bg-muted rounded"></div>
@@ -904,6 +922,70 @@ function ProblemButtonSection() {
                       </FormItem>
                     )}
                   />
+
+                  <FormField
+                    control={createForm.control}
+                    name="defaultAssetId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Default Asset</FormLabel>
+                        <Select
+                          onValueChange={(value) => field.onChange(value === "none" ? null : parseInt(value))}
+                          value={field.value === null ? "none" : field.value?.toString()}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select an asset" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="none">None</SelectItem>
+                            {assets.map((asset) => (
+                              <SelectItem key={asset.id} value={asset.id.toString()}>
+                                {asset.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          When a work order is created, it will be assigned to this asset by default
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={createForm.control}
+                    name="defaultAssignedTo"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Default Assignee</FormLabel>
+                        <Select
+                          onValueChange={(value) => field.onChange(value === "none" ? null : parseInt(value))}
+                          value={field.value === null ? "none" : field.value?.toString()}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a user" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="none">None</SelectItem>
+                            {users.map((user) => (
+                              <SelectItem key={user.id} value={user.id.toString()}>
+                                {user.username}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          When a work order is created, it will be assigned to this user by default
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
               )}
             </form>
@@ -1015,6 +1097,156 @@ function ProblemButtonSection() {
                   </FormItem>
                 )}
               />
+              
+              <FormField
+                control={editForm.control}
+                name="createWorkOrder"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                    <div className="space-y-0.5">
+                      <FormLabel>Create Work Order</FormLabel>
+                      <FormDescription>
+                        Automatically create a work order when this problem is reported
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              
+              {editForm.watch("createWorkOrder") && (
+                <div className="space-y-4 rounded-lg border p-4">
+                  <h3 className="text-sm font-medium">Work Order Details</h3>
+                  
+                  <FormField
+                    control={editForm.control}
+                    name="workOrderTitle"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Work Order Title</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., Repair Machine Failure" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={editForm.control}
+                    name="workOrderDescription"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Details about the work to be done"
+                            className="resize-none"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={editForm.control}
+                    name="workOrderPriority"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Priority</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select priority" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="LOW">Low</SelectItem>
+                            <SelectItem value="MEDIUM">Medium</SelectItem>
+                            <SelectItem value="HIGH">High</SelectItem>
+                            <SelectItem value="CRITICAL">Critical</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={editForm.control}
+                    name="defaultAssetId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Default Asset</FormLabel>
+                        <Select
+                          onValueChange={(value) => field.onChange(value === "none" ? null : parseInt(value))}
+                          value={field.value === null ? "none" : field.value?.toString()}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select an asset" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="none">None</SelectItem>
+                            {assets.map((asset) => (
+                              <SelectItem key={asset.id} value={asset.id.toString()}>
+                                {asset.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          When a work order is created, it will be assigned to this asset by default
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={editForm.control}
+                    name="defaultAssignedTo"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Default Assignee</FormLabel>
+                        <Select
+                          onValueChange={(value) => field.onChange(value === "none" ? null : parseInt(value))}
+                          value={field.value === null ? "none" : field.value?.toString()}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a user" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="none">None</SelectItem>
+                            {users.map((user) => (
+                              <SelectItem key={user.id} value={user.id.toString()}>
+                                {user.username}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          When a work order is created, it will be assigned to this user by default
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              )}
             </form>
           </Form>
           <DialogFooter>

@@ -473,7 +473,7 @@ export default function ProblemTracking() {
                         <FormItem>
                           <FormLabel>Related Asset</FormLabel>
                           <Select
-                            onValueChange={(value) => field.onChange(value ? parseInt(value) : null)}
+                            onValueChange={(value) => field.onChange(value === "none" ? null : value ? parseInt(value) : null)}
                             value={field.value?.toString()}
                           >
                             <FormControl>
@@ -482,7 +482,7 @@ export default function ProblemTracking() {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="">None</SelectItem>
+                              <SelectItem value="none">None</SelectItem>
                               {Array.isArray(assetsQuery.data) && assetsQuery.data.map(asset => (
                                 <SelectItem key={asset.id} value={asset.id.toString()}>
                                   {asset.name}
@@ -567,7 +567,7 @@ export default function ProblemTracking() {
                       <FormItem>
                         <FormLabel>Related Asset</FormLabel>
                         <Select
-                          onValueChange={(value) => field.onChange(value ? parseInt(value) : null)}
+                          onValueChange={(value) => field.onChange(value === "none" ? null : value ? parseInt(value) : null)}
                           value={field.value?.toString()}
                         >
                           <FormControl>
@@ -576,7 +576,7 @@ export default function ProblemTracking() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">None</SelectItem>
+                            <SelectItem value="none">None</SelectItem>
                             {Array.isArray(assetsQuery.data) && assetsQuery.data.map(asset => (
                               <SelectItem key={asset.id} value={asset.id.toString()}>
                                 {asset.name}

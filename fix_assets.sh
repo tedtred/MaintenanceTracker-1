@@ -1,3 +1,7 @@
+#!/bin/bash
+
+# Fix assets.tsx
+cat > client/src/pages/assets.tsx.new << 'EOF'
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import {
@@ -82,7 +86,7 @@ import {
   Truck,
   Server,
   Cpu,
-  Tools,
+  Tool,
   Printer,
   HardDrive,
   Zap,
@@ -1124,3 +1128,9 @@ export default function AssetsPage() {
     </>
   );
 }
+EOF
+
+# Replace original file with new one
+mv client/src/pages/assets.tsx.new client/src/pages/assets.tsx
+
+echo "Fixed assets.tsx file"

@@ -1,3 +1,7 @@
+#!/bin/bash
+
+# Fix dashboard.tsx
+cat > client/src/pages/dashboard.tsx.new << 'EOF'
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link } from "wouter";
@@ -617,3 +621,9 @@ export default function Dashboard() {
     </>
   );
 }
+EOF
+
+# Replace original file with new one
+mv client/src/pages/dashboard.tsx.new client/src/pages/dashboard.tsx
+
+echo "Fixed dashboard.tsx file"

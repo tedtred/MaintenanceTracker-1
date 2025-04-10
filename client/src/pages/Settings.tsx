@@ -189,7 +189,7 @@ export default function SettingsPage() {
     return (
       <div className="flex h-screen">
         <SidebarNav />
-        <div className="flex-1 p-8">
+        <div className="w-full">
           <div className="animate-pulse space-y-4">
             <div className="h-8 w-1/4 bg-muted rounded"></div>
             <div className="h-64 bg-muted rounded"></div>

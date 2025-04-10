@@ -293,7 +293,7 @@ export default function MaintenanceCalendar() {
   });
 
   const getAssetName = (assetId: number) => {
-    const asset = assets.find(a => a.id === assetId);
+    const asset = Array.isArray(assets) ? assets.find(a => a.id === assetId) : undefined;
     return asset ? asset.name : 'Unknown Asset';
   };
 
@@ -327,13 +327,15 @@ export default function MaintenanceCalendar() {
   };
 
   const getAssetDetails = (assetId: number) => {
-    return assets.find(a => a.id === assetId);
+    return Array.isArray(assets) ? assets.find(a => a.id === assetId) : undefined;
   };
 
   const getCompletionHistory = (scheduleId: number) => {
-    return completions
-      .filter(c => c.scheduleId === scheduleId)
-      .sort((a, b) => new Date(b.completedDate).getTime() - new Date(a.completedDate).getTime());
+    return Array.isArray(completions) 
+      ? completions
+        .filter(c => c.scheduleId === scheduleId)
+        .sort((a, b) => new Date(b.completedDate).getTime() - new Date(a.completedDate).getTime())
+      : [];
   };
 
   const handleCompleteClick = () => {
@@ -446,9 +448,9 @@ export default function MaintenanceCalendar() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Assets</SelectItem>
-                        {assets.map(asset => (
+                        {Array.isArray(assets) ? assets.map(asset => (
                           <SelectItem key={asset.id} value={asset.id.toString()}>{asset.name}</SelectItem>
-                        ))}
+                        )) : null}
                       </SelectContent>
                     </Select>
                     <Select
@@ -515,9 +517,9 @@ export default function MaintenanceCalendar() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Assets</SelectItem>
-                        {assets.map(asset => (
+                        {Array.isArray(assets) ? assets.map(asset => (
                           <SelectItem key={asset.id} value={asset.id.toString()}>{asset.name}</SelectItem>
-                        ))}
+                        )) : null}
                       </SelectContent>
                     </Select>
                   </div>

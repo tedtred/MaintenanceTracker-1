@@ -242,9 +242,45 @@ export default function Dashboard() {
     return { maintenanceTasks, overdueTasks, todayTasks };
   };
 
+  // Sort work orders by priority status
+  const sortWorkOrders = (workOrders: any[]) => {
+    // Define priority order: OPEN first, then IN_PROGRESS, then WAITING_ON_PARTS, then others
+    const statusPriority = {
+      [WorkOrderStatus.OPEN]: 1,
+      [WorkOrderStatus.IN_PROGRESS]: 2,
+      [WorkOrderStatus.WAITING_ON_PARTS]: 3,
+      [WorkOrderStatus.COMPLETED]: 4,
+      [WorkOrderStatus.ARCHIVED]: 5
+    };
+
+    return [...workOrders].sort((a, b) => {
+      // First sort by status priority
+      const statusDiff = statusPriority[a.status as keyof typeof statusPriority] - 
+                         statusPriority[b.status as keyof typeof statusPriority];
+      if (statusDiff !== 0) return statusDiff;
+      
+      // Then sort by reported date (newest first)
+      return new Date(b.reportedDate).getTime() - new Date(a.reportedDate).getTime();
+    });
+  };
+
+  // State for work order filter
+  const [workOrderFilter, setWorkOrderFilter] = useState<string>("all");
+
   // Render the dashboard content
   const renderDashboardContent = () => {
-    const { activeWorkOrders, openWorkOrders, inProgressWorkOrders } = processWorkOrders(workOrdersQuery.data);
+    const { activeWorkOrders: unsortedWorkOrders, openWorkOrders, inProgressWorkOrders } = processWorkOrders(workOrdersQuery.data);
+    const sortedWorkOrders = sortWorkOrders(unsortedWorkOrders);
+
+    // Filter work orders based on selected filter
+    const filteredWorkOrders = sortedWorkOrders ? sortedWorkOrders.filter(wo => {
+      if (workOrderFilter === "all") return true;
+      if (workOrderFilter === "open") return wo.status === WorkOrderStatus.OPEN;
+      if (workOrderFilter === "in-progress") return wo.status === WorkOrderStatus.IN_PROGRESS;
+      if (workOrderFilter === "waiting") return wo.status === WorkOrderStatus.WAITING_ON_PARTS;
+      return true;
+    }) : [];
+    
     const { maintenanceTasks, overdueTasks, todayTasks } = processMaintenanceTasks(schedulesQuery.data, completionsQuery.data);
 
     // Filter tasks based on selected tab
@@ -373,12 +409,26 @@ export default function Dashboard() {
                   <CardDescription>
                     Latest maintenance tickets
                   </CardDescription>
+                  <div className="flex mt-2 gap-2">
+                    <Badge className="cursor-pointer" variant="outline">
+                      All
+                    </Badge>
+                    <Badge className="cursor-pointer" variant="secondary">
+                      Open
+                    </Badge>
+                    <Badge className="cursor-pointer" variant="outline">
+                      In Progress
+                    </Badge>
+                    <Badge className="cursor-pointer" variant="outline">
+                      Waiting
+                    </Badge>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <ScrollArea className="h-[360px] pr-4">
                     <div className="space-y-3">
-                      {activeWorkOrders.length > 0 ? (
-                        activeWorkOrders.slice(0, 10).map((wo) => (
+                      {filteredWorkOrders.length > 0 ? (
+                        filteredWorkOrders.slice(0, 10).map((wo) => (
                           <Link 
                             href={`/work-orders/${wo.id}`}
                             key={wo.id}

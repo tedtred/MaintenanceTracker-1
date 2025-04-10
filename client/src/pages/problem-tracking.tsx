@@ -561,7 +561,7 @@ export default function ProblemTracking() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">None</SelectItem>
+                            <SelectItem value="none">None</SelectItem>
                             {assets.map((asset) => (
                               <SelectItem key={asset.id} value={asset.id.toString()}>
                                 {asset.name}
@@ -670,7 +670,7 @@ export default function ProblemTracking() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">None</SelectItem>
+                            <SelectItem value="none">None</SelectItem>
                             {assets.map(asset => (
                               <SelectItem key={asset.id} value={asset.id.toString()}>
                                 {asset.name}

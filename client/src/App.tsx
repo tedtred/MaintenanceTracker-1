@@ -22,6 +22,7 @@ import AdminPage from "@/pages/admin";
 import ProblemTracking from "@/pages/problem-tracking";
 import ProblemTrackingNew from "@/pages/problem-tracking-new";
 import ProblemTrackingAdmin from "@/pages/problem-tracking-admin";
+import ProblemTrackingAdminNew from "@/pages/problem-tracking-admin-new";
 
 function Router() {
   return (
@@ -39,7 +40,8 @@ function Router() {
       <ProtectedRoute path="/maintenance-analytics" component={MaintenanceAnalytics} />
       <ProtectedRoute path="/problem-tracking" component={ProblemTrackingNew} />
       <ProtectedRoute path="/problem-tracking-old" component={ProblemTracking} />
-      <ProtectedRoute path="/problem-tracking-admin" component={ProblemTrackingAdmin} />
+      <ProtectedRoute path="/problem-tracking-admin" component={ProblemTrackingAdminNew} />
+      <ProtectedRoute path="/problem-tracking-admin-old" component={ProblemTrackingAdmin} />
       <ProtectedRoute path="/admin" component={AdminPage} />
       <Route path="*">
         <NotFound />

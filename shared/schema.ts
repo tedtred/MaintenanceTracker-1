@@ -113,6 +113,7 @@ export const insertAssetSchema = createInsertSchema(assets)
     location: z.string().min(1, "Location is required"),
     status: z.string().min(1, "Status is required"),
     category: z.string().min(1, "Category is required"),
+    assetTag: z.string().optional(),
     modelNumber: z.string().optional(),
     serialNumber: z.string().optional(),
     manufacturer: z.string().optional(),

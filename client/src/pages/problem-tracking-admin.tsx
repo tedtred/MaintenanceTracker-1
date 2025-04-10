@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { usePermissions } from "@/hooks/use-permissions";
 import { ProblemButton } from "@shared/schema";
 import { HexColorPicker } from "react-colorful";
 import { useForm } from "react-hook-form";
@@ -51,6 +52,7 @@ import {
 export default function ProblemTrackingAdminNew() {
   const { toast } = useToast();
   const { user } = useAuth();
+  const { isAdmin } = usePermissions();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedButton, setSelectedButton] = useState<ProblemButton | null>(null);

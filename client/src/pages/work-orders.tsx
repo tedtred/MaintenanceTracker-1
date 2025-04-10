@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { insertWorkOrderSchema } from "@shared/schema";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLocation } from "wouter";
+import { usePermissions } from "@/hooks/use-permissions";
 
 // Import our modular data hooks
 import { useWorkOrders } from "@/hooks/use-work-order-data";
@@ -77,6 +78,7 @@ export default function WorkOrders() {
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const { toast } = useToast();
+  const { isAdmin } = usePermissions();
 
   // Use our modular hooks for data fetching and mutations
   const { 
@@ -613,36 +615,38 @@ export default function WorkOrders() {
                       />
                     </div>
                     <div className="pt-6 flex justify-between">
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button type="button" variant="destructive">
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This action cannot be undone. This will permanently delete this
-                              work order and all associated data.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDelete(selectedWorkOrder.id)}>
-                              {deleteWorkOrderMutation.isPending ? (
-                                <>
-                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                  Deleting...
-                                </>
-                              ) : (
-                                'Delete'
-                              )}
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                      {isAdmin && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button type="button" variant="destructive">
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete this
+                                work order and all associated data.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDelete(selectedWorkOrder.id)}>
+                                {deleteWorkOrderMutation.isPending ? (
+                                  <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Deleting...
+                                  </>
+                                ) : (
+                                  'Delete'
+                                )}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
                       <div className="flex gap-2">
                         <Button type="button" variant="outline" onClick={() => setIsDetailsDialogOpen(false)}>
                           Cancel

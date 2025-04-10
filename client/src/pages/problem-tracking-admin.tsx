@@ -607,6 +607,27 @@ export default function ProblemTrackingAdminNew() {
                           </FormItem>
                         )}
                       />
+                      
+                      <FormField
+                        control={createForm.control}
+                        name="skipDetailsForm"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between">
+                            <div className="space-y-0.5">
+                              <FormLabel>Skip Details Form</FormLabel>
+                              <FormDescription>
+                                Skip the details form when reporting this problem
+                              </FormDescription>
+                            </div>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
                     </div>
                   )}
                 </form>
@@ -916,6 +937,27 @@ export default function ProblemTrackingAdminNew() {
                               <FormLabel>Notify Maintenance</FormLabel>
                               <FormDescription>
                                 Send notification to maintenance team
+                              </FormDescription>
+                            </div>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={editForm.control}
+                        name="skipDetailsForm"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between">
+                            <div className="space-y-0.5">
+                              <FormLabel>Skip Details Form</FormLabel>
+                              <FormDescription>
+                                Skip the details form when reporting this problem
                               </FormDescription>
                             </div>
                             <FormControl>

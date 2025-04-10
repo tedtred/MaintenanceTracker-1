@@ -85,22 +85,35 @@ export default function WorkOrders() {
 
   const createMutation = useMutation({
     mutationFn: async (data: InsertWorkOrder) => {
-      const payload = {
-        ...data,
-        assignedTo: null,
-        assetId: null,
-        reportedDate: data.reportedDate.toISOString(),
-        completedDate: null,
-      };
-
-      const res = await apiRequest("POST", "/api/work-orders", payload);
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to create work order");
+      try {
+        console.log("Creating work order with data:", data);
+        
+        // Ensure proper date formatting
+        const payload = {
+          ...data,
+          assignedTo: null,
+          assetId: null,
+          reportedDate: data.reportedDate ? new Date(data.reportedDate).toISOString() : new Date().toISOString(),
+          completedDate: null,
+        };
+        
+        console.log("Formatted payload:", payload);
+        
+        const res = await apiRequest("POST", "/api/work-orders", payload);
+        if (!res.ok) {
+          const errorData = await res.json();
+          console.error("API error response:", errorData);
+          throw new Error(errorData.message || `Failed to create work order: ${res.statusText}`);
+        }
+        
+        return await res.json();
+      } catch (error) {
+        console.error("Error creating work order:", error);
+        throw error;
       }
-      return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Work order created successfully:", data);
       queryClient.invalidateQueries({ queryKey: ["/api/work-orders"] });
       setIsCreateDialogOpen(false);
       form.reset();
@@ -110,9 +123,10 @@ export default function WorkOrders() {
       });
     },
     onError: (error: Error) => {
+      console.error("Create mutation error:", error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to create work order",
         variant: "destructive",
       });
     },

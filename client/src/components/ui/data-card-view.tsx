@@ -14,11 +14,11 @@ export interface DataField {
 }
 
 interface DataCardViewProps<T> {
-  data: T[];
+  data: any[]; // Using any here to resolve typing issues with passed data
   fields: DataField[];
-  onRowClick?: (item: T) => void;
-  actions?: (item: T) => ReactNode;
-  keyField: keyof T;
+  onRowClick?: (item: any) => void;
+  actions?: (item: any) => ReactNode;
+  keyField: string;
   className?: string;
   emptyMessage?: string;
   isLoading?: boolean;

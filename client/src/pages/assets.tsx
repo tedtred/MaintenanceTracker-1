@@ -704,6 +704,19 @@ export default function Assets() {
                   </div>
                   <FormField
                     control={form.control}
+                    name="assetTag"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Asset Tag</FormLabel>
+                        <FormControl>
+                          <Input {...field} value={field.value || ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
                     name="serialNumber"
                     render={({ field }) => (
                       <FormItem>
@@ -867,19 +880,34 @@ export default function Assets() {
                             )}
                           />
                         </div>
-                        <FormField
-                          control={detailsForm.control}
-                          name="serialNumber"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Serial Number</FormLabel>
-                              <FormControl>
-                                <Input {...field} value={field.value || ""} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <FormField
+                            control={detailsForm.control}
+                            name="assetTag"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Asset Tag</FormLabel>
+                                <FormControl>
+                                  <Input {...field} value={field.value || ""} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={detailsForm.control}
+                            name="serialNumber"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Serial Number</FormLabel>
+                                <FormControl>
+                                  <Input {...field} value={field.value || ""} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
                         <div className="pt-6 flex justify-between">
                           <div>
                             {isAdmin && (

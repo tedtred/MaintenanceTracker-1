@@ -11,6 +11,7 @@ import AuthPage from "@/pages/auth-page";
 import Dashboard from "@/pages/dashboard";
 import DashboardNew from "@/pages/dashboard-new";
 import WorkOrders from "@/pages/work-orders";
+import WorkOrdersNew from "@/pages/work-orders-new";
 import WorkOrderDetails from "@/pages/work-order-details";
 import Assets from "@/pages/assets";
 import MaintenanceCalendar from "@/pages/maintenance-calendar";
@@ -26,7 +27,8 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       <ProtectedRoute path="/" component={DashboardNew} />
       <ProtectedRoute path="/dashboard-old" component={Dashboard} />
-      <ProtectedRoute path="/work-orders" component={WorkOrders} />
+      <ProtectedRoute path="/work-orders" component={WorkOrdersNew} />
+      <ProtectedRoute path="/work-orders-old" component={WorkOrders} />
       <ProtectedRoute path="/work-orders/:id" component={WorkOrderDetails} />
       <ProtectedRoute path="/assets" component={Assets} />
       <ProtectedRoute path="/maintenance-calendar" component={MaintenanceCalendar} />

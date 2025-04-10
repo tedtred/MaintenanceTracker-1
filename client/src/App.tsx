@@ -48,21 +48,14 @@ function HomeRedirect() {
       // Parse user permissions
       const userPermissions = JSON.parse(user.pagePermissions || '[]');
       
-      // Check if user has dashboard access
-      if (userPermissions.includes("dashboard")) {
-        setRedirectPath("/dashboard");
-        return;
-      }
-      
-      // If settings has role-based default landing pages configured
+      // Get user-specific default landing page from settings
       if (settings?.roleDefaultPages) {
         try {
           const defaultPages = JSON.parse(settings.roleDefaultPages || '{}');
-          const rolePage = defaultPages[user.role];
           
-          // If there's a default page for this role and user has access
-          if (rolePage && userPermissions.includes(rolePage)) {
-            setRedirectPath(`/${rolePage}`);
+          // Check if there's a role-specific default landing page
+          if (defaultPages[user.role] && userPermissions.includes(defaultPages[user.role])) {
+            setRedirectPath(`/${defaultPages[user.role]}`);
             return;
           }
         } catch (e) {
@@ -70,7 +63,13 @@ function HomeRedirect() {
         }
       }
       
-      // Fallback: Use first available permission as landing page
+      // Check if user has dashboard access as a fallback
+      if (userPermissions.includes("dashboard")) {
+        setRedirectPath("/dashboard");
+        return;
+      }
+      
+      // If no default page set or accessible, use first available permission
       if (userPermissions.length > 0) {
         setRedirectPath(`/${userPermissions[0]}`);
         return;

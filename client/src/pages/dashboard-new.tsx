@@ -410,16 +410,32 @@ export default function Dashboard() {
                     Latest maintenance tickets
                   </CardDescription>
                   <div className="flex mt-2 gap-2">
-                    <Badge className="cursor-pointer" variant="outline">
+                    <Badge 
+                      className="cursor-pointer" 
+                      variant={workOrderFilter === "all" ? "secondary" : "outline"}
+                      onClick={() => setWorkOrderFilter("all")}
+                    >
                       All
                     </Badge>
-                    <Badge className="cursor-pointer" variant="secondary">
+                    <Badge 
+                      className="cursor-pointer" 
+                      variant={workOrderFilter === "open" ? "secondary" : "outline"}
+                      onClick={() => setWorkOrderFilter("open")}
+                    >
                       Open
                     </Badge>
-                    <Badge className="cursor-pointer" variant="outline">
+                    <Badge 
+                      className="cursor-pointer" 
+                      variant={workOrderFilter === "in-progress" ? "secondary" : "outline"}
+                      onClick={() => setWorkOrderFilter("in-progress")}
+                    >
                       In Progress
                     </Badge>
-                    <Badge className="cursor-pointer" variant="outline">
+                    <Badge 
+                      className="cursor-pointer" 
+                      variant={workOrderFilter === "waiting" ? "secondary" : "outline"}
+                      onClick={() => setWorkOrderFilter("waiting")}
+                    >
                       Waiting
                     </Badge>
                   </div>

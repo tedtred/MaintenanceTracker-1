@@ -386,7 +386,7 @@ export default function Dashboard() {
                     {activeWorkOrders.length > 0 ? (
                       activeWorkOrders.slice(0, 10).map((wo) => (
                         <Link 
-                          href={`/work-order-details/${wo.id}`}
+                          href={`/work-orders/${wo.id}`}
                           key={wo.id}
                           className="block"
                         >

@@ -353,6 +353,7 @@ export const problemButtons = pgTable("problem_buttons", {
   defaultAssetId: integer("default_asset_id").references(() => assets.id),
   defaultAssignedTo: integer("default_assigned_to").references(() => users.id),
   notifyMaintenance: boolean("notify_maintenance").notNull().default(false),
+  skipDetailsForm: boolean("skip_details_form").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -385,6 +386,7 @@ export const insertProblemButtonSchema = createInsertSchema(problemButtons)
       z.number().int().positive()
     ]).optional(),
     notifyMaintenance: z.boolean().default(false),
+    skipDetailsForm: z.boolean().default(false),
   });
 
 // Problem Events schema to track reported problems

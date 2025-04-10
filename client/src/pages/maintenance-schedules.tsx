@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay, formatDistanceToNow } from "date-fns";
-import enUS from "date-fns/locale/en-US";
+import { enUS } from "date-fns/locale/en-US";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import {
   MaintenanceSchedule,
@@ -35,6 +35,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -200,7 +201,10 @@ export default function MaintenanceSchedules() {
     { enabled: isChangeLogDialogOpen && !!selectedSchedule }
   );
 
-  const form = useForm<InsertMaintenanceSchedule>({
+  // This form is no longer used - we're using createForm and editForm instead
+
+  // Create form for new schedules
+  const createForm = useForm<InsertMaintenanceSchedule>({
     resolver: zodResolver(insertMaintenanceScheduleSchema),
     defaultValues: {
       title: "",
@@ -209,18 +213,79 @@ export default function MaintenanceSchedules() {
       status: MaintenanceStatus.SCHEDULED,
       startDate: new Date(),
       endDate: null,
-      assetId: undefined, // This will force user to select an asset
+      assetId: undefined,
     },
   });
 
-  // Handle dialog close
-  const handleDialogChange = (open: boolean) => {
+  // Edit form for existing schedules
+  const editForm = useForm<InsertMaintenanceSchedule>({
+    resolver: zodResolver(insertMaintenanceScheduleSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      frequency: MaintenanceFrequency.MONTHLY,
+      status: MaintenanceStatus.SCHEDULED,
+      startDate: new Date(),
+      endDate: null,
+      assetId: undefined,
+    },
+  });
+
+  // Handle dialog close for create dialog
+  const handleCreateDialogChange = (open: boolean) => {
     if (!open) {
-      form.reset(); // Reset form when dialog closes
+      createForm.reset();
     }
     setIsCreateDialogOpen(open);
   };
 
+  // Handle dialog close for edit dialog
+  const handleEditDialogChange = (open: boolean) => {
+    if (!open) {
+      editForm.reset();
+      setSelectedSchedule(null);
+    }
+    setIsEditDialogOpen(open);
+  };
+
+  // Handle dialog close for change log dialog
+  const handleChangeLogDialogChange = (open: boolean) => {
+    if (!open) {
+      setSelectedSchedule(null);
+    }
+    setIsChangeLogDialogOpen(open);
+  };
+
+  // Open edit dialog with selected schedule
+  const openEditDialog = (schedule: MaintenanceSchedule) => {
+    setSelectedSchedule(schedule);
+    editForm.reset({
+      title: schedule.title,
+      description: schedule.description,
+      frequency: schedule.frequency,
+      status: schedule.status,
+      startDate: new Date(schedule.startDate),
+      endDate: schedule.endDate ? new Date(schedule.endDate) : null,
+      assetId: schedule.assetId,
+      affectsAssetStatus: schedule.affectsAssetStatus,
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  // Open change log dialog for selected schedule
+  const openChangeLogDialog = (schedule: MaintenanceSchedule) => {
+    setSelectedSchedule(schedule);
+    setIsChangeLogDialogOpen(true);
+  };
+
+  // Handle calendar event selection
+  const handleSelectEvent = (event: any) => {
+    if (event.resource) {
+      openEditDialog(event.resource);
+    }
+  };
+
+  // Convert schedules to calendar events
   const events = schedules.map((schedule) => ({
     id: schedule.id,
     title: schedule.title,
@@ -232,8 +297,8 @@ export default function MaintenanceSchedules() {
   return (
     <div className="flex h-screen">
       <SidebarNav />
-      <div className="w-full">
-        <div className="max-w-6xl mx-auto space-y-8">
+      <div className="w-full overflow-auto">
+        <div className="max-w-6xl mx-auto space-y-8 p-4">
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold">Maintenance Schedules</h1>
@@ -242,7 +307,7 @@ export default function MaintenanceSchedules() {
               </p>
             </div>
 
-            <Dialog open={isCreateDialogOpen} onOpenChange={handleDialogChange}>
+            <Dialog open={isCreateDialogOpen} onOpenChange={handleCreateDialogChange}>
               <DialogTrigger asChild>
                 <Button>Schedule Maintenance</Button>
               </DialogTrigger>
@@ -250,15 +315,15 @@ export default function MaintenanceSchedules() {
                 <DialogHeader>
                   <DialogTitle>Schedule New Maintenance</DialogTitle>
                 </DialogHeader>
-                <Form {...form}>
+                <Form {...createForm}>
                   <form
-                    onSubmit={form.handleSubmit((data) =>
-                      createMutation.mutate(data)
+                    onSubmit={createForm.handleSubmit((data) => 
+                      createScheduleMutation.mutate(data)
                     )}
                     className="space-y-4"
                   >
                     <FormField
-                      control={form.control}
+                      control={createForm.control}
                       name="title"
                       render={({ field }) => (
                         <FormItem>
@@ -271,7 +336,7 @@ export default function MaintenanceSchedules() {
                       )}
                     />
                     <FormField
-                      control={form.control}
+                      control={createForm.control}
                       name="description"
                       render={({ field }) => (
                         <FormItem>
@@ -284,7 +349,7 @@ export default function MaintenanceSchedules() {
                       )}
                     />
                     <FormField
-                      control={form.control}
+                      control={createForm.control}
                       name="assetId"
                       render={({ field }) => (
                         <FormItem>
@@ -314,7 +379,7 @@ export default function MaintenanceSchedules() {
                       )}
                     />
                     <FormField
-                      control={form.control}
+                      control={createForm.control}
                       name="frequency"
                       render={({ field }) => (
                         <FormItem>
@@ -342,7 +407,7 @@ export default function MaintenanceSchedules() {
                     />
                     <div className="grid grid-cols-2 gap-4">
                       <FormField
-                        control={form.control}
+                        control={createForm.control}
                         name="startDate"
                         render={({ field }) => (
                           <FormItem>
@@ -360,7 +425,7 @@ export default function MaintenanceSchedules() {
                         )}
                       />
                       <FormField
-                        control={form.control}
+                        control={createForm.control}
                         name="endDate"
                         render={({ field }) => (
                           <FormItem>
@@ -382,7 +447,7 @@ export default function MaintenanceSchedules() {
                       />
                     </div>
                     <FormField
-                      control={form.control}
+                      control={createForm.control}
                       name="status"
                       render={({ field }) => (
                         <FormItem>
@@ -411,7 +476,7 @@ export default function MaintenanceSchedules() {
                     <Button
                       type="submit"
                       className="w-full"
-                      disabled={createMutation.isPending}
+                      disabled={createScheduleMutation.isPending}
                     >
                       Schedule Maintenance
                     </Button>
@@ -421,6 +486,256 @@ export default function MaintenanceSchedules() {
             </Dialog>
           </div>
 
+          {/* Edit Schedule Dialog */}
+          <Dialog open={isEditDialogOpen} onOpenChange={handleEditDialogChange}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Edit Maintenance Schedule</DialogTitle>
+                <DialogDescription>
+                  Update maintenance schedule details. All changes will be logged.
+                </DialogDescription>
+              </DialogHeader>
+              
+              {selectedSchedule && (
+                <Form {...editForm}>
+                  <form
+                    onSubmit={editForm.handleSubmit((data) => {
+                      if (selectedSchedule) {
+                        updateScheduleMutation.mutate({
+                          id: selectedSchedule.id,
+                          updates: data,
+                        });
+                        setIsEditDialogOpen(false);
+                      }
+                    })}
+                    className="space-y-4"
+                  >
+                    <FormField
+                      control={editForm.control}
+                      name="title"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Title</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={editForm.control}
+                      name="description"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Description</FormLabel>
+                          <FormControl>
+                            <Textarea {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={editForm.control}
+                      name="assetId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Asset</FormLabel>
+                          <Select
+                            onValueChange={(value) => field.onChange(parseInt(value))}
+                            value={field.value?.toString()}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select asset" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {assets.map((asset) => (
+                                <SelectItem
+                                  key={asset.id}
+                                  value={asset.id.toString()}
+                                >
+                                  {asset.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={editForm.control}
+                        name="frequency"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Frequency</FormLabel>
+                            <Select
+                              onValueChange={field.onChange}
+                              value={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select frequency" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {Object.values(MaintenanceFrequency).map((freq) => (
+                                  <SelectItem key={freq} value={freq}>
+                                    {freq}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={editForm.control}
+                        name="status"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Status</FormLabel>
+                            <Select
+                              onValueChange={field.onChange}
+                              value={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select status" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {Object.values(MaintenanceStatus).map((status) => (
+                                  <SelectItem key={status} value={status}>
+                                    {status}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={editForm.control}
+                        name="startDate"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Start Date</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="datetime-local"
+                                {...field}
+                                value={field.value instanceof Date ? field.value.toISOString().slice(0, 16) : ''}
+                                onChange={(e) => field.onChange(new Date(e.target.value))}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={editForm.control}
+                        name="endDate"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>End Date (Optional)</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="datetime-local"
+                                {...field}
+                                value={field.value instanceof Date ? field.value.toISOString().slice(0, 16) : ''}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  field.onChange(value ? new Date(value) : null);
+                                }}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <FormField
+                      control={editForm.control}
+                      name="affectsAssetStatus"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                          <div className="space-y-0.5">
+                            <FormLabel>Affects Asset Status</FormLabel>
+                            <FormDescription>
+                              When maintenance is due, change asset status to "Maintenance"
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    <DialogFooter className="gap-2 sm:space-x-0">
+                      <Button
+                        variant="outline"
+                        type="button"
+                        onClick={() => openChangeLogDialog(selectedSchedule)}
+                      >
+                        View Change History
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        type="button"
+                        onClick={() => {
+                          if (confirm('Are you sure you want to delete this schedule?')) {
+                            deleteScheduleMutation.mutate(selectedSchedule.id);
+                            setIsEditDialogOpen(false);
+                          }
+                        }}
+                      >
+                        Delete
+                      </Button>
+                      <Button 
+                        type="submit"
+                        disabled={updateScheduleMutation.isPending}
+                      >
+                        Save Changes
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </Form>
+              )}
+            </DialogContent>
+          </Dialog>
+
+          {/* Change Log Dialog */}
+          <Dialog open={isChangeLogDialogOpen} onOpenChange={handleChangeLogDialogChange}>
+            <DialogContent className="max-w-3xl max-h-[80vh]">
+              <DialogHeader>
+                <DialogTitle>Change History</DialogTitle>
+                <DialogDescription>
+                  {selectedSchedule ? `Change history for "${selectedSchedule.title}"` : "Select a schedule to view change history"}
+                </DialogDescription>
+              </DialogHeader>
+              
+              {changeLogsQuery.isLoading ? (
+                <div className="flex justify-center items-center h-40">
+                  <p>Loading change history...</p>
+                </div>
+              ) : (
+                <ChangeLogList logs={changeLogsQuery.data || []} />
+              )}
+            </DialogContent>
+          </Dialog>
+
           <div className="h-[600px] bg-card rounded-lg p-4">
             <Calendar
               localizer={localizer}
@@ -428,6 +743,7 @@ export default function MaintenanceSchedules() {
               startAccessor="start"
               endAccessor="end"
               style={{ height: "100%" }}
+              onSelectEvent={handleSelectEvent}
             />
           </div>
         </div>

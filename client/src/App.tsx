@@ -18,6 +18,7 @@ import AssetsNew from "@/pages/assets-new";
 import MaintenanceCalendar from "@/pages/maintenance-calendar";
 import MaintenanceCalendarNew from "@/pages/maintenance-calendar-new";
 import MaintenanceAnalytics from "@/pages/maintenance-analytics";
+import MaintenanceAnalyticsNew from "@/pages/maintenance-analytics-new";
 import AdminPage from "@/pages/admin";
 import ProblemTracking from "@/pages/problem-tracking";
 import ProblemTrackingNew from "@/pages/problem-tracking-new";
@@ -37,7 +38,8 @@ function Router() {
       <ProtectedRoute path="/assets-old" component={Assets} />
       <ProtectedRoute path="/maintenance-calendar" component={MaintenanceCalendarNew} />
       <ProtectedRoute path="/maintenance-calendar-old" component={MaintenanceCalendar} />
-      <ProtectedRoute path="/maintenance-analytics" component={MaintenanceAnalytics} />
+      <ProtectedRoute path="/maintenance-analytics" component={MaintenanceAnalyticsNew} />
+      <ProtectedRoute path="/maintenance-analytics-old" component={MaintenanceAnalytics} />
       <ProtectedRoute path="/problem-tracking" component={ProblemTrackingNew} />
       <ProtectedRoute path="/problem-tracking-old" component={ProblemTracking} />
       <ProtectedRoute path="/problem-tracking-admin" component={ProblemTrackingAdminNew} />

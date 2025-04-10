@@ -86,11 +86,11 @@ export default function MaintenanceAnalytics() {
   const isLoading = isLoadingCompletions || isLoadingWorkOrders || isLoadingAssets;
 
   // Filter work orders based on time range
-  const filteredWorkOrders = workOrders.filter(wo => {
+  const filteredWorkOrders = Array.isArray(workOrders) ? workOrders.filter(wo => {
     const orderDate = new Date(wo.reportedDate);
     const daysAgo = differenceInDays(new Date(), orderDate);
     return daysAgo <= parseInt(timeRange);
-  });
+  }) : [];
 
   // Prepare data for monthly completion trend
   const last6Months = eachMonthOfInterval({
@@ -100,9 +100,9 @@ export default function MaintenanceAnalytics() {
 
   // Fix date handling in monthly completions data
   const monthlyCompletions = last6Months.map(month => {
-    const completions = maintenanceCompletions.filter(completion =>
+    const completions = Array.isArray(maintenanceCompletions) ? maintenanceCompletions.filter(completion =>
       startOfMonth(new Date(completion.completedDate)).getTime() === month.getTime()
-    );
+    ) : [];
 
     return {
       month: format(month, 'MMM yyyy'),
@@ -112,9 +112,9 @@ export default function MaintenanceAnalytics() {
   });
 
   // Work order metrics
-  const completedWorkOrders = workOrders.filter(wo =>
+  const completedWorkOrders = Array.isArray(workOrders) ? workOrders.filter(wo =>
     wo.status === WorkOrderStatus.COMPLETED && wo.completedDate && wo.reportedDate
-  );
+  ) : [];
 
   const averageCompletionTime = completedWorkOrders.reduce((acc, wo) => {
     const completionTime = new Date(wo.completedDate!).getTime() - new Date(wo.reportedDate).getTime();

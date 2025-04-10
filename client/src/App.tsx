@@ -14,6 +14,7 @@ import WorkOrders from "@/pages/work-orders";
 import WorkOrdersNew from "@/pages/work-orders-new";
 import WorkOrderDetails from "@/pages/work-order-details";
 import Assets from "@/pages/assets";
+import AssetsNew from "@/pages/assets-new";
 import MaintenanceCalendar from "@/pages/maintenance-calendar";
 import MaintenanceCalendarNew from "@/pages/maintenance-calendar-new";
 import MaintenanceAnalytics from "@/pages/maintenance-analytics";
@@ -30,9 +31,10 @@ function Router() {
       <ProtectedRoute path="/work-orders" component={WorkOrdersNew} />
       <ProtectedRoute path="/work-orders-old" component={WorkOrders} />
       <ProtectedRoute path="/work-orders/:id" component={WorkOrderDetails} />
-      <ProtectedRoute path="/assets" component={Assets} />
-      <ProtectedRoute path="/maintenance-calendar" component={MaintenanceCalendar} />
-      <ProtectedRoute path="/maintenance-calendar-new" component={MaintenanceCalendarNew} />
+      <ProtectedRoute path="/assets" component={AssetsNew} />
+      <ProtectedRoute path="/assets-old" component={Assets} />
+      <ProtectedRoute path="/maintenance-calendar" component={MaintenanceCalendarNew} />
+      <ProtectedRoute path="/maintenance-calendar-old" component={MaintenanceCalendar} />
       <ProtectedRoute path="/maintenance-analytics" component={MaintenanceAnalytics} />
       <ProtectedRoute path="/problem-tracking" component={ProblemTracking} />
       <ProtectedRoute path="/problem-tracking-admin" component={ProblemTrackingAdmin} />

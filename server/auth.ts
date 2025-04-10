@@ -200,4 +200,22 @@ export function setupAuth(app: Express) {
       res.status(500).json({ message: "Failed to update user permissions" });
     }
   });
+  
+  // Add endpoint for updating user's default landing page
+  app.patch("/api/admin/users/:id/default-landing-page", isAdmin, async (req, res) => {
+    const userId = parseInt(req.params.id);
+    const { defaultLandingPage } = req.body;
+
+    if (typeof defaultLandingPage !== 'string') {
+      return res.status(400).json({ message: "Default landing page must be a string" });
+    }
+
+    try {
+      // We need to add this method to the storage interface
+      const updatedUser = await storage.updateUserDefaultLandingPage(userId, defaultLandingPage);
+      res.json(updatedUser);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update user default landing page" });
+    }
+  });
 }

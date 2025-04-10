@@ -29,6 +29,7 @@ export interface IStorage {
   getAllUsers(): Promise<User[]>; 
   updateUserRole(userId: number, role: string): Promise<User>;
   updateUserPagePermissions(userId: number, permissions: string[]): Promise<User>; // Add page permissions method
+  updateUserDefaultLandingPage(userId: number, defaultLandingPage: string): Promise<User>; // Add default landing page method
   getPendingUsers(): Promise<User[]>;
   approveUser(userId: number): Promise<User>;
   deleteUser(userId: number): Promise<void>;

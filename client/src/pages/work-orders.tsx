@@ -77,9 +77,9 @@ export default function WorkOrders() {
   });
 
   // Filter work orders based on archived status
-  const filteredWorkOrders = workOrders.filter((wo) =>
+  const filteredWorkOrders = Array.isArray(workOrders) ? workOrders.filter((wo) =>
     showArchived ? true : wo.status !== WorkOrderStatus.ARCHIVED
-  );
+  ) : [];
 
   const createMutation = useMutation({
     mutationFn: async (data: InsertWorkOrder) => {

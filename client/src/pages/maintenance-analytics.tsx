@@ -154,7 +154,7 @@ export default function MaintenanceAnalytics() {
   const assetStatusData = Object.values(AssetStatus)
     .map(status => ({
       name: status,
-      value: assets.filter(asset => asset.status === status).length
+      value: Array.isArray(assets) ? assets.filter(asset => asset.status === status).length : 0
     }))
     .filter(item => item.value > 0);
 
@@ -185,8 +185,7 @@ export default function MaintenanceAnalytics() {
 
   return (
     <div className="flex h-screen">
-      <SidebarNav />
-      <div>
+      <div className="w-full">
         <div className="max-w-7xl mx-auto space-y-8">
           <div className="flex justify-between items-center">
             <div>

@@ -144,23 +144,23 @@ export default function Dashboard() {
   };
 
   // Get asset details by ID
-  const getAssetDetails = (assetId) => {
-    if (!assetsQuery.data) return null;
+  const getAssetDetails = (assetId: number) => {
+    if (!assetsQuery.data || !Array.isArray(assetsQuery.data)) return null;
     return assetsQuery.data.find((asset) => asset.id === assetId);
   };
 
   // Get asset name by ID (for display)
-  const getAssetName = (assetId) => {
+  const getAssetName = (assetId: number) => {
     const asset = getAssetDetails(assetId);
     return asset ? asset.name : "Unknown Asset";
   };
 
   // Get completion history for a schedule
-  const getCompletionHistory = (scheduleId) => {
-    if (!maintenanceCompletionsQuery.data) return [];
+  const getCompletionHistory = (scheduleId: number) => {
+    if (!maintenanceCompletionsQuery.data || !Array.isArray(maintenanceCompletionsQuery.data)) return [];
     return maintenanceCompletionsQuery.data
       .filter((completion) => completion.scheduleId === scheduleId)
-      .sort((a, b) => new Date(b.completedDate) - new Date(a.completedDate));
+      .sort((a, b) => new Date(b.completedDate).getTime() - new Date(a.completedDate).getTime());
   };
 
   // Check if data is loading

@@ -644,6 +644,34 @@ export default function ProblemTracking() {
           </Dialog>
         )}
         
+        {/* Quick Report Confirmation Dialog */}
+        <Dialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Confirm Problem Report</DialogTitle>
+              <DialogDescription>
+                {selectedButton ? `Are you sure you want to report ${selectedButton.label}?` : 'Confirm problem report'}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              <p>A problem report will be created with minimal details.</p>
+              {selectedButton?.createWorkOrder && (
+                <p className="mt-2 font-medium text-amber-600">
+                  This will automatically create a work order.
+                </p>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsConfirmOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleQuickReport}>
+                Confirm Report
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        
         {/* Resolution dialog */}
         {selectedEvent && (
           <Dialog open={!!selectedEvent} onOpenChange={(open) => !open && setSelectedEvent(null)}>

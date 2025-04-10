@@ -119,6 +119,9 @@ export default function Assets() {
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [isMaintenanceDialogOpen, setIsMaintenanceDialogOpen] = useState(false);
+  const [isEditMaintenanceDialogOpen, setIsEditMaintenanceDialogOpen] = useState(false);
+  const [isChangeLogDialogOpen, setIsChangeLogDialogOpen] = useState(false);
+  const [selectedSchedule, setSelectedSchedule] = useState<any | null>(null);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isImporting, setIsImporting] = useState(false);
@@ -139,6 +142,9 @@ export default function Assets() {
     createScheduleMutation,
     deleteScheduleMutation
   } = useMaintenanceSchedules();
+  
+  const { updateScheduleMutation } = useUpdateSchedule();
+  const { changeLogsQuery } = useMaintenanceChangeLogs();
 
   // Forms
   const assetFormSchema = z.object({
@@ -215,6 +221,20 @@ export default function Assets() {
       affectsAssetStatus: false,
     },
   });
+  
+  // Edit maintenance form
+  const editMaintenanceForm = useForm<z.infer<typeof maintenanceFormSchema>>({
+    resolver: zodResolver(maintenanceFormSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      status: "SCHEDULED",
+      frequency: LOCAL_MAINTENANCE_FREQUENCY.MONTHLY,
+      startDate: new Date(),
+      endDate: null,
+      affectsAssetStatus: false,
+    },
+  });
 
   // Update details form when asset is selected
   useEffect(() => {
@@ -235,6 +255,21 @@ export default function Assets() {
       maintenanceForm.setValue("startDate", new Date());
     }
   }, [isMaintenanceDialogOpen, selectedAsset, maintenanceForm]);
+  
+  // Populate edit maintenance form when a schedule is selected
+  useEffect(() => {
+    if (selectedSchedule && isEditMaintenanceDialogOpen) {
+      editMaintenanceForm.reset({
+        title: selectedSchedule.title,
+        description: selectedSchedule.description,
+        frequency: selectedSchedule.frequency,
+        status: selectedSchedule.status,
+        startDate: new Date(selectedSchedule.startDate),
+        endDate: selectedSchedule.endDate ? new Date(selectedSchedule.endDate) : null,
+        affectsAssetStatus: selectedSchedule.affectsAssetStatus,
+      });
+    }
+  }, [selectedSchedule, isEditMaintenanceDialogOpen, editMaintenanceForm]);
 
   // Handler functions
   const handleAssetClick = (asset: Asset) => {
@@ -312,6 +347,35 @@ export default function Assets() {
         });
       }
     });
+  };
+  
+  const handleUpdateMaintenanceSubmit = (data: z.infer<typeof maintenanceFormSchema>) => {
+    if (!selectedSchedule) return;
+    
+    updateScheduleMutation.mutate({
+      id: selectedSchedule.id,
+      updates: data
+    }, {
+      onSuccess: () => {
+        setIsEditMaintenanceDialogOpen(false);
+        toast({
+          title: "Success",
+          description: "Maintenance schedule updated successfully",
+        });
+      }
+    });
+  };
+  
+  const openEditDialog = (schedule: any) => {
+    if (isAdmin) {
+      setSelectedSchedule(schedule);
+      setIsEditMaintenanceDialogOpen(true);
+    }
+  };
+  
+  const openChangeLogDialog = (schedule: any) => {
+    setSelectedSchedule(schedule);
+    setIsChangeLogDialogOpen(true);
   };
 
   const handleDeleteSchedule = (scheduleId: number) => {
@@ -1006,48 +1070,107 @@ export default function Assets() {
                                       <Badge>{schedule.status}</Badge>
                                     </TableCell>
                                     <TableCell className="text-right">
-                                      {isAdmin && (
-                                        <AlertDialog>
-                                          <AlertDialogTrigger asChild>
-                                            <Button variant="ghost" size="sm">
-                                              <svg 
-                                                xmlns="http://www.w3.org/2000/svg" 
-                                                width="24" 
-                                                height="24" 
-                                                viewBox="0 0 24 24" 
-                                                fill="none" 
-                                                stroke="currentColor" 
-                                                strokeWidth="2" 
-                                                strokeLinecap="round" 
-                                                strokeLinejoin="round" 
+                                      <div className="flex justify-end gap-2">
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            openChangeLogDialog(schedule);
+                                          }}
+                                        >
+                                          <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="24"
+                                            height="24"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            className="h-4 w-4"
+                                          >
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                            <path d="M14 2v6h6"></path>
+                                            <path d="M16 13H8"></path>
+                                            <path d="M16 17H8"></path>
+                                            <path d="M10 9H8"></path>
+                                          </svg>
+                                          <span className="sr-only">History</span>
+                                        </Button>
+                                        
+                                        {isAdmin && (
+                                          <>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                openEditDialog(schedule);
+                                              }}
+                                            >
+                                              <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                width="24"
+                                                height="24"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                strokeWidth="2"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
                                                 className="h-4 w-4"
                                               >
-                                                <path d="M3 6h18"></path>
-                                                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                                                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-                                                <line x1="10" y1="11" x2="10" y2="17"></line>
-                                                <line x1="14" y1="11" x2="14" y2="17"></line>
+                                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                                               </svg>
-                                              <span className="sr-only">Delete</span>
+                                              <span className="sr-only">Edit</span>
                                             </Button>
-                                          </AlertDialogTrigger>
-                                          <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                              <AlertDialogTitle>Delete Maintenance Schedule</AlertDialogTitle>
-                                              <AlertDialogDescription>
-                                                Are you sure you want to delete this maintenance schedule?
-                                                This action cannot be undone.
-                                              </AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                              <AlertDialogAction onClick={() => handleDeleteSchedule(schedule.id)}>
-                                                Delete
-                                              </AlertDialogAction>
-                                            </AlertDialogFooter>
-                                          </AlertDialogContent>
-                                        </AlertDialog>
-                                      )}
+                                        
+                                            <AlertDialog>
+                                              <AlertDialogTrigger asChild>
+                                                <Button variant="ghost" size="sm">
+                                                  <svg 
+                                                    xmlns="http://www.w3.org/2000/svg" 
+                                                    width="24" 
+                                                    height="24" 
+                                                    viewBox="0 0 24 24" 
+                                                    fill="none" 
+                                                    stroke="currentColor" 
+                                                    strokeWidth="2" 
+                                                    strokeLinecap="round" 
+                                                    strokeLinejoin="round" 
+                                                    className="h-4 w-4"
+                                                  >
+                                                    <path d="M3 6h18"></path>
+                                                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                                                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                                                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                                                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                                                  </svg>
+                                                  <span className="sr-only">Delete</span>
+                                                </Button>
+                                              </AlertDialogTrigger>
+                                              <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                  <AlertDialogTitle>Delete Maintenance Schedule</AlertDialogTitle>
+                                                  <AlertDialogDescription>
+                                                    Are you sure you want to delete this maintenance schedule?
+                                                    This action cannot be undone.
+                                                  </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                  <AlertDialogAction onClick={() => handleDeleteSchedule(schedule.id)}>
+                                                    Delete
+                                                  </AlertDialogAction>
+                                                </AlertDialogFooter>
+                                              </AlertDialogContent>
+                                            </AlertDialog>
+                                          </>
+                                        )}
+                                      </div>
                                     </TableCell>
                                   </TableRow>
                                 ))
@@ -1222,6 +1345,264 @@ export default function Assets() {
                     </div>
                   </form>
                 </Form>
+              </DialogContent>
+            </Dialog>
+          )}
+          
+          {/* Edit Maintenance Dialog */}
+          {selectedSchedule && (
+            <Dialog open={isEditMaintenanceDialogOpen} onOpenChange={setIsEditMaintenanceDialogOpen}>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Edit Maintenance Schedule</DialogTitle>
+                  <DialogDescription>
+                    Update the maintenance schedule details
+                  </DialogDescription>
+                </DialogHeader>
+                <Form {...updateMaintenanceForm}>
+                  <form onSubmit={updateMaintenanceForm.handleSubmit(handleUpdateMaintenanceSubmit)} className="space-y-4">
+                    <FormField
+                      control={updateMaintenanceForm.control}
+                      name="title"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Title *</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={updateMaintenanceForm.control}
+                      name="description"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Description</FormLabel>
+                          <FormControl>
+                            <Textarea {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={updateMaintenanceForm.control}
+                      name="frequency"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Frequency *</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select frequency" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value={LOCAL_MAINTENANCE_FREQUENCY.DAILY}>Daily</SelectItem>
+                              <SelectItem value={LOCAL_MAINTENANCE_FREQUENCY.WEEKLY}>Weekly</SelectItem>
+                              <SelectItem value={LOCAL_MAINTENANCE_FREQUENCY.BI_WEEKLY}>Bi-Weekly</SelectItem>
+                              <SelectItem value={LOCAL_MAINTENANCE_FREQUENCY.MONTHLY}>Monthly</SelectItem>
+                              <SelectItem value={LOCAL_MAINTENANCE_FREQUENCY.BI_MONTHLY}>Bi-Monthly</SelectItem>
+                              <SelectItem value={LOCAL_MAINTENANCE_FREQUENCY.QUARTERLY}>Quarterly</SelectItem>
+                              <SelectItem value={LOCAL_MAINTENANCE_FREQUENCY.SEMI_ANNUAL}>Semi-Annually</SelectItem>
+                              <SelectItem value={LOCAL_MAINTENANCE_FREQUENCY.YEARLY}>Yearly</SelectItem>
+                              <SelectItem value={LOCAL_MAINTENANCE_FREQUENCY.EIGHTEEN_MONTHS}>18 Months</SelectItem>
+                              <SelectItem value={LOCAL_MAINTENANCE_FREQUENCY.TWO_YEAR}>2 Years</SelectItem>
+                              <SelectItem value={LOCAL_MAINTENANCE_FREQUENCY.THREE_YEAR}>3 Years</SelectItem>
+                              <SelectItem value={LOCAL_MAINTENANCE_FREQUENCY.FIVE_YEAR}>5 Years</SelectItem>
+                              <SelectItem value={LOCAL_MAINTENANCE_FREQUENCY.CUSTOM}>Custom</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={updateMaintenanceForm.control}
+                      name="status"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Status *</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select status" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value={LOCAL_MAINTENANCE_STATUS.SCHEDULED}>Scheduled</SelectItem>
+                              <SelectItem value={LOCAL_MAINTENANCE_STATUS.COMPLETED}>Completed</SelectItem>
+                              <SelectItem value={LOCAL_MAINTENANCE_STATUS.OVERDUE}>Overdue</SelectItem>
+                              <SelectItem value={LOCAL_MAINTENANCE_STATUS.CANCELLED}>Cancelled</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={updateMaintenanceForm.control}
+                      name="startDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Start Date *</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="date"
+                              value={field.value ? format(field.value, "yyyy-MM-dd") : ""}
+                              onChange={(e) => {
+                                const date = e.target.value
+                                  ? new Date(e.target.value)
+                                  : new Date();
+                                field.onChange(date);
+                              }}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={updateMaintenanceForm.control}
+                      name="endDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>End Date (Optional)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="date"
+                              value={field.value ? format(field.value, "yyyy-MM-dd") : ""}
+                              onChange={(e) => {
+                                const date = e.target.value
+                                  ? new Date(e.target.value)
+                                  : null;
+                                field.onChange(date);
+                              }}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={updateMaintenanceForm.control}
+                      name="affectsAssetStatus"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>
+                              Update Asset Status
+                            </FormLabel>
+                            <FormDescription>
+                              When overdue, set asset status to "Needs Maintenance"
+                            </FormDescription>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                    <div className="pt-3 flex justify-end gap-2">
+                      <Button type="button" variant="outline" onClick={() => setIsEditMaintenanceDialogOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={() => {
+                          setIsEditMaintenanceDialogOpen(false);
+                          setIsChangeLogDialogOpen(true);
+                        }}
+                        className="mr-auto"
+                      >
+                        View History
+                      </Button>
+                      <Button type="submit" disabled={updateScheduleMutation.isPending}>
+                        {updateScheduleMutation.isPending ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Updating...
+                          </>
+                        ) : (
+                          'Update Schedule'
+                        )}
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
+          )}
+          
+          {/* Change Log Dialog */}
+          {selectedSchedule && (
+            <Dialog open={isChangeLogDialogOpen} onOpenChange={setIsChangeLogDialogOpen}>
+              <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Maintenance Schedule Change History</DialogTitle>
+                  <DialogDescription>
+                    View the history of changes for this maintenance schedule
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-lg font-medium">{selectedSchedule.title}</h3>
+                    <p className="text-sm text-muted-foreground">Current status: {selectedSchedule.status}</p>
+                  </div>
+                  
+                  {changeLogsQuery.isLoading ? (
+                    <div className="flex justify-center p-4">
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                    </div>
+                  ) : changeLogsQuery.data && changeLogsQuery.data.length > 0 ? (
+                    <div className="border rounded-md overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Changed By</TableHead>
+                            <TableHead>Field</TableHead>
+                            <TableHead>Old Value</TableHead>
+                            <TableHead>New Value</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {changeLogsQuery.data
+                            .filter(log => log.scheduleId === selectedSchedule.id)
+                            .sort((a, b) => new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime())
+                            .map((log) => (
+                              <TableRow key={log.id}>
+                                <TableCell>{format(new Date(log.changedAt), "MMM dd, yyyy HH:mm")}</TableCell>
+                                <TableCell>{log.changedBy ? `User #${log.changedBy}` : "System"}</TableCell>
+                                <TableCell className="font-medium">
+                                  {log.fieldName ? 
+                                    log.fieldName.charAt(0).toUpperCase() + log.fieldName.slice(1).replace(/([A-Z])/g, ' $1') 
+                                    : log.changeType}
+                                </TableCell>
+                                <TableCell>{formatLogValue(log.oldValue)}</TableCell>
+                                <TableCell>{formatLogValue(log.newValue)}</TableCell>
+                              </TableRow>
+                            ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  ) : (
+                    <div className="text-center p-4 text-muted-foreground">
+                      No change history found for this schedule
+                    </div>
+                  )}
+                  
+                  <div className="flex justify-end">
+                    <Button onClick={() => setIsChangeLogDialogOpen(false)}>Close</Button>
+                  </div>
+                </div>
               </DialogContent>
             </Dialog>
           )}

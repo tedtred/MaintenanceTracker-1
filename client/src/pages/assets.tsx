@@ -180,7 +180,10 @@ export default function Assets() {
   } = useMaintenanceSchedules();
   
   const { updateScheduleMutation } = useUpdateSchedule();
-  const { changeLogsQuery } = useMaintenanceChangeLogs();
+  const { changeLogsQuery } = useMaintenanceChangeLogs(
+    selectedSchedule?.id || 0,
+    { enabled: selectedSchedule !== null }
+  );
 
   // Forms
   const assetFormSchema = z.object({

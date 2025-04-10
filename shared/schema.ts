@@ -237,11 +237,19 @@ export type InsertMaintenanceCompletion = z.infer<typeof insertMaintenanceComple
 export const MaintenanceFrequency = {
   DAILY: "DAILY",
   WEEKLY: "WEEKLY",
+  BI_WEEKLY: "BI_WEEKLY",
   MONTHLY: "MONTHLY",
+  BI_MONTHLY: "BI_MONTHLY",
   QUARTERLY: "QUARTERLY",
-  BIANNUAL: "BI_ANNUAL",
+  SEMI_ANNUAL: "SEMI_ANNUAL",
+  BIANNUAL: "BI_ANNUAL", // Kept for backward compatibility
   YEARLY: "YEARLY",
+  ANNUAL: "ANNUAL", // Alias for YEARLY
+  EIGHTEEN_MONTHS: "EIGHTEEN_MONTHS",
   TWO_YEAR: "TWO_YEAR",
+  THREE_YEAR: "THREE_YEAR",
+  FIVE_YEAR: "FIVE_YEAR",
+  CUSTOM: "CUSTOM",
 } as const;
 
 export const MaintenanceStatus = {

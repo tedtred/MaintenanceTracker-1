@@ -505,12 +505,18 @@ export default function MaintenanceCalendar() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Frequencies</SelectItem>
-                        <SelectItem value="DAILY">Daily</SelectItem>
-                        <SelectItem value="WEEKLY">Weekly</SelectItem>
-                        <SelectItem value="MONTHLY">Monthly</SelectItem>
-                        <SelectItem value="QUARTERLY">Quarterly</SelectItem>
-                        <SelectItem value="SEMI_ANNUALLY">Semi-Annually</SelectItem>
-                        <SelectItem value="YEARLY">Annually</SelectItem>
+                        <SelectItem value={MaintenanceFrequency.DAILY}>Daily</SelectItem>
+                        <SelectItem value={MaintenanceFrequency.WEEKLY}>Weekly</SelectItem>
+                        <SelectItem value={MaintenanceFrequency.BI_WEEKLY}>Bi-Weekly</SelectItem>
+                        <SelectItem value={MaintenanceFrequency.MONTHLY}>Monthly</SelectItem>
+                        <SelectItem value={MaintenanceFrequency.BI_MONTHLY}>Bi-Monthly</SelectItem>
+                        <SelectItem value={MaintenanceFrequency.QUARTERLY}>Quarterly</SelectItem>
+                        <SelectItem value={MaintenanceFrequency.SEMI_ANNUAL}>Semi-Annually</SelectItem>
+                        <SelectItem value={MaintenanceFrequency.YEARLY}>Yearly</SelectItem>
+                        <SelectItem value={MaintenanceFrequency.EIGHTEEN_MONTHS}>18 Months</SelectItem>
+                        <SelectItem value={MaintenanceFrequency.TWO_YEAR}>2 Years</SelectItem>
+                        <SelectItem value={MaintenanceFrequency.THREE_YEAR}>3 Years</SelectItem>
+                        <SelectItem value={MaintenanceFrequency.FIVE_YEAR}>5 Years</SelectItem>
                       </SelectContent>
                     </Select>
                     <ScrollArea className="h-[400px] pr-4">

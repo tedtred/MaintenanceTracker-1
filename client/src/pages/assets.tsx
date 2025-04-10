@@ -89,10 +89,19 @@ const LOCAL_ASSET_CATEGORY = {
 const LOCAL_MAINTENANCE_FREQUENCY = {
   DAILY: MaintenanceFrequency.DAILY,
   WEEKLY: MaintenanceFrequency.WEEKLY,
+  BI_WEEKLY: MaintenanceFrequency.BI_WEEKLY,
   MONTHLY: MaintenanceFrequency.MONTHLY,
+  BI_MONTHLY: MaintenanceFrequency.BI_MONTHLY,
   QUARTERLY: MaintenanceFrequency.QUARTERLY,
-  BIANNUAL: MaintenanceFrequency.BIANNUAL,
-  YEARLY: MaintenanceFrequency.YEARLY
+  SEMI_ANNUAL: MaintenanceFrequency.SEMI_ANNUAL,
+  BIANNUAL: MaintenanceFrequency.BIANNUAL, // Kept for backward compatibility
+  YEARLY: MaintenanceFrequency.YEARLY,
+  ANNUAL: MaintenanceFrequency.ANNUAL, // Alias for YEARLY 
+  EIGHTEEN_MONTHS: MaintenanceFrequency.EIGHTEEN_MONTHS,
+  TWO_YEAR: MaintenanceFrequency.TWO_YEAR,
+  THREE_YEAR: MaintenanceFrequency.THREE_YEAR,
+  FIVE_YEAR: MaintenanceFrequency.FIVE_YEAR,
+  CUSTOM: MaintenanceFrequency.CUSTOM
 };
 
 export default function Assets() {
@@ -1109,10 +1118,17 @@ export default function Assets() {
                             <SelectContent>
                               <SelectItem value={LOCAL_MAINTENANCE_FREQUENCY.DAILY}>Daily</SelectItem>
                               <SelectItem value={LOCAL_MAINTENANCE_FREQUENCY.WEEKLY}>Weekly</SelectItem>
+                              <SelectItem value={LOCAL_MAINTENANCE_FREQUENCY.BI_WEEKLY}>Bi-Weekly</SelectItem>
                               <SelectItem value={LOCAL_MAINTENANCE_FREQUENCY.MONTHLY}>Monthly</SelectItem>
+                              <SelectItem value={LOCAL_MAINTENANCE_FREQUENCY.BI_MONTHLY}>Bi-Monthly</SelectItem>
                               <SelectItem value={LOCAL_MAINTENANCE_FREQUENCY.QUARTERLY}>Quarterly</SelectItem>
-                              <SelectItem value={LOCAL_MAINTENANCE_FREQUENCY.BIANNUAL}>Semi-Annually</SelectItem>
+                              <SelectItem value={LOCAL_MAINTENANCE_FREQUENCY.SEMI_ANNUAL}>Semi-Annually</SelectItem>
                               <SelectItem value={LOCAL_MAINTENANCE_FREQUENCY.YEARLY}>Yearly</SelectItem>
+                              <SelectItem value={LOCAL_MAINTENANCE_FREQUENCY.EIGHTEEN_MONTHS}>18 Months</SelectItem>
+                              <SelectItem value={LOCAL_MAINTENANCE_FREQUENCY.TWO_YEAR}>2 Years</SelectItem>
+                              <SelectItem value={LOCAL_MAINTENANCE_FREQUENCY.THREE_YEAR}>3 Years</SelectItem>
+                              <SelectItem value={LOCAL_MAINTENANCE_FREQUENCY.FIVE_YEAR}>5 Years</SelectItem>
+                              <SelectItem value={LOCAL_MAINTENANCE_FREQUENCY.CUSTOM}>Custom</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />

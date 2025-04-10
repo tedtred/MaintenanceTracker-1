@@ -123,7 +123,7 @@ const generateRecurringEvents = (
       case MaintenanceFrequency.QUARTERLY:
         currentDate = addMonths(currentDate, 3);
         break;
-      case MaintenanceFrequency.SEMI_ANNUALLY:
+      case MaintenanceFrequency.SEMI_ANNUAL:
         currentDate = addMonths(currentDate, 6);
         break;
       case MaintenanceFrequency.YEARLY:
@@ -311,7 +311,7 @@ export default function MaintenanceCalendar() {
       completeMaintenanceMutation.mutate({
         scheduleId: selectedEvent.resource.id,
         completedDate: new Date(),
-        notes: form.getValues().notes || null,
+        notes: form.getValues().notes || undefined,
       });
       setIsCompleteDialogOpen(false);
     }
@@ -401,23 +401,38 @@ export default function MaintenanceCalendar() {
                           <span>
                             {selectedFrequency === 'all' 
                               ? 'All Frequencies' 
-                              : selectedFrequency === 'DAILY' ? 'Daily'
-                              : selectedFrequency === 'WEEKLY' ? 'Weekly'
-                              : selectedFrequency === 'MONTHLY' ? 'Monthly'
-                              : selectedFrequency === 'QUARTERLY' ? 'Quarterly'
-                              : selectedFrequency === 'SEMI_ANNUALLY' ? 'Semi-Annually'
-                              : 'Annually'
+                              : selectedFrequency === MaintenanceFrequency.DAILY ? 'Daily'
+                              : selectedFrequency === MaintenanceFrequency.WEEKLY ? 'Weekly'
+                              : selectedFrequency === MaintenanceFrequency.BI_WEEKLY ? 'Bi-Weekly'
+                              : selectedFrequency === MaintenanceFrequency.MONTHLY ? 'Monthly'
+                              : selectedFrequency === MaintenanceFrequency.BI_MONTHLY ? 'Bi-Monthly'
+                              : selectedFrequency === MaintenanceFrequency.QUARTERLY ? 'Quarterly'
+                              : selectedFrequency === MaintenanceFrequency.SEMI_ANNUAL ? 'Semi-Annually'
+                              : selectedFrequency === MaintenanceFrequency.YEARLY ? 'Annually'
+                              : selectedFrequency === MaintenanceFrequency.EIGHTEEN_MONTHS ? '18 Months'
+                              : selectedFrequency === MaintenanceFrequency.TWO_YEAR ? '2 Years'
+                              : selectedFrequency === MaintenanceFrequency.THREE_YEAR ? '3 Years'
+                              : selectedFrequency === MaintenanceFrequency.FIVE_YEAR ? '5 Years'
+                              : selectedFrequency === MaintenanceFrequency.CUSTOM ? 'Custom'
+                              : 'Unknown Frequency'
                             }
                           </span>
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">All Frequencies</SelectItem>
-                          <SelectItem value="DAILY">Daily</SelectItem>
-                          <SelectItem value="WEEKLY">Weekly</SelectItem>
-                          <SelectItem value="MONTHLY">Monthly</SelectItem>
-                          <SelectItem value="QUARTERLY">Quarterly</SelectItem>
-                          <SelectItem value="SEMI_ANNUALLY">Semi-Annually</SelectItem>
-                          <SelectItem value="YEARLY">Annually</SelectItem>
+                          <SelectItem value={MaintenanceFrequency.DAILY}>Daily</SelectItem>
+                          <SelectItem value={MaintenanceFrequency.WEEKLY}>Weekly</SelectItem>
+                          <SelectItem value={MaintenanceFrequency.BI_WEEKLY}>Bi-Weekly</SelectItem>
+                          <SelectItem value={MaintenanceFrequency.MONTHLY}>Monthly</SelectItem>
+                          <SelectItem value={MaintenanceFrequency.BI_MONTHLY}>Bi-Monthly</SelectItem>
+                          <SelectItem value={MaintenanceFrequency.QUARTERLY}>Quarterly</SelectItem>
+                          <SelectItem value={MaintenanceFrequency.SEMI_ANNUAL}>Semi-Annually</SelectItem>
+                          <SelectItem value={MaintenanceFrequency.YEARLY}>Annually</SelectItem>
+                          <SelectItem value={MaintenanceFrequency.EIGHTEEN_MONTHS}>18 Months</SelectItem>
+                          <SelectItem value={MaintenanceFrequency.TWO_YEAR}>2 Years</SelectItem>
+                          <SelectItem value={MaintenanceFrequency.THREE_YEAR}>3 Years</SelectItem>
+                          <SelectItem value={MaintenanceFrequency.FIVE_YEAR}>5 Years</SelectItem>
+                          <SelectItem value={MaintenanceFrequency.CUSTOM}>Custom</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -494,12 +509,20 @@ export default function MaintenanceCalendar() {
                         <span>
                           {selectedFrequency === 'all' 
                             ? 'All Frequencies' 
-                            : selectedFrequency === 'DAILY' ? 'Daily'
-                            : selectedFrequency === 'WEEKLY' ? 'Weekly'
-                            : selectedFrequency === 'MONTHLY' ? 'Monthly'
-                            : selectedFrequency === 'QUARTERLY' ? 'Quarterly'
-                            : selectedFrequency === 'SEMI_ANNUALLY' ? 'Semi-Annually'
-                            : 'Annually'
+                            : selectedFrequency === MaintenanceFrequency.DAILY ? 'Daily'
+                            : selectedFrequency === MaintenanceFrequency.WEEKLY ? 'Weekly'
+                            : selectedFrequency === MaintenanceFrequency.BI_WEEKLY ? 'Bi-Weekly'
+                            : selectedFrequency === MaintenanceFrequency.MONTHLY ? 'Monthly'
+                            : selectedFrequency === MaintenanceFrequency.BI_MONTHLY ? 'Bi-Monthly'
+                            : selectedFrequency === MaintenanceFrequency.QUARTERLY ? 'Quarterly'
+                            : selectedFrequency === MaintenanceFrequency.SEMI_ANNUAL ? 'Semi-Annually'
+                            : selectedFrequency === MaintenanceFrequency.YEARLY || selectedFrequency === MaintenanceFrequency.ANNUAL ? 'Yearly'
+                            : selectedFrequency === MaintenanceFrequency.EIGHTEEN_MONTHS ? '18 Months'
+                            : selectedFrequency === MaintenanceFrequency.TWO_YEAR ? '2 Years'
+                            : selectedFrequency === MaintenanceFrequency.THREE_YEAR ? '3 Years'
+                            : selectedFrequency === MaintenanceFrequency.FIVE_YEAR ? '5 Years'
+                            : selectedFrequency === MaintenanceFrequency.CUSTOM ? 'Custom'
+                            : 'All Frequencies'
                           }
                         </span>
                       </SelectTrigger>
@@ -517,6 +540,7 @@ export default function MaintenanceCalendar() {
                         <SelectItem value={MaintenanceFrequency.TWO_YEAR}>2 Years</SelectItem>
                         <SelectItem value={MaintenanceFrequency.THREE_YEAR}>3 Years</SelectItem>
                         <SelectItem value={MaintenanceFrequency.FIVE_YEAR}>5 Years</SelectItem>
+                        <SelectItem value={MaintenanceFrequency.CUSTOM}>Custom</SelectItem>
                       </SelectContent>
                     </Select>
                     <ScrollArea className="h-[400px] pr-4">
@@ -603,9 +627,9 @@ export default function MaintenanceCalendar() {
                           <p className={selectedEvent.resource.isOverdue ? "text-destructive" : ""}>
                             {selectedEvent.resource.isOverdue 
                               ? selectedEvent.resource.status 
-                              : selectedEvent.resource.status === MaintenanceFrequency.SCHEDULED
+                              : selectedEvent.resource.status === MaintenanceStatus.SCHEDULED
                               ? 'Scheduled'
-                              : selectedEvent.resource.status === MaintenanceFrequency.IN_PROGRESS
+                              : selectedEvent.resource.status === MaintenanceStatus.IN_PROGRESS
                               ? 'In progress'
                               : 'Ongoing'}
                           </p>

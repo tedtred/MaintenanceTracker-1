@@ -1,5 +1,17 @@
 import React from "react";
 import { UseQueryResult } from "@tanstack/react-query";
+import { DockerConnectionError } from './docker-connection-error';
+import { ConnectionError } from '@/lib/api-error';
+
+// Helper component to handle Docker connection error display
+function DockerConnectionErrorWrapper({ errors }: { errors: (Error | null)[] }) {
+  // Find the first connection error to display
+  const connectionError = errors.find(
+    err => err && err instanceof ConnectionError
+  ) as ConnectionError | undefined;
+  
+  return <DockerConnectionError error={connectionError || null} />;
+}
 
 interface DataLoaderProps<T> {
   isLoading: boolean;
@@ -38,7 +50,13 @@ export function DataLoader<T>({
     return errorComponent ? (
       <>{errorComponent(error)}</>
     ) : (
-      <div className="flex h-[50vh] items-center justify-center">
+      <div className="flex flex-col h-[50vh] items-center justify-center">
+        {/* Display Docker connection error if relevant */}
+        {error && error.name === 'ConnectionError' && (
+          <div className="w-full max-w-3xl mb-4">
+            <DockerConnectionError error={error instanceof ConnectionError ? error : null} />
+          </div>
+        )}
         <div className="bg-destructive/10 text-destructive p-4 rounded-md max-w-md">
           <h3 className="font-semibold mb-2">Error Loading Data</h3>
           <p>{error?.message || "An unexpected error occurred"}</p>
@@ -95,10 +113,12 @@ export function MultiQueryLoader({
       <>{errorComponent(errors)}</>
     ) : (
       <div className="flex flex-col h-[50vh] items-center justify-center">
-        {/* Import and render the Docker connection error if relevant */}
+        {/* Display Docker connection error if relevant */}
         {errors.some(err => err && err.name === 'ConnectionError') && (
           <div className="w-full max-w-3xl mb-4">
-            <DockerConnectionErrorWrapper errors={errors} />
+            <DockerConnectionError 
+              error={errors.find(err => err && err instanceof ConnectionError) || null} 
+            />
           </div>
         )}
         <div className="bg-destructive/10 text-destructive p-4 rounded-md max-w-md">

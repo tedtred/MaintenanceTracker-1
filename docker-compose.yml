@@ -13,6 +13,8 @@ services:
       - HOST=0.0.0.0
       - PORT=5000
       - IS_DOCKER=true
+      # Allow connections from any hostname (needed for IP-based access)
+      - ALLOW_ORIGIN=*
       # Set FORCE_DB_REBUILD=true for initial deployment, then set to false after first successful deployment
       # WARNING: Setting this to true will erase all database data
       - FORCE_DB_REBUILD=false

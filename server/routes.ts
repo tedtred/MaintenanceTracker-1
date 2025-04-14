@@ -14,6 +14,7 @@ import { setupEnvironmentRoutes } from "./routes/environment";
 import path from "path";
 import express from "express";
 import fs from 'fs'; //Import fs module
+import cors from 'cors';
 
 function handleZodError(error: ZodError) {
   const errors: Record<string, string[]> = {};

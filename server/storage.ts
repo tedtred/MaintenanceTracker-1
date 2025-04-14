@@ -435,27 +435,138 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getMaintenanceSchedules(): Promise<MaintenanceSchedule[]> {
-    return await db.select().from(maintenanceSchedules);
+    try {
+      const schedules = await db.select().from(maintenanceSchedules);
+      // Add default value for affectsAssetStatus if it doesn't exist in the database
+      return schedules.map(schedule => ({
+        ...schedule,
+        affectsAssetStatus: schedule.affectsAssetStatus === undefined ? false : schedule.affectsAssetStatus,
+      }));
+    } catch (error) {
+      console.error('Error fetching maintenance schedules:', error);
+      // Try raw query as fallback if schema issues
+      try {
+        const result = await db.execute(`
+          SELECT id, title, description, asset_id as "assetId", 
+                 start_date as "startDate", end_date as "endDate", 
+                 frequency, last_completed as "lastCompleted", status,
+                 FALSE as "affectsAssetStatus"
+          FROM maintenance_schedules
+        `);
+        return result.rows;
+      } catch (fallbackError) {
+        console.error('Fallback query also failed:', fallbackError);
+        throw error; // Throw the original error
+      }
+    }
   }
 
   async getMaintenanceSchedulesByDateRange(start: Date, end: Date): Promise<MaintenanceSchedule[]> {
-    return await db
-      .select()
-      .from(maintenanceSchedules)
-      .where(
-        and(
-          gte(maintenanceSchedules.startDate, start),
-          lte(maintenanceSchedules.endDate, end)
-        )
-      );
+    try {
+      const schedules = await db
+        .select()
+        .from(maintenanceSchedules)
+        .where(
+          and(
+            gte(maintenanceSchedules.startDate, start),
+            lte(maintenanceSchedules.endDate, end)
+          )
+        );
+      
+      // Add default value for affectsAssetStatus if it doesn't exist in the database
+      return schedules.map(schedule => ({
+        ...schedule,
+        affectsAssetStatus: schedule.affectsAssetStatus === undefined ? false : schedule.affectsAssetStatus,
+      }));
+    } catch (error) {
+      console.error('Error fetching maintenance schedules by date range:', error);
+      // Try raw query as fallback if schema issues
+      try {
+        const startDate = start instanceof Date ? start.toISOString() : start;
+        const endDate = end instanceof Date ? end.toISOString() : end;
+        
+        const result = await pool.query(`
+          SELECT id, title, description, asset_id as "assetId", 
+                 start_date as "startDate", end_date as "endDate", 
+                 frequency, last_completed as "lastCompleted", status,
+                 FALSE as "affectsAssetStatus"
+          FROM maintenance_schedules
+          WHERE start_date >= $1 AND end_date <= $2
+        `, [startDate, endDate]);
+        
+        // Convert result to proper MaintenanceSchedule objects
+        return (result.rows as any[]).map(row => {
+          return {
+            id: row.id,
+            title: row.title,
+            description: row.description,
+            assetId: row.assetId,
+            startDate: new Date(row.startDate),
+            endDate: row.endDate ? new Date(row.endDate) : null,
+            frequency: row.frequency,
+            lastCompleted: row.lastCompleted ? new Date(row.lastCompleted) : null,
+            status: row.status,
+            affectsAssetStatus: row.affectsAssetStatus === undefined ? false : row.affectsAssetStatus,
+          };
+        });
+      } catch (fallbackError) {
+        console.error('Fallback query also failed:', fallbackError);
+        throw error; // Throw the original error
+      }
+    }
   }
 
   async getMaintenanceSchedule(id: number): Promise<MaintenanceSchedule | undefined> {
-    const [schedule] = await db
-      .select()
-      .from(maintenanceSchedules)
-      .where(eq(maintenanceSchedules.id, id));
-    return schedule;
+    try {
+      const [schedule] = await db
+        .select()
+        .from(maintenanceSchedules)
+        .where(eq(maintenanceSchedules.id, id));
+      
+      if (schedule) {
+        // Add default value for affectsAssetStatus if it doesn't exist in the database
+        return {
+          ...schedule,
+          affectsAssetStatus: schedule.affectsAssetStatus === undefined ? false : schedule.affectsAssetStatus,
+        };
+      }
+      return schedule;
+    } catch (error) {
+      console.error(`Error fetching maintenance schedule ${id}:`, error);
+      // Try raw query as fallback if schema issues
+      try {
+        const result = await pool.query(`
+          SELECT id, title, description, asset_id as "assetId", 
+                 start_date as "startDate", end_date as "endDate", 
+                 frequency, last_completed as "lastCompleted", status,
+                 FALSE as "affectsAssetStatus"
+          FROM maintenance_schedules
+          WHERE id = $1
+        `, [id]);
+        
+        if (result.rows.length === 0) {
+          return undefined;
+        }
+        
+        const row = result.rows[0] as any;
+        // Properly convert the raw result to a MaintenanceSchedule object
+        return {
+          id: row.id,
+          title: row.title,
+          description: row.description,
+          assetId: row.assetId,
+          startDate: new Date(row.startDate),
+          endDate: row.endDate ? new Date(row.endDate) : null,
+          frequency: row.frequency,
+          lastCompleted: row.lastCompleted ? new Date(row.lastCompleted) : null,
+          status: row.status,
+          affectsAssetStatus: row.affectsAssetStatus === undefined ? false : !!row.affectsAssetStatus,
+        };
+      } catch (fallbackError) {
+        console.error('Fallback query also failed:', fallbackError);
+        throw error; // Throw the original error
+      }
+    }
   }
 
   async updateMaintenanceSchedule(id: number, updates: Partial<MaintenanceSchedule>, userId?: number): Promise<MaintenanceSchedule> {
@@ -568,7 +679,7 @@ export class DatabaseStorage implements IStorage {
         changedBy: userId || null,
         changeType: "DELETE",
         oldValue: JSON.stringify(schedule),
-        newValue: null,
+        newValue: "",
       });
     }
     

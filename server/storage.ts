@@ -234,6 +234,9 @@ export class DatabaseStorage implements IStorage {
           else if (key === 'assetId') updateData.assetId = updates.assetId;
           else if (key === 'notes') updateData.notes = updates.notes;
           else if (key === 'solutionNotes') updateData.solutionNotes = updates.solutionNotes;
+          else if (key === 'affectsAssetStatus') updateData.affectsAssetStatus = updates.affectsAssetStatus;
+          else if (key === 'partsRequired') updateData.partsRequired = updates.partsRequired;
+          else if (key === 'problemDetails') updateData.problemDetails = updates.problemDetails;
         }
       });
       

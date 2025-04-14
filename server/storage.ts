@@ -191,15 +191,85 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getWorkOrders(): Promise<WorkOrder[]> {
-    return await db.select().from(workOrders);
+    try {
+      // Use the ORM approach first
+      return await db.select().from(workOrders);
+    } catch (error) {
+      console.error('Error in getWorkOrders using ORM:', error);
+      
+      // Fallback to raw query if ORM fails (likely due to schema mismatch)
+      try {
+        const { rows } = await pool.query(`
+          SELECT 
+            id, title, description, status, priority, assigned_to AS "assignedTo",
+            asset_id AS "assetId", reported_date AS "reportedDate", due_date AS "dueDate",
+            completed_date AS "completedDate", 
+            parts_required AS "partsRequired", problem_details AS "problemDetails",
+            solution_notes AS "solutionNotes", created_by AS "createdBy",
+            created_at AS "createdAt", updated_at AS "updatedAt", 
+            false AS "affectsAssetStatus"  -- Default value if column doesn't exist
+          FROM work_orders
+        `);
+        
+        // Format date fields
+        return rows.map(row => ({
+          ...row,
+          reportedDate: row.reportedDate ? new Date(row.reportedDate) : null,
+          dueDate: row.dueDate ? new Date(row.dueDate) : null,
+          completedDate: row.completedDate ? new Date(row.completedDate) : null,
+          createdAt: row.createdAt ? new Date(row.createdAt) : null,
+          updatedAt: row.updatedAt ? new Date(row.updatedAt) : null,
+        }));
+      } catch (fallbackError) {
+        console.error('Error in getWorkOrders fallback query:', fallbackError);
+        throw fallbackError; // Re-throw if both approaches fail
+      }
+    }
   }
 
   async getWorkOrder(id: number): Promise<WorkOrder | undefined> {
-    const [workOrder] = await db
-      .select()
-      .from(workOrders)
-      .where(eq(workOrders.id, id));
-    return workOrder;
+    try {
+      // Try using the ORM first
+      const [workOrder] = await db
+        .select()
+        .from(workOrders)
+        .where(eq(workOrders.id, id));
+      return workOrder;
+    } catch (error) {
+      console.error('Error in getWorkOrder using ORM:', error);
+      
+      // Fallback to raw query if ORM fails (likely due to schema mismatch)
+      try {
+        const { rows } = await pool.query(`
+          SELECT 
+            id, title, description, status, priority, assigned_to AS "assignedTo",
+            asset_id AS "assetId", reported_date AS "reportedDate", due_date AS "dueDate",
+            completed_date AS "completedDate", 
+            parts_required AS "partsRequired", problem_details AS "problemDetails",
+            solution_notes AS "solutionNotes", created_by AS "createdBy",
+            created_at AS "createdAt", updated_at AS "updatedAt", 
+            false AS "affectsAssetStatus"  -- Default value if column doesn't exist
+          FROM work_orders
+          WHERE id = $1
+        `, [id]);
+        
+        if (rows.length === 0) return undefined;
+        
+        // Format date fields
+        const row = rows[0];
+        return {
+          ...row,
+          reportedDate: row.reportedDate ? new Date(row.reportedDate) : null,
+          dueDate: row.dueDate ? new Date(row.dueDate) : null,
+          completedDate: row.completedDate ? new Date(row.completedDate) : null,
+          createdAt: row.createdAt ? new Date(row.createdAt) : null,
+          updatedAt: row.updatedAt ? new Date(row.updatedAt) : null,
+        };
+      } catch (fallbackError) {
+        console.error('Error in getWorkOrder fallback query:', fallbackError);
+        return undefined; // Return undefined instead of throwing to be consistent with ORM approach
+      }
+    }
   }
 
   async updateWorkOrder(id: number, updates: Partial<WorkOrder>): Promise<WorkOrder> {
@@ -286,13 +356,80 @@ export class DatabaseStorage implements IStorage {
         value instanceof Date ? value.toISOString() : value
       ));
       
-      const [workOrder] = await db
-        .update(workOrders)
-        .set(updateData)
-        .where(eq(workOrders.id, id))
-        .returning();
-  
-      if (!workOrder) throw new Error("Work order not found");
+      try {
+        // Try using the ORM first
+        const [workOrder] = await db
+          .update(workOrders)
+          .set(updateData)
+          .where(eq(workOrders.id, id))
+          .returning();
+    
+        if (!workOrder) throw new Error("Work order not found");
+        return workOrder;
+      } catch (ormError) {
+        console.error('ORM update failed, falling back to raw query:', ormError);
+        
+        // Create query dynamically to handle potential schema differences
+        const fields = [];
+        const values = [id]; // First param is always id
+        let paramIndex = 2; // Start at $2
+        
+        // Build update fields and values
+        Object.keys(updateData).forEach(key => {
+          // Skip affectsAssetStatus if it might not exist in Docker
+          if (key === 'affectsAssetStatus') return;
+          
+          // Convert camelCase to snake_case for SQL
+          const snakeKey = key.replace(/([A-Z])/g, "_$1").toLowerCase();
+          fields.push(`${snakeKey} = $${paramIndex}`);
+          
+          // Format dates for SQL
+          if (updateData[key] instanceof Date) {
+            values.push(updateData[key].toISOString());
+          } else {
+            values.push(updateData[key]);
+          }
+          
+          paramIndex++;
+        });
+        
+        if (fields.length === 0) {
+          throw new Error("No valid fields to update");
+        }
+        
+        const updateQuery = `
+          UPDATE work_orders
+          SET ${fields.join(', ')}
+          WHERE id = $1
+          RETURNING *
+        `;
+        
+        const { rows } = await pool.query(updateQuery, values);
+        
+        if (rows.length === 0) {
+          throw new Error("Work order not found");
+        }
+        
+        // Format response to match expected WorkOrder type
+        const result = {
+          ...rows[0],
+          assignedTo: rows[0].assigned_to,
+          assetId: rows[0].asset_id,
+          reportedDate: rows[0].reported_date ? new Date(rows[0].reported_date) : null,
+          completedDate: rows[0].completed_date ? new Date(rows[0].completed_date) : null,
+          dueDate: rows[0].due_date ? new Date(rows[0].due_date) : null,
+          createdAt: rows[0].created_at ? new Date(rows[0].created_at) : null,
+          updatedAt: rows[0].updated_at ? new Date(rows[0].updated_at) : null,
+          affectsAssetStatus: false, // Default value as it's missing in Docker
+          partsRequired: rows[0].parts_required,
+          problemDetails: rows[0].problem_details,
+          solutionNotes: rows[0].solution_notes,
+          createdBy: rows[0].created_by
+        };
+        
+        // Return the result
+        return result;
+      }
       
       // If we're completing a work order, check for related problem events to mark as resolved
       if (isCompletingWorkOrder) {

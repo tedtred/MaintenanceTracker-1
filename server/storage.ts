@@ -183,11 +183,91 @@ export class DatabaseStorage implements IStorage {
 
   // Work Order Methods
   async createWorkOrder(workOrder: InsertWorkOrder): Promise<WorkOrder> {
-    const [newWorkOrder] = await db.insert(workOrders).values({
-      ...workOrder,
-      reportedDate: new Date(),
-    }).returning();
-    return newWorkOrder;
+    try {
+      // Try with ORM first
+      const [newWorkOrder] = await db.insert(workOrders).values({
+        ...workOrder,
+        reportedDate: new Date(),
+      }).returning();
+      return newWorkOrder;
+    } catch (error) {
+      console.error('Error creating work order with ORM:', error);
+      
+      // Check if this is a column error (missing affects_asset_status)
+      if (error.message && error.message.includes('affects_asset_status')) {
+        console.log('Falling back to raw SQL query for work order creation');
+        
+        try {
+          // Create an object with all fields except affectsAssetStatus
+          const workOrderData = {
+            ...workOrder,
+            reportedDate: new Date()
+          };
+          
+          // Build column names and placeholders for SQL query
+          const columns = [];
+          const values = [];
+          const placeholders = [];
+          let paramIndex = 1;
+          
+          // Map camelCase keys to snake_case for SQL
+          for (const [key, value] of Object.entries(workOrderData)) {
+            // Skip affectsAssetStatus as it doesn't exist in Docker DB
+            if (key === 'affectsAssetStatus') continue;
+            
+            // Convert camelCase to snake_case
+            const snakeKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
+            columns.push(snakeKey);
+            values.push(value);
+            placeholders.push(`$${paramIndex}`);
+            paramIndex++;
+          }
+          
+          // Execute the raw SQL INSERT
+          const query = `
+            INSERT INTO work_orders (${columns.join(', ')})
+            VALUES (${placeholders.join(', ')})
+            RETURNING *
+          `;
+          
+          const { rows } = await pool.query(query, values);
+          
+          if (rows.length === 0) {
+            throw new Error('Failed to create work order');
+          }
+          
+          // Convert raw result to WorkOrder object
+          const row = rows[0];
+          const result = {
+            id: row.id,
+            title: row.title,
+            description: row.description,
+            status: row.status,
+            priority: row.priority,
+            assignedTo: row.assigned_to,
+            assetId: row.asset_id,
+            reportedDate: row.reported_date ? new Date(row.reported_date) : null,
+            dueDate: row.due_date ? new Date(row.due_date) : null,
+            completedDate: row.completed_date ? new Date(row.completed_date) : null,
+            affectsAssetStatus: false, // Default as it's missing in Docker
+            partsRequired: row.parts_required,
+            problemDetails: row.problem_details,
+            solutionNotes: row.solution_notes,
+            createdBy: row.created_by,
+            createdAt: row.created_at ? new Date(row.created_at) : null,
+            updatedAt: row.updated_at ? new Date(row.updated_at) : null
+          };
+          
+          return result;
+        } catch (fallbackError) {
+          console.error('Error in createWorkOrder fallback method:', fallbackError);
+          throw fallbackError;
+        }
+      } else {
+        // If it's not related to missing column, re-throw the original error
+        throw error;
+      }
+    }
   }
 
   async getWorkOrders(): Promise<WorkOrder[]> {
@@ -427,28 +507,32 @@ export class DatabaseStorage implements IStorage {
           createdBy: rows[0].created_by
         };
         
-        // Return the result
-        return result;
-      }
-      
-      // If we're completing a work order, check for related problem events to mark as resolved
-      if (isCompletingWorkOrder) {
-        // Find any problem events that reference this work order
-        const relatedProblemEvents = await db
-          .select()
-          .from(problemEvents)
-          .where(eq(problemEvents.workOrderId, id));
-          
-        // If this work order is linked to problem events, resolve them too
-        for (const event of relatedProblemEvents) {
-          if (!event.resolved) {
-            console.log(`Automatically resolving problem event ${event.id} because work order ${id} was completed`);
-            await this.resolveProblemEvent(event.id, workOrder.assignedTo || event.userId);
+        // If we're completing a work order and using the raw query approach,
+        // check for related problem events to mark as resolved
+        if (isCompletingWorkOrder) {
+          try {
+            // Find any problem events that reference this work order
+            const relatedProblemEvents = await db
+              .select()
+              .from(problemEvents)
+              .where(eq(problemEvents.workOrderId, id));
+              
+            // If this work order is linked to problem events, resolve them too
+            for (const event of relatedProblemEvents) {
+              if (!event.resolved) {
+                console.log(`Automatically resolving problem event ${event.id} because work order ${id} was completed`);
+                await this.resolveProblemEvent(event.id, result.assignedTo || event.userId);
+              }
+            }
+          } catch (eventError) {
+            console.error("Error handling related problem events:", eventError);
+            // Continue despite errors with problem events
           }
         }
+        
+        // Return the result from our raw query
+        return result;
       }
-      
-      return workOrder;
     } catch (error) {
       console.error("Error in updateWorkOrder:", error);
       throw error;

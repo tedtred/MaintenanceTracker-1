@@ -27,6 +27,10 @@ function handleZodError(error: ZodError) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Add a health check endpoint
+  app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
   setupAuth(app);
 
   // Serve uploaded files

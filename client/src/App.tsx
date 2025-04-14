@@ -30,10 +30,15 @@ function HomeRedirect() {
   const [, setLocation] = useLocation();
   const [redirectPath, setRedirectPath] = useState<string | null>(null);
   
-
-  
   useEffect(() => {
-    if (isLoading || !user) return;
+    // If still loading, do nothing yet
+    if (isLoading) return;
+    
+    // If not authenticated, redirect to auth page
+    if (!user) {
+      setRedirectPath("/auth");
+      return;
+    }
     
     // Admin users always go to dashboard
     if (user.role === UserRole.ADMIN) {

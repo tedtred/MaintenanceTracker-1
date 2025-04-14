@@ -1,0 +1,241 @@
+index-BoJbVI8k.js:40 
+            
+            
+            GET http://192.168.0.122:5000/api/work-orders net::ERR_CONNECTION_REFUSED
+xt @ index-BoJbVI8k.js:40
+queryFn @ index-BoJbVI8k.js:379
+a @ index-BoJbVI8k.js:40
+m @ index-BoJbVI8k.js:40
+start @ index-BoJbVI8k.js:40
+fetch @ index-BoJbVI8k.js:40
+Dp @ index-BoJbVI8k.js:40
+onSubscribe @ index-BoJbVI8k.js:40
+subscribe @ index-BoJbVI8k.js:40
+(anonymous) @ index-BoJbVI8k.js:40
+hW @ index-BoJbVI8k.js:38
+F0 @ index-BoJbVI8k.js:40
+Rd @ index-BoJbVI8k.js:40
+CZ @ index-BoJbVI8k.js:40
+Ec @ index-BoJbVI8k.js:40
+bk @ index-BoJbVI8k.js:40
+lc @ index-BoJbVI8k.js:38
+CZ @ index-BoJbVI8k.js:40
+Ec @ index-BoJbVI8k.js:40
+HW @ index-BoJbVI8k.js:40
+w @ index-BoJbVI8k.js:25
+C @ index-BoJbVI8k.js:25
+index-BoJbVI8k.js:379  Error fetching from /api/work-orders: TypeError: Failed to fetch
+    at xt (index-BoJbVI8k.js:40:96642)
+    at queryFn (index-BoJbVI8k.js:379:76731)
+    at Object.a [as fn] (index-BoJbVI8k.js:40:67961)
+    at m (index-BoJbVI8k.js:40:63554)
+    at Object.start (index-BoJbVI8k.js:40:64013)
+    at tL.fetch (index-BoJbVI8k.js:40:69297)
+    at sL.Dp (index-BoJbVI8k.js:40:89693)
+    at sL.onSubscribe (index-BoJbVI8k.js:40:84227)
+    at sL.subscribe (index-BoJbVI8k.js:40:57913)
+    at index-BoJbVI8k.js:40:95217
+queryFn @ index-BoJbVI8k.js:379
+await in queryFn
+a @ index-BoJbVI8k.js:40
+m @ index-BoJbVI8k.js:40
+start @ index-BoJbVI8k.js:40
+fetch @ index-BoJbVI8k.js:40
+Dp @ index-BoJbVI8k.js:40
+onSubscribe @ index-BoJbVI8k.js:40
+subscribe @ index-BoJbVI8k.js:40
+(anonymous) @ index-BoJbVI8k.js:40
+hW @ index-BoJbVI8k.js:38
+F0 @ index-BoJbVI8k.js:40
+Rd @ index-BoJbVI8k.js:40
+CZ @ index-BoJbVI8k.js:40
+Ec @ index-BoJbVI8k.js:40
+bk @ index-BoJbVI8k.js:40
+lc @ index-BoJbVI8k.js:38
+CZ @ index-BoJbVI8k.js:40
+Ec @ index-BoJbVI8k.js:40
+HW @ index-BoJbVI8k.js:40
+w @ index-BoJbVI8k.js:25
+C @ index-BoJbVI8k.js:25
+index-BoJbVI8k.js:40 
+            
+            
+            GET http://192.168.0.122:5000/api/maintenance-schedules net::ERR_CONNECTION_REFUSED
+xt @ index-BoJbVI8k.js:40
+queryFn @ index-BoJbVI8k.js:379
+a @ index-BoJbVI8k.js:40
+m @ index-BoJbVI8k.js:40
+start @ index-BoJbVI8k.js:40
+fetch @ index-BoJbVI8k.js:40
+Dp @ index-BoJbVI8k.js:40
+onSubscribe @ index-BoJbVI8k.js:40
+subscribe @ index-BoJbVI8k.js:40
+(anonymous) @ index-BoJbVI8k.js:40
+hW @ index-BoJbVI8k.js:38
+F0 @ index-BoJbVI8k.js:40
+Rd @ index-BoJbVI8k.js:40
+CZ @ index-BoJbVI8k.js:40
+Ec @ index-BoJbVI8k.js:40
+bk @ index-BoJbVI8k.js:40
+lc @ index-BoJbVI8k.js:38
+CZ @ index-BoJbVI8k.js:40
+Ec @ index-BoJbVI8k.js:40
+HW @ index-BoJbVI8k.js:40
+w @ index-BoJbVI8k.js:25
+C @ index-BoJbVI8k.js:25
+index-BoJbVI8k.js:379  Error fetching from /api/maintenance-schedules: TypeError: Failed to fetch
+    at xt (index-BoJbVI8k.js:40:96642)
+    at queryFn (index-BoJbVI8k.js:379:76731)
+    at Object.a [as fn] (index-BoJbVI8k.js:40:67961)
+    at m (index-BoJbVI8k.js:40:63554)
+    at Object.start (index-BoJbVI8k.js:40:64013)
+    at tL.fetch (index-BoJbVI8k.js:40:69297)
+    at sL.Dp (index-BoJbVI8k.js:40:89693)
+    at sL.onSubscribe (index-BoJbVI8k.js:40:84227)
+    at sL.subscribe (index-BoJbVI8k.js:40:57913)
+    at index-BoJbVI8k.js:40:95217
+queryFn @ index-BoJbVI8k.js:379
+await in queryFn
+a @ index-BoJbVI8k.js:40
+m @ index-BoJbVI8k.js:40
+start @ index-BoJbVI8k.js:40
+fetch @ index-BoJbVI8k.js:40
+Dp @ index-BoJbVI8k.js:40
+onSubscribe @ index-BoJbVI8k.js:40
+subscribe @ index-BoJbVI8k.js:40
+(anonymous) @ index-BoJbVI8k.js:40
+hW @ index-BoJbVI8k.js:38
+F0 @ index-BoJbVI8k.js:40
+Rd @ index-BoJbVI8k.js:40
+CZ @ index-BoJbVI8k.js:40
+Ec @ index-BoJbVI8k.js:40
+bk @ index-BoJbVI8k.js:40
+lc @ index-BoJbVI8k.js:38
+CZ @ index-BoJbVI8k.js:40
+Ec @ index-BoJbVI8k.js:40
+HW @ index-BoJbVI8k.js:40
+w @ index-BoJbVI8k.js:25
+C @ index-BoJbVI8k.js:25
+[NEW] Explain Console errors by using Copilot in Edge: click
+         
+         to explain an error. 
+        Learn more
+        Don't show again
+index-BoJbVI8k.js:40 
+            
+            
+            GET http://192.168.0.122:5000/api/maintenance-completions net::ERR_CONNECTION_REFUSED
+xt @ index-BoJbVI8k.js:40
+queryFn @ index-BoJbVI8k.js:379
+a @ index-BoJbVI8k.js:40
+m @ index-BoJbVI8k.js:40
+start @ index-BoJbVI8k.js:40
+fetch @ index-BoJbVI8k.js:40
+Dp @ index-BoJbVI8k.js:40
+onSubscribe @ index-BoJbVI8k.js:40
+subscribe @ index-BoJbVI8k.js:40
+(anonymous) @ index-BoJbVI8k.js:40
+hW @ index-BoJbVI8k.js:38
+F0 @ index-BoJbVI8k.js:40
+Rd @ index-BoJbVI8k.js:40
+CZ @ index-BoJbVI8k.js:40
+Ec @ index-BoJbVI8k.js:40
+bk @ index-BoJbVI8k.js:40
+lc @ index-BoJbVI8k.js:38
+CZ @ index-BoJbVI8k.js:40
+Ec @ index-BoJbVI8k.js:40
+HW @ index-BoJbVI8k.js:40
+w @ index-BoJbVI8k.js:25
+C @ index-BoJbVI8k.js:25
+index-BoJbVI8k.js:379  Error fetching from /api/maintenance-completions: TypeError: Failed to fetch
+    at xt (index-BoJbVI8k.js:40:96642)
+    at queryFn (index-BoJbVI8k.js:379:76731)
+    at Object.a [as fn] (index-BoJbVI8k.js:40:67961)
+    at m (index-BoJbVI8k.js:40:63554)
+    at Object.start (index-BoJbVI8k.js:40:64013)
+    at tL.fetch (index-BoJbVI8k.js:40:69297)
+    at sL.Dp (index-BoJbVI8k.js:40:89693)
+    at sL.onSubscribe (index-BoJbVI8k.js:40:84227)
+    at sL.subscribe (index-BoJbVI8k.js:40:57913)
+    at index-BoJbVI8k.js:40:95217
+queryFn @ index-BoJbVI8k.js:379
+await in queryFn
+a @ index-BoJbVI8k.js:40
+m @ index-BoJbVI8k.js:40
+start @ index-BoJbVI8k.js:40
+fetch @ index-BoJbVI8k.js:40
+Dp @ index-BoJbVI8k.js:40
+onSubscribe @ index-BoJbVI8k.js:40
+subscribe @ index-BoJbVI8k.js:40
+(anonymous) @ index-BoJbVI8k.js:40
+hW @ index-BoJbVI8k.js:38
+F0 @ index-BoJbVI8k.js:40
+Rd @ index-BoJbVI8k.js:40
+CZ @ index-BoJbVI8k.js:40
+Ec @ index-BoJbVI8k.js:40
+bk @ index-BoJbVI8k.js:40
+lc @ index-BoJbVI8k.js:38
+CZ @ index-BoJbVI8k.js:40
+Ec @ index-BoJbVI8k.js:40
+HW @ index-BoJbVI8k.js:40
+w @ index-BoJbVI8k.js:25
+C @ index-BoJbVI8k.js:25
+index-BoJbVI8k.js:40 
+            
+            
+            GET http://192.168.0.122:5000/api/assets net::ERR_CONNECTION_REFUSED
+xt @ index-BoJbVI8k.js:40
+queryFn @ index-BoJbVI8k.js:379
+a @ index-BoJbVI8k.js:40
+m @ index-BoJbVI8k.js:40
+start @ index-BoJbVI8k.js:40
+fetch @ index-BoJbVI8k.js:40
+Dp @ index-BoJbVI8k.js:40
+onSubscribe @ index-BoJbVI8k.js:40
+subscribe @ index-BoJbVI8k.js:40
+(anonymous) @ index-BoJbVI8k.js:40
+hW @ index-BoJbVI8k.js:38
+F0 @ index-BoJbVI8k.js:40
+Rd @ index-BoJbVI8k.js:40
+CZ @ index-BoJbVI8k.js:40
+Ec @ index-BoJbVI8k.js:40
+bk @ index-BoJbVI8k.js:40
+lc @ index-BoJbVI8k.js:38
+CZ @ index-BoJbVI8k.js:40
+Ec @ index-BoJbVI8k.js:40
+HW @ index-BoJbVI8k.js:40
+w @ index-BoJbVI8k.js:25
+C @ index-BoJbVI8k.js:25
+index-BoJbVI8k.js:379  Error fetching from /api/assets: TypeError: Failed to fetch
+    at xt (index-BoJbVI8k.js:40:96642)
+    at queryFn (index-BoJbVI8k.js:379:76731)
+    at Object.a [as fn] (index-BoJbVI8k.js:40:67961)
+    at m (index-BoJbVI8k.js:40:63554)
+    at Object.start (index-BoJbVI8k.js:40:64013)
+    at tL.fetch (index-BoJbVI8k.js:40:69297)
+    at sL.Dp (index-BoJbVI8k.js:40:89693)
+    at sL.onSubscribe (index-BoJbVI8k.js:40:84227)
+    at sL.subscribe (index-BoJbVI8k.js:40:57913)
+    at index-BoJbVI8k.js:40:95217
+queryFn @ index-BoJbVI8k.js:379
+await in queryFn
+a @ index-BoJbVI8k.js:40
+m @ index-BoJbVI8k.js:40
+start @ index-BoJbVI8k.js:40
+fetch @ index-BoJbVI8k.js:40
+Dp @ index-BoJbVI8k.js:40
+onSubscribe @ index-BoJbVI8k.js:40
+subscribe @ index-BoJbVI8k.js:40
+(anonymous) @ index-BoJbVI8k.js:40
+hW @ index-BoJbVI8k.js:38
+F0 @ index-BoJbVI8k.js:40
+Rd @ index-BoJbVI8k.js:40
+CZ @ index-BoJbVI8k.js:40
+Ec @ index-BoJbVI8k.js:40
+bk @ index-BoJbVI8k.js:40
+lc @ index-BoJbVI8k.js:38
+CZ @ index-BoJbVI8k.js:40
+Ec @ index-BoJbVI8k.js:40
+HW @ index-BoJbVI8k.js:40
+w @ index-BoJbVI8k.js:25
+C @ index-BoJbVI8k.js:25

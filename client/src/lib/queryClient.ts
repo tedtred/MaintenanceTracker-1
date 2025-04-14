@@ -11,6 +11,13 @@ const buildApiUrl = (url: string): string => {
   if (url.startsWith('http')) {
     return url;
   }
+  
+  // Special case for 192.168.0.122 IP address (Docker environment)
+  if (window.location.hostname === '192.168.0.122') {
+    // Use the full origin (including port) with the API path
+    return `${window.location.origin}${url}`;
+  }
+  
   // Otherwise, prepend the base URL
   return `${API_BASE_URL}${url}`;
 };

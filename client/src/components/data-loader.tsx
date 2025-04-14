@@ -94,7 +94,13 @@ export function MultiQueryLoader({
     return errorComponent ? (
       <>{errorComponent(errors)}</>
     ) : (
-      <div className="flex h-[50vh] items-center justify-center">
+      <div className="flex flex-col h-[50vh] items-center justify-center">
+        {/* Import and render the Docker connection error if relevant */}
+        {errors.some(err => err && err.name === 'ConnectionError') && (
+          <div className="w-full max-w-3xl mb-4">
+            <DockerConnectionErrorWrapper errors={errors} />
+          </div>
+        )}
         <div className="bg-destructive/10 text-destructive p-4 rounded-md max-w-md">
           <h3 className="font-semibold mb-2">Error Loading Data</h3>
           <ul className="list-disc pl-4">

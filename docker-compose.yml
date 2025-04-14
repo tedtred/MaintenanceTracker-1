@@ -12,6 +12,7 @@ services:
       - SESSION_SECRET=your_secure_random_string_here
       - HOST=0.0.0.0
       - PORT=5000
+      - IS_DOCKER=true
       # Set FORCE_DB_REBUILD=true for initial deployment, then set to false after first successful deployment
       # WARNING: Setting this to true will erase all database data
       - FORCE_DB_REBUILD=false

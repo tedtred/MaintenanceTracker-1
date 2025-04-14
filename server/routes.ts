@@ -10,6 +10,7 @@ import {
 } from "@shared/schema";
 import { ZodError } from "zod";
 import { upload, handleFileUpload, processCSVImport, generateCSVExport } from "./services/file-storage";
+import { setupEnvironmentRoutes } from "./routes/environment";
 import path from "path";
 import express from "express";
 import fs from 'fs'; //Import fs module
@@ -32,6 +33,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
   setupAuth(app);
+  setupEnvironmentRoutes(app);
 
   // Serve uploaded files
   app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));

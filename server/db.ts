@@ -7,7 +7,8 @@ import ws from "ws";
 import * as schema from "@shared/schema";
 
 // Check if we're in Docker environment
-const isDockerEnvironment = process.env.NODE_ENV === 'production';
+// Use explicit IS_DOCKER env var if available, otherwise fallback to NODE_ENV
+const isDockerEnvironment = process.env.IS_DOCKER === 'true' || process.env.NODE_ENV === 'production';
 
 // Only use Neon DB with WebSockets outside Docker
 if (!isDockerEnvironment) {

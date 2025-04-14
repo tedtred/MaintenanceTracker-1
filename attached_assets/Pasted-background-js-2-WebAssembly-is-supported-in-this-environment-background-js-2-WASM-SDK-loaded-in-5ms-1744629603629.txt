@@ -1,0 +1,137 @@
+background.js:2 WebAssembly is supported in this environment
+background.js:2 WASM SDK loaded in 5ms
+background.js:2 State version: 70
+background.js:2 Migrator wv (to version 3) should migrate: false - up
+background.js:2 Migrator Pm (to version 4) should migrate: false - up
+background.js:2 Migrator Sf (to version 5) should migrate: false - up
+background.js:2 Migrator cy (to version 6) should migrate: false - up
+background.js:2 Migrator hv (to version 7) should migrate: false - up
+background.js:2 Migrator yv (to version 8) should migrate: false - up
+background.js:2 Migrator bv (to version 9) should migrate: false - up
+background.js:2 Migrator Rp (to version 10) should migrate: false - up
+background.js:2 Migrator Fp (to version 11) should migrate: false - up
+background.js:2 Migrator Kp (to version 12) should migrate: false - up
+background.js:2 Migrator Gp (to version 13) should migrate: false - up
+background.js:2 Migrator Jp (to version 14) should migrate: false - up
+background.js:2 Migrator eg (to version 15) should migrate: false - up
+background.js:2 Migrator ng (to version 16) should migrate: false - up
+background.js:2 Migrator sg (to version 17) should migrate: false - up
+background.js:2 Migrator cg (to version 18) should migrate: false - up
+background.js:2 Migrator hg (to version 19) should migrate: false - up
+background.js:2 Migrator mg (to version 20) should migrate: false - up
+background.js:2 Migrator vg (to version 21) should migrate: false - up
+background.js:2 Migrator wg (to version 22) should migrate: false - up
+background.js:2 Migrator Sg (to version 23) should migrate: false - up
+background.js:2 Migrator Bg (to version 24) should migrate: false - up
+background.js:2 Migrator Pg (to version 25) should migrate: false - up
+background.js:2 Migrator _g (to version 26) should migrate: false - up
+background.js:2 Migrator Rg (to version 27) should migrate: false - up
+background.js:2 Migrator Fg (to version 28) should migrate: false - up
+background.js:2 Migrator Lg (to version 29) should migrate: false - up
+background.js:2 Migrator $g (to version 30) should migrate: false - up
+background.js:2 Migrator Wg (to version 31) should migrate: false - up
+background.js:2 Migrator Xg (to version 32) should migrate: false - up
+background.js:2 Migrator rm (to version 33) should migrate: false - up
+background.js:2 Migrator cm (to version 34) should migrate: false - up
+background.js:2 Migrator hm (to version 35) should migrate: false - up
+background.js:2 Migrator mm (to version 36) should migrate: false - up
+background.js:2 Migrator vm (to version 37) should migrate: false - up
+background.js:2 Migrator Em (to version 38) should migrate: false - up
+background.js:2 Migrator Dm (to version 39) should migrate: false - up
+background.js:2 Migrator Mm (to version 40) should migrate: false - up
+background.js:2 Migrator Um (to version 41) should migrate: false - up
+background.js:2 Migrator Vm (to version 42) should migrate: false - up
+background.js:2 Migrator Hm (to version 43) should migrate: false - up
+background.js:2 Migrator Ym (to version 44) should migrate: false - up
+background.js:2 Migrator nf (to version 45) should migrate: false - up
+background.js:2 Migrator sf (to version 46) should migrate: false - up
+background.js:2 Migrator yf (to version 47) should migrate: false - up
+background.js:2 Migrator Af (to version 48) should migrate: false - up
+background.js:2 Migrator If (to version 49) should migrate: false - up
+background.js:2 Migrator Df (to version 50) should migrate: false - up
+background.js:2 Migrator zf (to version 51) should migrate: false - up
+background.js:2 Migrator Tf (to version 52) should migrate: false - up
+background.js:2 Migrator Rf (to version 53) should migrate: false - up
+background.js:2 Migrator Uf (to version 54) should migrate: false - up
+background.js:2 Migrator $f (to version 55) should migrate: false - up
+background.js:2 Migrator Yf (to version 56) should migrate: false - up
+background.js:2 Migrator ey (to version 57) should migrate: false - up
+background.js:2 Migrator ny (to version 58) should migrate: false - up
+background.js:2 Migrator oy (to version 59) should migrate: false - up
+background.js:2 Migrator gy (to version 60) should migrate: false - up
+background.js:2 Migrator Ay (to version 61) should migrate: false - up
+background.js:2 Migrator By (to version 62) should migrate: false - up
+background.js:2 Migrator Ty (to version 63) should migrate: false - up
+background.js:2 Migrator Oy (to version 64) should migrate: false - up
+background.js:2 Migrator Gy (to version 65) should migrate: false - up
+background.js:2 Migrator ev (to version 66) should migrate: false - up
+background.js:2 Migrator nv (to version 67) should migrate: false - up
+background.js:2 Migrator sv (to version 68) should migrate: false - up
+background.js:2 Migrator uv (to version 69) should migrate: false - up
+background.js:2 Migrator mv (to version 70) should migrate: false - up
+background.js:2 Uncaught (in promise) Error: Duplicate script ID 'fido2-page-script-registration'
+background.js:2 Uncaught (in promise) Error: Frame with ID 726 is showing error page
+background.js:2 Cannot find menu item with id copy-totp
+write @ background.js:2
+auth:87 Replit environment detected - applying custom fixes
+chunk-XQLYTHWV.js?v=71733c10:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+main.tsx:21 Running in Replit environment - HMR disabled
+main.tsx:55 Successfully patched WebSocket to block HMR connections
+queryClient.ts:25 
+            
+            
+           GET https://cae64e35-0f6e-4655-b856-5383ab5cbb9d-00-wmqcqk09r1hx.kirk.replit.dev/api/user 401 (Unauthorized)
+(anonymous) @ queryClient.ts:25
+fetchFn @ @tanstack_react-query.js?v=71733c10:840
+run @ @tanstack_react-query.js?v=71733c10:494
+start @ @tanstack_react-query.js?v=71733c10:536
+fetch @ @tanstack_react-query.js?v=71733c10:926
+executeFetch_fn @ @tanstack_react-query.js?v=71733c10:2211
+onSubscribe @ @tanstack_react-query.js?v=71733c10:1898
+subscribe @ @tanstack_react-query.js?v=71733c10:24
+(anonymous) @ @tanstack_react-query.js?v=71733c10:3022
+subscribeToStore @ chunk-XQLYTHWV.js?v=71733c10:11984
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=71733c10:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=71733c10:18161
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=71733c10:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=71733c10:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=71733c10:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=71733c10:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=71733c10:19447
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=71733c10:18868
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=71733c10:9119
+commitRootImpl @ chunk-XQLYTHWV.js?v=71733c10:19432
+commitRoot @ chunk-XQLYTHWV.js?v=71733c10:19277
+finishConcurrentRender @ chunk-XQLYTHWV.js?v=71733c10:18805
+performConcurrentWorkOnRoot @ chunk-XQLYTHWV.js?v=71733c10:18718
+workLoop @ chunk-XQLYTHWV.js?v=71733c10:197
+flushWork @ chunk-XQLYTHWV.js?v=71733c10:176
+performWorkUntilDeadline @ chunk-XQLYTHWV.js?v=71733c10:384
+bootstrap-autofill-overlay.js:711 Uncaught (in promise) NotFoundError: Failed to execute 'insertBefore' on 'Node': The node before which the new node is to be inserted is not a child of this node.
+    at Ha.Node.insertBefore (bootstrap-autofill-overlay.js:711:13)
+    at AutofillInlineMenuContentService.<anonymous> (bootstrap-autofill-overlay.js:2190:30)
+    at Generator.next (<anonymous>)
+    at fulfilled (bootstrap-autofill-overlay.js:2061:58)
+Ha.Node.insertBefore @ bootstrap-autofill-overlay.js:711
+(anonymous) @ bootstrap-autofill-overlay.js:2190
+fulfilled @ bootstrap-autofill-overlay.js:2061
+Promise.then
+step @ bootstrap-autofill-overlay.js:2063
+(anonymous) @ bootstrap-autofill-overlay.js:2064
+autofill_inline_menu_content_service_awaiter @ bootstrap-autofill-overlay.js:2060
+AutofillInlineMenuContentService.processContainerElementMutation @ bootstrap-autofill-overlay.js:2162
+requestIdleCallbackPolyfill.timeout @ bootstrap-autofill-overlay.js:2154
+(anonymous) @ bootstrap-autofill-overlay.js:898
+requestIdleCallback
+requestIdleCallbackPolyfill @ bootstrap-autofill-overlay.js:898
+AutofillInlineMenuContentService.handleContainerElementMutationObserverUpdate @ bootstrap-autofill-overlay.js:2154
+childList
+Ha.Node.appendChild @ bootstrap-autofill-overlay.js:724
+openNotificationBar @ bootstrap-autofill-overlay.js:2645
+handleOpenNotificationBarMessage @ bootstrap-autofill-overlay.js:2591
+openNotificationBar @ bootstrap-autofill-overlay.js:2542
+AutofillInit.handleExtensionMessage @ bootstrap-autofill-overlay.js:8642
+client:536 WebSocket connection to 'wss://cae64e35-0f6e-4655-b856-5383ab5cbb9d-00-wmqcqk09r1hx.kirk.replit.dev:24678/?token=Rv9Mupoc0cWR' failed: 
+setupWebSocket @ client:536
+(anonymous) @ client:531
+client:560 [vite] server connection lost. Polling for restart...

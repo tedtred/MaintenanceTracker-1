@@ -38,8 +38,8 @@ COPY shared ./shared
 # Copy built assets from builder
 COPY --from=builder /app/dist ./dist
 
-# Add postgresql-client for database operations
-RUN apk add --no-cache postgresql-client
+# Add postgresql-client and cron for database operations and scheduled tasks
+RUN apk add --no-cache postgresql-client busybox-extras
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs

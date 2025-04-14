@@ -55,23 +55,45 @@ app.use((req, res, next) => {
     console.error("Error:", err); // Log the full error
   });
 
+  // Check if this is a migrations-only run
+  const runMigrationsOnly = process.argv.includes('--run-migrations');
+
   // Run migrations before server start
   try {
-    // Check for FORCE_DB_REBUILD environment variable, but only in production
-    const forceRebuild = isProduction && process.env.FORCE_DB_REBUILD === 'true';
+    // Check for FORCE_DB_REBUILD environment variable
+    // Allow rebuild in development when explicitly requested via CLI or env var
+    const forceRebuild = process.env.FORCE_DB_REBUILD === 'true' || 
+                          (runMigrationsOnly && process.argv.includes('--force'));
     
     if (forceRebuild) {
       console.log("⚠️ FORCE_DB_REBUILD is set to true. The database will be reset!");
       await runMigrations(true);
       console.log("Database rebuilt successfully. Remember to set FORCE_DB_REBUILD=false for subsequent deployments.");
-    } else if (isProduction) {
-      // In production without force rebuild, still run migrations but don't force rebuild
+      
+      // If this is a migrations-only run, exit after completion
+      if (runMigrationsOnly) {
+        console.log("Migrations completed, exiting...");
+        process.exit(0);
+      }
+    } else if (isProduction || runMigrationsOnly) {
+      // In production or when explicitly requested, run migrations but don't force rebuild
       await runMigrations(false);
+      
+      // If this is a migrations-only run, exit after completion
+      if (runMigrationsOnly) {
+        console.log("Migrations completed, exiting...");
+        process.exit(0);
+      }
     }
-    // In development, don't run migrations automatically
+    // In development, don't run migrations automatically unless requested
   } catch (error) {
     console.error("Failed to run migrations:", error);
-    // Continue anyway, as the tables might already exist
+    
+    // If this is a migrations-only run, exit with error
+    if (runMigrationsOnly) {
+      process.exit(1);
+    }
+    // Continue anyway for normal server operation, as the tables might already exist
   }
 
 

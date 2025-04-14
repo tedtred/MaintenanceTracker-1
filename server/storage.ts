@@ -210,6 +210,15 @@ export class DatabaseStorage implements IStorage {
           const placeholders = [];
           let paramIndex = 1;
           
+          // Get available columns to handle different schemas
+          const tableInfo = await pool.query(`
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name = 'work_orders'
+          `);
+          
+          const availableColumns = tableInfo.rows.map(row => row.column_name);
+          
           // Map camelCase keys to snake_case for SQL
           for (const [key, value] of Object.entries(workOrderData)) {
             // Skip affectsAssetStatus as it doesn't exist in Docker DB
@@ -217,6 +226,13 @@ export class DatabaseStorage implements IStorage {
             
             // Convert camelCase to snake_case
             const snakeKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
+            
+            // Skip fields that don't exist in this schema
+            if (!availableColumns.includes(snakeKey)) {
+              console.log(`Skipping field '${key}' (${snakeKey}) as it does not exist in work_orders table`);
+              continue;
+            }
+            
             columns.push(snakeKey);
             values.push(value);
             placeholders.push(`$${paramIndex}`);
@@ -236,6 +252,11 @@ export class DatabaseStorage implements IStorage {
             throw new Error('Failed to create work order');
           }
           
+          // Get available columns to handle different schemas
+          const hasPartsRequired = availableColumns.includes('parts_required');
+          const hasProblemDetails = availableColumns.includes('problem_details');
+          const hasSolutionNotes = availableColumns.includes('solution_notes');
+          
           // Convert raw result to WorkOrder object
           const row = rows[0];
           const result = {
@@ -250,9 +271,9 @@ export class DatabaseStorage implements IStorage {
             dueDate: row.due_date ? new Date(row.due_date) : null,
             completedDate: row.completed_date ? new Date(row.completed_date) : null,
             affectsAssetStatus: false, // Default as it's missing in Docker
-            partsRequired: row.parts_required,
-            problemDetails: row.problem_details,
-            solutionNotes: row.solution_notes,
+            partsRequired: hasPartsRequired ? row.parts_required : [],
+            problemDetails: hasProblemDetails ? row.problem_details : '',
+            solutionNotes: hasSolutionNotes ? row.solution_notes : '',
             createdBy: row.created_by,
             createdAt: row.created_at ? new Date(row.created_at) : null,
             updatedAt: row.updated_at ? new Date(row.updated_at) : null
@@ -279,13 +300,29 @@ export class DatabaseStorage implements IStorage {
       
       // Fallback to raw query if ORM fails (likely due to schema mismatch)
       try {
+        // Try with a more dynamic approach to handle potential missing columns
+        // First, check what columns are actually in the table
+        const tableInfo = await pool.query(`
+          SELECT column_name
+          FROM information_schema.columns
+          WHERE table_name = 'work_orders'
+        `);
+        
+        const availableColumns = tableInfo.rows.map(row => row.column_name);
+        const hasPartsRequired = availableColumns.includes('parts_required');
+        const hasProblemDetails = availableColumns.includes('problem_details');
+        const hasSolutionNotes = availableColumns.includes('solution_notes');
+        
+        // Build a query that only includes columns that exist
         const { rows } = await pool.query(`
           SELECT 
             id, title, description, status, priority, assigned_to AS "assignedTo",
             asset_id AS "assetId", reported_date AS "reportedDate", due_date AS "dueDate",
             completed_date AS "completedDate", 
-            parts_required AS "partsRequired", problem_details AS "problemDetails",
-            solution_notes AS "solutionNotes", created_by AS "createdBy",
+            ${hasPartsRequired ? 'parts_required AS "partsRequired",' : "'[]' AS \"partsRequired\","} 
+            ${hasProblemDetails ? 'problem_details AS "problemDetails",' : "'' AS \"problemDetails\","} 
+            ${hasSolutionNotes ? 'solution_notes AS "solutionNotes",' : "'' AS \"solutionNotes\","} 
+            created_by AS "createdBy",
             created_at AS "createdAt", updated_at AS "updatedAt", 
             false AS "affectsAssetStatus"  -- Default value if column doesn't exist
           FROM work_orders
@@ -320,13 +357,29 @@ export class DatabaseStorage implements IStorage {
       
       // Fallback to raw query if ORM fails (likely due to schema mismatch)
       try {
+        // Try with a more dynamic approach to handle potential missing columns
+        // First, check what columns are actually in the table
+        const tableInfo = await pool.query(`
+          SELECT column_name
+          FROM information_schema.columns
+          WHERE table_name = 'work_orders'
+        `);
+        
+        const availableColumns = tableInfo.rows.map(row => row.column_name);
+        const hasPartsRequired = availableColumns.includes('parts_required');
+        const hasProblemDetails = availableColumns.includes('problem_details');
+        const hasSolutionNotes = availableColumns.includes('solution_notes');
+        
+        // Build a query that only includes columns that exist
         const { rows } = await pool.query(`
           SELECT 
             id, title, description, status, priority, assigned_to AS "assignedTo",
             asset_id AS "assetId", reported_date AS "reportedDate", due_date AS "dueDate",
             completed_date AS "completedDate", 
-            parts_required AS "partsRequired", problem_details AS "problemDetails",
-            solution_notes AS "solutionNotes", created_by AS "createdBy",
+            ${hasPartsRequired ? 'parts_required AS "partsRequired",' : "'[]' AS \"partsRequired\","} 
+            ${hasProblemDetails ? 'problem_details AS "problemDetails",' : "'' AS \"problemDetails\","} 
+            ${hasSolutionNotes ? 'solution_notes AS "solutionNotes",' : "'' AS \"solutionNotes\","} 
+            created_by AS "createdBy",
             created_at AS "createdAt", updated_at AS "updatedAt", 
             false AS "affectsAssetStatus"  -- Default value if column doesn't exist
           FROM work_orders
@@ -454,6 +507,15 @@ export class DatabaseStorage implements IStorage {
         const values = [id]; // First param is always id
         let paramIndex = 2; // Start at $2
         
+        // Get available columns to handle different schemas
+        const tableInfo = await pool.query(`
+          SELECT column_name
+          FROM information_schema.columns
+          WHERE table_name = 'work_orders'
+        `);
+        
+        const availableColumns = tableInfo.rows.map(row => row.column_name);
+        
         // Build update fields and values
         Object.keys(updateData).forEach(key => {
           // Skip affectsAssetStatus if it might not exist in Docker
@@ -461,13 +523,20 @@ export class DatabaseStorage implements IStorage {
           
           // Convert camelCase to snake_case for SQL
           const snakeKey = key.replace(/([A-Z])/g, "_$1").toLowerCase();
+          
+          // Skip fields that don't exist in this schema
+          if (!availableColumns.includes(snakeKey)) {
+            console.log(`Skipping field '${key}' (${snakeKey}) as it does not exist in work_orders table`);
+            return;
+          }
+          
           fields.push(`${snakeKey} = $${paramIndex}`);
           
           // Format dates for SQL
-          if (updateData[key] instanceof Date) {
-            values.push(updateData[key].toISOString());
+          if (updateData[key as keyof typeof updateData] instanceof Date) {
+            values.push((updateData[key as keyof typeof updateData] as Date).toISOString());
           } else {
-            values.push(updateData[key]);
+            values.push(updateData[key as keyof typeof updateData]);
           }
           
           paramIndex++;
@@ -490,7 +559,12 @@ export class DatabaseStorage implements IStorage {
           throw new Error("Work order not found");
         }
         
-        // Format response to match expected WorkOrder type
+        // Reuse the columns we checked earlier
+        const hasPartsRequired = availableColumns.includes('parts_required');
+        const hasProblemDetails = availableColumns.includes('problem_details');
+        const hasSolutionNotes = availableColumns.includes('solution_notes');
+        
+        // Format response to match expected WorkOrder type with schema compatibility
         const result = {
           ...rows[0],
           assignedTo: rows[0].assigned_to,
@@ -501,9 +575,9 @@ export class DatabaseStorage implements IStorage {
           createdAt: rows[0].created_at ? new Date(rows[0].created_at) : null,
           updatedAt: rows[0].updated_at ? new Date(rows[0].updated_at) : null,
           affectsAssetStatus: false, // Default value as it's missing in Docker
-          partsRequired: rows[0].parts_required,
-          problemDetails: rows[0].problem_details,
-          solutionNotes: rows[0].solution_notes,
+          partsRequired: hasPartsRequired ? rows[0].parts_required : [],
+          problemDetails: hasProblemDetails ? rows[0].problem_details : '',
+          solutionNotes: hasSolutionNotes ? rows[0].solution_notes : '',
           createdBy: rows[0].created_by
         };
         

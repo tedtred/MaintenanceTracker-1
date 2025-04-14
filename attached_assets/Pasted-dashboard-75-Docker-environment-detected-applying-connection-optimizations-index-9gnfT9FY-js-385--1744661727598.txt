@@ -1,0 +1,248 @@
+dashboard:75 Docker environment detected - applying connection optimizations
+index-9gnfT9FY.js:385 Running in Docker environment: 192.168.0.122
+index-9gnfT9FY.js:385 API requests will go to: http://192.168.0.122:5000/api/work-orders
+index-9gnfT9FY.js:46 
+            
+            
+            GET http://192.168.0.122:5000/api/work-orders 500 (Internal Server Error)
+bt @ index-9gnfT9FY.js:46
+queryFn @ index-9gnfT9FY.js:385
+a @ index-9gnfT9FY.js:40
+m @ index-9gnfT9FY.js:40
+start @ index-9gnfT9FY.js:40
+fetch @ index-9gnfT9FY.js:40
+$p @ index-9gnfT9FY.js:40
+onSubscribe @ index-9gnfT9FY.js:40
+subscribe @ index-9gnfT9FY.js:40
+(anonymous) @ index-9gnfT9FY.js:40
+$W @ index-9gnfT9FY.js:38
+Y0 @ index-9gnfT9FY.js:40
+Id @ index-9gnfT9FY.js:40
+yJ @ index-9gnfT9FY.js:40
+Ac @ index-9gnfT9FY.js:40
+Uk @ index-9gnfT9FY.js:40
+uc @ index-9gnfT9FY.js:38
+(anonymous) @ index-9gnfT9FY.js:40
+setTimeout
+i @ index-9gnfT9FY.js:40
+o @ index-9gnfT9FY.js:40
+batch @ index-9gnfT9FY.js:40
+cs @ index-9gnfT9FY.js:40
+setData @ index-9gnfT9FY.js:40
+onSuccess @ index-9gnfT9FY.js:40
+f @ index-9gnfT9FY.js:40
+Promise.then
+m @ index-9gnfT9FY.js:40
+start @ index-9gnfT9FY.js:40
+fetch @ index-9gnfT9FY.js:40
+$p @ index-9gnfT9FY.js:40
+onSubscribe @ index-9gnfT9FY.js:40
+subscribe @ index-9gnfT9FY.js:40
+(anonymous) @ index-9gnfT9FY.js:40
+$W @ index-9gnfT9FY.js:38
+Y0 @ index-9gnfT9FY.js:40
+Id @ index-9gnfT9FY.js:40
+Uk @ index-9gnfT9FY.js:40
+uc @ index-9gnfT9FY.js:38
+yJ @ index-9gnfT9FY.js:40
+Ac @ index-9gnfT9FY.js:40
+hU @ index-9gnfT9FY.js:40
+w @ index-9gnfT9FY.js:25
+T @ index-9gnfT9FY.js:25
+[NEW] Explain Console errors by using Copilot in Edge: click
+         
+         to explain an error. 
+        Learn more
+        Don't show again
+index-9gnfT9FY.js:385  Error fetching from /api/work-orders: APIError: column "parts_required" does not exist
+    at BU (index-9gnfT9FY.js:40:96686)
+    at async queryFn (index-9gnfT9FY.js:385:76938)
+queryFn @ index-9gnfT9FY.js:385
+await in queryFn
+a @ index-9gnfT9FY.js:40
+m @ index-9gnfT9FY.js:40
+start @ index-9gnfT9FY.js:40
+fetch @ index-9gnfT9FY.js:40
+$p @ index-9gnfT9FY.js:40
+onSubscribe @ index-9gnfT9FY.js:40
+subscribe @ index-9gnfT9FY.js:40
+(anonymous) @ index-9gnfT9FY.js:40
+$W @ index-9gnfT9FY.js:38
+Y0 @ index-9gnfT9FY.js:40
+Id @ index-9gnfT9FY.js:40
+yJ @ index-9gnfT9FY.js:40
+Ac @ index-9gnfT9FY.js:40
+Uk @ index-9gnfT9FY.js:40
+uc @ index-9gnfT9FY.js:38
+(anonymous) @ index-9gnfT9FY.js:40
+setTimeout
+i @ index-9gnfT9FY.js:40
+o @ index-9gnfT9FY.js:40
+batch @ index-9gnfT9FY.js:40
+cs @ index-9gnfT9FY.js:40
+setData @ index-9gnfT9FY.js:40
+onSuccess @ index-9gnfT9FY.js:40
+f @ index-9gnfT9FY.js:40
+Promise.then
+m @ index-9gnfT9FY.js:40
+start @ index-9gnfT9FY.js:40
+fetch @ index-9gnfT9FY.js:40
+$p @ index-9gnfT9FY.js:40
+onSubscribe @ index-9gnfT9FY.js:40
+subscribe @ index-9gnfT9FY.js:40
+(anonymous) @ index-9gnfT9FY.js:40
+$W @ index-9gnfT9FY.js:38
+Y0 @ index-9gnfT9FY.js:40
+Id @ index-9gnfT9FY.js:40
+Uk @ index-9gnfT9FY.js:40
+uc @ index-9gnfT9FY.js:38
+yJ @ index-9gnfT9FY.js:40
+Ac @ index-9gnfT9FY.js:40
+hU @ index-9gnfT9FY.js:40
+w @ index-9gnfT9FY.js:25
+T @ index-9gnfT9FY.js:25
+index-9gnfT9FY.js:46 
+            
+            
+            GET http://192.168.0.122:5000/api/work-orders 500 (Internal Server Error)
+bt @ index-9gnfT9FY.js:46
+queryFn @ index-9gnfT9FY.js:385
+a @ index-9gnfT9FY.js:40
+m @ index-9gnfT9FY.js:40
+start @ index-9gnfT9FY.js:40
+fetch @ index-9gnfT9FY.js:40
+$p @ index-9gnfT9FY.js:40
+onSubscribe @ index-9gnfT9FY.js:40
+subscribe @ index-9gnfT9FY.js:40
+(anonymous) @ index-9gnfT9FY.js:40
+$W @ index-9gnfT9FY.js:38
+Y0 @ index-9gnfT9FY.js:40
+Id @ index-9gnfT9FY.js:40
+yJ @ index-9gnfT9FY.js:40
+Ac @ index-9gnfT9FY.js:40
+Uk @ index-9gnfT9FY.js:40
+uc @ index-9gnfT9FY.js:38
+yJ @ index-9gnfT9FY.js:40
+Ac @ index-9gnfT9FY.js:40
+hU @ index-9gnfT9FY.js:40
+w @ index-9gnfT9FY.js:25
+T @ index-9gnfT9FY.js:25
+index-9gnfT9FY.js:385  Error fetching from /api/work-orders: APIError: column "parts_required" does not exist
+    at BU (index-9gnfT9FY.js:40:96686)
+    at async queryFn (index-9gnfT9FY.js:385:76938)
+queryFn @ index-9gnfT9FY.js:385
+await in queryFn
+a @ index-9gnfT9FY.js:40
+m @ index-9gnfT9FY.js:40
+start @ index-9gnfT9FY.js:40
+fetch @ index-9gnfT9FY.js:40
+$p @ index-9gnfT9FY.js:40
+onSubscribe @ index-9gnfT9FY.js:40
+subscribe @ index-9gnfT9FY.js:40
+(anonymous) @ index-9gnfT9FY.js:40
+$W @ index-9gnfT9FY.js:38
+Y0 @ index-9gnfT9FY.js:40
+Id @ index-9gnfT9FY.js:40
+yJ @ index-9gnfT9FY.js:40
+Ac @ index-9gnfT9FY.js:40
+Uk @ index-9gnfT9FY.js:40
+uc @ index-9gnfT9FY.js:38
+yJ @ index-9gnfT9FY.js:40
+Ac @ index-9gnfT9FY.js:40
+hU @ index-9gnfT9FY.js:40
+w @ index-9gnfT9FY.js:25
+T @ index-9gnfT9FY.js:25
+index-9gnfT9FY.js:46 
+            
+            
+            GET http://192.168.0.122:5000/api/work-orders 500 (Internal Server Error)
+bt @ index-9gnfT9FY.js:46
+queryFn @ index-9gnfT9FY.js:385
+a @ index-9gnfT9FY.js:40
+m @ index-9gnfT9FY.js:40
+start @ index-9gnfT9FY.js:40
+fetch @ index-9gnfT9FY.js:40
+$p @ index-9gnfT9FY.js:40
+onSubscribe @ index-9gnfT9FY.js:40
+subscribe @ index-9gnfT9FY.js:40
+(anonymous) @ index-9gnfT9FY.js:40
+$W @ index-9gnfT9FY.js:38
+Y0 @ index-9gnfT9FY.js:40
+Id @ index-9gnfT9FY.js:40
+yJ @ index-9gnfT9FY.js:40
+Ac @ index-9gnfT9FY.js:40
+Uk @ index-9gnfT9FY.js:40
+uc @ index-9gnfT9FY.js:38
+(anonymous) @ index-9gnfT9FY.js:40
+index-9gnfT9FY.js:385  Error fetching from /api/work-orders: APIError: column "parts_required" does not exist
+    at BU (index-9gnfT9FY.js:40:96686)
+    at async queryFn (index-9gnfT9FY.js:385:76938)
+queryFn @ index-9gnfT9FY.js:385
+await in queryFn
+a @ index-9gnfT9FY.js:40
+m @ index-9gnfT9FY.js:40
+start @ index-9gnfT9FY.js:40
+fetch @ index-9gnfT9FY.js:40
+$p @ index-9gnfT9FY.js:40
+onSubscribe @ index-9gnfT9FY.js:40
+subscribe @ index-9gnfT9FY.js:40
+(anonymous) @ index-9gnfT9FY.js:40
+$W @ index-9gnfT9FY.js:38
+Y0 @ index-9gnfT9FY.js:40
+Id @ index-9gnfT9FY.js:40
+yJ @ index-9gnfT9FY.js:40
+Ac @ index-9gnfT9FY.js:40
+Uk @ index-9gnfT9FY.js:40
+uc @ index-9gnfT9FY.js:38
+(anonymous) @ index-9gnfT9FY.js:40
+index-9gnfT9FY.js:46 
+            
+            
+            GET http://192.168.0.122:5000/api/work-orders 500 (Internal Server Error)
+bt @ index-9gnfT9FY.js:46
+queryFn @ index-9gnfT9FY.js:385
+a @ index-9gnfT9FY.js:40
+m @ index-9gnfT9FY.js:40
+start @ index-9gnfT9FY.js:40
+fetch @ index-9gnfT9FY.js:40
+$p @ index-9gnfT9FY.js:40
+onSubscribe @ index-9gnfT9FY.js:40
+subscribe @ index-9gnfT9FY.js:40
+(anonymous) @ index-9gnfT9FY.js:40
+$W @ index-9gnfT9FY.js:38
+Y0 @ index-9gnfT9FY.js:40
+Id @ index-9gnfT9FY.js:40
+yJ @ index-9gnfT9FY.js:40
+Ac @ index-9gnfT9FY.js:40
+Uk @ index-9gnfT9FY.js:40
+uc @ index-9gnfT9FY.js:38
+yJ @ index-9gnfT9FY.js:40
+Ac @ index-9gnfT9FY.js:40
+hU @ index-9gnfT9FY.js:40
+w @ index-9gnfT9FY.js:25
+T @ index-9gnfT9FY.js:25
+index-9gnfT9FY.js:385  Error fetching from /api/work-orders: APIError: column "parts_required" does not exist
+    at BU (index-9gnfT9FY.js:40:96686)
+    at async queryFn (index-9gnfT9FY.js:385:76938)
+queryFn @ index-9gnfT9FY.js:385
+await in queryFn
+a @ index-9gnfT9FY.js:40
+m @ index-9gnfT9FY.js:40
+start @ index-9gnfT9FY.js:40
+fetch @ index-9gnfT9FY.js:40
+$p @ index-9gnfT9FY.js:40
+onSubscribe @ index-9gnfT9FY.js:40
+subscribe @ index-9gnfT9FY.js:40
+(anonymous) @ index-9gnfT9FY.js:40
+$W @ index-9gnfT9FY.js:38
+Y0 @ index-9gnfT9FY.js:40
+Id @ index-9gnfT9FY.js:40
+yJ @ index-9gnfT9FY.js:40
+Ac @ index-9gnfT9FY.js:40
+Uk @ index-9gnfT9FY.js:40
+uc @ index-9gnfT9FY.js:38
+yJ @ index-9gnfT9FY.js:40
+Ac @ index-9gnfT9FY.js:40
+hU @ index-9gnfT9FY.js:40
+w @ index-9gnfT9FY.js:25
+T @ index-9gnfT9FY.js:25

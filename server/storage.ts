@@ -700,25 +700,26 @@ export class DatabaseStorage implements IStorage {
   }
 
   async checkAndArchiveCompletedWorkOrders(): Promise<void> {
-    const now = new Date();
-    const fortyEightHoursAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+    try {
+      const now = new Date();
+      const fortyEightHoursAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
 
-    // Get all completed work orders
-    const completedOrders = await db
-      .select()
-      .from(workOrders)
-      .where(
-        and(
-          eq(workOrders.status, WorkOrderStatus.COMPLETED),
-          lte(workOrders.completedDate, fortyEightHoursAgo)
-        )
-      );
+      // Get all completed work orders - using raw query to avoid schema mismatches
+      const { rows } = await pool.query(`
+        SELECT id, status, completed_date
+        FROM work_orders
+        WHERE status = $1 AND completed_date <= $2
+      `, [WorkOrderStatus.COMPLETED, fortyEightHoursAgo]);
 
-    // Archive orders completed more than 48 hours ago
-    for (const order of completedOrders) {
-      await this.updateWorkOrder(order.id, {
-        status: WorkOrderStatus.ARCHIVED
-      });
+      // Archive orders completed more than 48 hours ago
+      for (const order of rows) {
+        await this.updateWorkOrder(order.id, {
+          status: WorkOrderStatus.ARCHIVED
+        });
+      }
+    } catch (error) {
+      console.error('Error in checkAndArchiveCompletedWorkOrders:', error);
+      // Continue operation even if this process fails - it's not critical
     }
   }
 

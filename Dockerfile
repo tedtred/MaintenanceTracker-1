@@ -66,5 +66,15 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
 # Note: We won't run migrations here during image build anymore
 # They will be handled at startup time instead
 
-# Start command (use node directly to run the production server)
+# Copy our entrypoint script
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+COPY update-browserslist.mjs /app/update-browserslist.mjs
+
+# Make the entrypoint script executable
+USER root
+RUN chmod +x /app/docker-entrypoint.sh
+USER nextjs
+
+# Use our entrypoint script to set up cron job and then start the server
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
 CMD ["node", "dist/index.js"]

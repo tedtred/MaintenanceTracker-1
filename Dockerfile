@@ -38,17 +38,21 @@ COPY shared ./shared
 # Copy built assets from builder
 COPY --from=builder /app/dist ./dist
 
-# Add postgresql-client and cron for database operations and scheduled tasks
-RUN apk add --no-cache postgresql-client busybox-extras
+# Add postgresql-client for database operations
+RUN apk add --no-cache postgresql-client
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs
 RUN adduser -S nextjs -u 1001
 
-# Set proper permissions
-RUN chown -R nextjs:nodejs /app
+# Copy our entrypoint script and update script
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+COPY update-browserslist.mjs /app/update-browserslist.mjs
 
-# Switch to non-root user
+# Set proper permissions and make the entrypoint script executable
+USER root
+RUN chmod +x /app/docker-entrypoint.sh
+RUN chown -R nextjs:nodejs /app
 USER nextjs
 
 # Set environment variables
@@ -63,18 +67,6 @@ EXPOSE 5000
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:5000/api/health || exit 1
 
-# Note: We won't run migrations here during image build anymore
-# They will be handled at startup time instead
-
-# Copy our entrypoint script
-COPY docker-entrypoint.sh /app/docker-entrypoint.sh
-COPY update-browserslist.mjs /app/update-browserslist.mjs
-
-# Make the entrypoint script executable
-USER root
-RUN chmod +x /app/docker-entrypoint.sh
-USER nextjs
-
-# Use our entrypoint script to set up cron job and then start the server
+# Use our entrypoint script
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
 CMD ["node", "dist/index.js"]

@@ -29,6 +29,39 @@ function handleZodError(error: ZodError) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Configure CORS with dynamic origin checking
+  app.use(cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      // or any origin when in development or when ALLOW_ORIGIN is set to *
+      if (!origin || process.env.ALLOW_ORIGIN === '*') {
+        return callback(null, true);
+      }
+      
+      // Check if the origin is in the allowed list
+      // This allows explicit IP addresses like 192.168.0.122 to work
+      const allowedOrigins = [
+        'http://localhost:5000',
+        'http://localhost:3000',
+        process.env.HOST ? `http://${process.env.HOST}:${process.env.PORT || 5000}` : undefined,
+      ].filter(Boolean);
+      
+      // If IS_DOCKER is true, be more permissive with origins to support IP-based access
+      const isDocker = process.env.IS_DOCKER === 'true';
+      if (isDocker) {
+        return callback(null, true);
+      }
+      
+      if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+        callback(null, true);
+      } else {
+        console.warn(`CORS blocked request from origin: ${origin}`);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true
+  }));
+
   // Add a health check endpoint
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });

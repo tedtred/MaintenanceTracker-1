@@ -42,14 +42,26 @@ export function formatConnectionError(error: unknown, url: string): Error {
     return error;
   }
   
+  // Import isDockerEnvironment from config module
+  const isDockerEnv = 
+    window.location.hostname.match(/^(\d{1,3}\.){3}\d{1,3}$/) !== null ||
+    window.location.hostname === 'host.docker.internal' ||
+    window.location.hostname === 'docker.for.mac.localhost' ||
+    window.location.hostname === 'docker.for.win.localhost' ||
+    (window as any).__IS_DOCKER__ === true;
+  
   // Format connection errors specially for Docker environment
   if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-    const hostname = window.location.hostname;
-    
     // Special message for the Docker environment
-    if (hostname === '192.168.0.122') {
+    if (isDockerEnv) {
       return new ConnectionError(
-        `Connection to API failed. Check that the Docker container is exposing port 5000 correctly. URL: ${url}`,
+        `Docker Connection Error: Unable to connect to the API at ${url}. This may be caused by:
+        
+        1. The API container might not be running
+        2. CORS settings might be blocking your request
+        3. The container may not be properly exposing port 5000
+        
+        Check your Docker configuration and ensure the server is running.`,
         error
       );
     }

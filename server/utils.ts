@@ -11,5 +11,8 @@ export function log(message: string, source = "express") {
   console.log(`${formattedTime} [${source}] ${message}`);
 }
 
-// Helper to check if we're in production mode
-export const isProduction = process.env.NODE_ENV === "production";
+// Check if we're running in Replit
+export const isReplit = !!process.env.REPL_ID || !!process.env.REPL_SLUG;
+
+// Production mode is when NODE_ENV is production AND we're not in Replit
+export const isProduction = process.env.NODE_ENV === "production" && !isReplit;

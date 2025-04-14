@@ -150,6 +150,18 @@ This application includes a database rebuild feature for situations when:
 - You want to reset to a fresh installation with default data
 - You're experiencing database-related errors (such as missing columns)
 
+#### Environment-Specific Behavior
+
+The database rebuild behavior differs based on the environment:
+
+1. **Docker (Production)**:
+   - In production Docker environments, the rebuild is triggered by the FORCE_DB_REBUILD environment variable
+   - Database migrations run automatically on startup
+
+2. **Replit (Development)**:
+   - In Replit, automatic migrations and rebuilds are disabled by default
+   - Use the rebuild script described below to explicitly trigger a rebuild when needed
+
 #### For Production (Docker)
 
 1. Set the FORCE_DB_REBUILD environment variable to true in docker-compose.yml:
@@ -174,7 +186,7 @@ You can use the included script for development environments:
 node rebuild-database.js
 ```
 
-This will prompt for confirmation before rebuilding the database.
+This will prompt for confirmation before rebuilding the database. This is the preferred method for both local and Replit development environments.
 
 ### Manual Installation
 

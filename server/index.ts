@@ -2,7 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import path from "path";
 import fs from "fs";
-import { log, isProduction } from "./utils";
+import { log, isProduction, isReplit } from "./utils";
 import { createServer } from 'http';
 
 // Import migrations
@@ -60,13 +60,26 @@ app.use((req, res, next) => {
 
   // Run migrations before server start
   try {
+    console.log("Environment check:");
+    console.log("  - Running in Replit:", isReplit);
+    console.log("  - Production mode:", isProduction);
+    console.log("  - FORCE_DB_REBUILD:", process.env.FORCE_DB_REBUILD);
+    console.log("  - Migrations-only mode:", runMigrationsOnly);
+    
     // Check for FORCE_DB_REBUILD environment variable
-    // Allow rebuild in development when explicitly requested via CLI or env var
-    const forceRebuild = process.env.FORCE_DB_REBUILD === 'true' || 
-                          (runMigrationsOnly && process.argv.includes('--force'));
+    // Allow rebuild when explicitly requested via CLI or env var
+    // Never auto-rebuild in Replit unless explicitly running the script
+    const forceRebuild = (!isReplit && process.env.FORCE_DB_REBUILD === 'true') || 
+                         (runMigrationsOnly && process.argv.includes('--force'));
     
     if (forceRebuild) {
-      console.log("⚠️ FORCE_DB_REBUILD is set to true. The database will be reset!");
+      console.log("⚠️ Database rebuild triggered!");
+      if (isReplit) {
+        console.log("Running in Replit - rebuild was explicitly requested via script.");
+      } else if (isProduction) {
+        console.log("Running in production Docker environment.");
+      }
+      
       await runMigrations(true);
       console.log("Database rebuilt successfully. Remember to set FORCE_DB_REBUILD=false for subsequent deployments.");
       
@@ -75,8 +88,9 @@ app.use((req, res, next) => {
         console.log("Migrations completed, exiting...");
         process.exit(0);
       }
-    } else if (isProduction || runMigrationsOnly) {
-      // In production or when explicitly requested, run migrations but don't force rebuild
+    } else if (isProduction || (runMigrationsOnly && !isReplit)) {
+      // In production or when explicitly requested (but not in Replit), run migrations but don't force rebuild
+      console.log("Running migrations without force rebuild (normal mode)");
       await runMigrations(false);
       
       // If this is a migrations-only run, exit after completion
@@ -84,8 +98,9 @@ app.use((req, res, next) => {
         console.log("Migrations completed, exiting...");
         process.exit(0);
       }
+    } else if (isReplit && !runMigrationsOnly) {
+      console.log("Skipping automatic migrations in Replit development environment");
     }
-    // In development, don't run migrations automatically unless requested
   } catch (error) {
     console.error("Failed to run migrations:", error);
     
@@ -138,6 +153,9 @@ app.use((req, res, next) => {
     console.log("- DATABASE_URL exists:", !!process.env.DATABASE_URL);
   } else {
     console.log("Running in development mode");
+    if (isReplit) {
+      console.log("Detected Replit environment");
+    }
     // In development, import and setup Vite dynamically
     try {
       // Use dynamic import with explicit file path to avoid issues

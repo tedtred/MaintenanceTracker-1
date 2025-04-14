@@ -1,4 +1,0 @@
-
-name,description,location,status,category,manufacturer,modelNumber,serialNumber,commissionedDate,lastMaintenance
-Asset 1,Description of asset 1,Building A,OPERATIONAL,MACHINERY,Manufacturer A,Model123,SN123456,2023-01-15,2023-06-20
-Asset 2,Description of asset 2,Building B,OPERATIONAL,VEHICLE,Manufacturer B,Model456,SN789012,2023-02-10,

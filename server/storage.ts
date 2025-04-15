@@ -1879,44 +1879,327 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createProblemButton(button: InsertProblemButton): Promise<ProblemButton> {
-    // Get the current highest order value
-    const buttons = await this.getProblemButtons();
-    const highestOrder = buttons.length > 0 
-      ? Math.max(...buttons.map(b => b.order))
-      : -1;
-
-    const [newButton] = await db
-      .insert(problemButtons)
-      .values({
-        ...button,
-        order: button.order || highestOrder + 1,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      })
-      .returning();
-    
-    return newButton;
+    try {
+      // Get the current highest order value
+      const buttons = await this.getProblemButtons();
+      const highestOrder = buttons.length > 0 
+        ? Math.max(...buttons.map(b => b.order || 0))
+        : -1;
+        
+      // Check for Docker environment
+      const isRunningInDocker = process.env.IS_DOCKER === 'true' || process.env.DOCKER_ENV === 'true'
+                               || process.env.RUNNING_IN_DOCKER === 'true';
+      
+      // Check database schema to detect Docker environment
+      const tableInfo = await pool.query(`
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name = 'problem_buttons'
+      `);
+      
+      const columns = tableInfo.rows.map(row => row.column_name);
+      console.log('Available columns in problem_buttons table for creation:', columns);
+      
+      // Check if we're in Docker environment based on schema differences
+      const hasCreatesWorkOrder = columns.includes('creates_work_order');
+      const hasCreateWorkOrder = columns.includes('create_work_order');
+      const inDockerEnvironment = isRunningInDocker || hasCreatesWorkOrder;
+      
+      console.log(`Creating problem button - Docker environment: ${inDockerEnvironment}`);
+      console.log('Problem button data:', button);
+      
+      if (inDockerEnvironment) {
+        console.log('Using Docker-specific approach for creating problem button');
+        
+        // Sanitize input for Docker environment
+        const sanitizedButton: Record<string, any> = {
+          label: button.label,
+          color: button.color || '#6b7280',
+          icon: button.icon || null
+        };
+        
+        // Map fields to their Docker-specific column names
+        if (hasCreatesWorkOrder && 'createWorkOrder' in button) {
+          sanitizedButton.creates_work_order = button.createWorkOrder;
+        } else if (hasCreateWorkOrder && 'createWorkOrder' in button) {
+          sanitizedButton.create_work_order = button.createWorkOrder;
+        }
+        
+        // Optionally add these fields if they exist in the schema
+        if (columns.includes('work_order_title') && button.workOrderTitle) {
+          sanitizedButton.work_order_title = button.workOrderTitle;
+        }
+        
+        if (columns.includes('work_order_description') && button.workOrderDescription) {
+          sanitizedButton.work_order_description = button.workOrderDescription;
+        }
+        
+        if (columns.includes('default_asset_id') && button.defaultAssetId) {
+          sanitizedButton.default_asset_id = button.defaultAssetId;
+        }
+        
+        if (columns.includes('order')) {
+          sanitizedButton.order = button.order || highestOrder + 1;
+        }
+        
+        if (columns.includes('active')) {
+          sanitizedButton.active = button.active !== undefined ? button.active : true;
+        }
+        
+        // Build field list and placeholders for prepared statement
+        const fieldNames = Object.keys(sanitizedButton);
+        const placeholders = fieldNames.map((_, index) => `$${index + 1}`);
+        const values = Object.values(sanitizedButton);
+        
+        // Build the query
+        const query = `
+          INSERT INTO problem_buttons (${fieldNames.join(', ')})
+          VALUES (${placeholders.join(', ')})
+          RETURNING *
+        `;
+        
+        console.log('Executing Docker-specific problem button creation query:', query);
+        console.log('With values:', values);
+        
+        const result = await pool.query(query, values);
+        
+        if (result.rows.length === 0) {
+          throw new Error('Failed to create problem button in Docker environment');
+        }
+        
+        // Transform the result to match our expected schema
+        const row = result.rows[0];
+        const newButton: ProblemButton = {
+          id: row.id,
+          label: row.label,
+          color: row.color || '#6b7280',
+          icon: row.icon || null,
+          order: row.order || 0,
+          active: row.active === undefined ? true : row.active,
+          createWorkOrder: (row.creates_work_order || row.create_work_order) || false,
+          workOrderTitle: row.work_order_title || null,
+          workOrderDescription: row.work_order_description || null,
+          workOrderPriority: row.work_order_priority || 'HIGH',
+          defaultAssetId: row.default_asset_id || null,
+          defaultAssignedTo: row.default_assigned_to || null,
+          notifyMaintenance: row.notify_maintenance || false,
+          skipDetailsForm: row.skip_details_form || false,
+          createdAt: row.created_at ? new Date(row.created_at) : new Date(),
+          updatedAt: row.updated_at ? new Date(row.updated_at) : new Date()
+        };
+        
+        console.log('Successfully created problem button in Docker:', newButton);
+        return newButton;
+      } else {
+        // Standard environment, use ORM
+        const [newButton] = await db
+          .insert(problemButtons)
+          .values({
+            ...button,
+            order: button.order || highestOrder + 1,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          })
+          .returning();
+        
+        return newButton;
+      }
+    } catch (error) {
+      console.error('Error creating problem button:', error);
+      throw error;
+    }
   }
 
   async updateProblemButton(id: number, updates: Partial<ProblemButton>): Promise<ProblemButton> {
-    const [updatedButton] = await db
-      .update(problemButtons)
-      .set({
-        ...updates,
-        updatedAt: new Date()
-      })
-      .where(eq(problemButtons.id, id))
-      .returning();
-    
-    if (!updatedButton) {
-      throw new Error("Button not found");
+    try {
+      // Check for Docker environment
+      const isRunningInDocker = process.env.IS_DOCKER === 'true' || process.env.DOCKER_ENV === 'true'
+                               || process.env.RUNNING_IN_DOCKER === 'true';
+      
+      // Check database schema to detect Docker environment
+      const tableInfo = await pool.query(`
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name = 'problem_buttons'
+      `);
+      
+      const columns = tableInfo.rows.map(row => row.column_name);
+      
+      // Check if we're in Docker environment based on schema differences
+      const hasCreatesWorkOrder = columns.includes('creates_work_order');
+      const inDockerEnvironment = isRunningInDocker || hasCreatesWorkOrder;
+      
+      console.log(`Updating problem button ${id} - Docker environment: ${inDockerEnvironment}`);
+      console.log('Problem button updates:', updates);
+      
+      if (inDockerEnvironment) {
+        console.log('Using Docker-specific approach for updating problem button');
+        
+        // First get the current button to make sure it exists
+        const buttonResult = await pool.query(`
+          SELECT * FROM problem_buttons WHERE id = $1
+        `, [id]);
+        
+        if (buttonResult.rows.length === 0) {
+          throw new Error(`Problem button with ID ${id} not found`);
+        }
+        
+        // Sanitize updates for Docker environment
+        const sanitizedUpdates: Record<string, any> = {};
+        
+        // Only add fields that exist in the Docker schema
+        if ('label' in updates) sanitizedUpdates.label = updates.label;
+        if ('color' in updates) sanitizedUpdates.color = updates.color;
+        if ('icon' in updates) sanitizedUpdates.icon = updates.icon;
+        
+        // Map fields to their Docker-specific column names
+        if (hasCreatesWorkOrder && 'createWorkOrder' in updates) {
+          sanitizedUpdates.creates_work_order = updates.createWorkOrder;
+        } else if (columns.includes('create_work_order') && 'createWorkOrder' in updates) {
+          sanitizedUpdates.create_work_order = updates.createWorkOrder;
+        }
+        
+        // Optionally update these fields if they exist in the schema
+        if (columns.includes('work_order_title') && 'workOrderTitle' in updates) {
+          sanitizedUpdates.work_order_title = updates.workOrderTitle;
+        }
+        
+        if (columns.includes('work_order_description') && 'workOrderDescription' in updates) {
+          sanitizedUpdates.work_order_description = updates.workOrderDescription;
+        }
+        
+        if (columns.includes('default_asset_id') && 'defaultAssetId' in updates) {
+          sanitizedUpdates.default_asset_id = updates.defaultAssetId;
+        }
+        
+        if (columns.includes('order') && 'order' in updates) {
+          sanitizedUpdates.order = updates.order;
+        }
+        
+        if (columns.includes('active') && 'active' in updates) {
+          sanitizedUpdates.active = updates.active;
+        }
+        
+        // If there's nothing to update, just return the current button
+        if (Object.keys(sanitizedUpdates).length === 0) {
+          return await this.getProblemButton(id) as ProblemButton;
+        }
+        
+        // Build the SET clause for the update query
+        const setClause = Object.keys(sanitizedUpdates).map((key, index) => 
+          `${key} = $${index + 2}`
+        ).join(', ');
+        
+        // Build and execute the update query
+        const query = `
+          UPDATE problem_buttons
+          SET ${setClause}
+          WHERE id = $1
+          RETURNING *
+        `;
+        
+        const values = [id, ...Object.values(sanitizedUpdates)];
+        
+        console.log('Executing Docker-specific problem button update query:', query);
+        console.log('With values:', values);
+        
+        const result = await pool.query(query, values);
+        
+        if (result.rows.length === 0) {
+          throw new Error(`Failed to update problem button with ID ${id}`);
+        }
+        
+        // Transform the result to match our expected schema
+        const row = result.rows[0];
+        const updatedButton: ProblemButton = {
+          id: row.id,
+          label: row.label,
+          color: row.color || '#6b7280',
+          icon: row.icon || null,
+          order: row.order || 0,
+          active: row.active === undefined ? true : row.active,
+          createWorkOrder: (row.creates_work_order || row.create_work_order) || false,
+          workOrderTitle: row.work_order_title || null,
+          workOrderDescription: row.work_order_description || null,
+          workOrderPriority: row.work_order_priority || 'HIGH',
+          defaultAssetId: row.default_asset_id || null,
+          defaultAssignedTo: row.default_assigned_to || null,
+          notifyMaintenance: row.notify_maintenance || false,
+          skipDetailsForm: row.skip_details_form || false,
+          createdAt: row.created_at ? new Date(row.created_at) : new Date(),
+          updatedAt: row.updated_at ? new Date(row.updated_at) : new Date()
+        };
+        
+        console.log('Successfully updated problem button in Docker:', updatedButton);
+        return updatedButton;
+      } else {
+        // Standard environment, use ORM
+        const [updatedButton] = await db
+          .update(problemButtons)
+          .set({
+            ...updates,
+            updatedAt: new Date()
+          })
+          .where(eq(problemButtons.id, id))
+          .returning();
+        
+        if (!updatedButton) {
+          throw new Error("Button not found");
+        }
+        
+        return updatedButton;
+      }
+    } catch (error) {
+      console.error('Error updating problem button:', error);
+      throw error;
     }
-    
-    return updatedButton;
   }
 
   async deleteProblemButton(id: number): Promise<void> {
-    await db.delete(problemButtons).where(eq(problemButtons.id, id));
+    try {
+      // Check for Docker environment
+      const isRunningInDocker = process.env.IS_DOCKER === 'true' || process.env.DOCKER_ENV === 'true'
+                              || process.env.RUNNING_IN_DOCKER === 'true';
+      
+      // Check database schema to detect Docker environment
+      const tableInfo = await pool.query(`
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name = 'problem_buttons'
+      `);
+      
+      const columns = tableInfo.rows.map(row => row.column_name);
+      
+      // Check if we're in Docker environment based on schema differences
+      const hasCreatesWorkOrder = columns.includes('creates_work_order');
+      const inDockerEnvironment = isRunningInDocker || hasCreatesWorkOrder;
+      
+      console.log(`Deleting problem button ${id} - Docker environment: ${inDockerEnvironment}`);
+      
+      if (inDockerEnvironment) {
+        console.log('Using Docker-specific approach for deleting problem button');
+        
+        // First check if the button exists
+        const buttonResult = await pool.query(`
+          SELECT * FROM problem_buttons WHERE id = $1
+        `, [id]);
+        
+        if (buttonResult.rows.length === 0) {
+          console.log(`Problem button with ID ${id} not found, nothing to delete`);
+          return;
+        }
+        
+        // Execute direct SQL delete
+        await pool.query(`DELETE FROM problem_buttons WHERE id = $1`, [id]);
+        console.log(`Successfully deleted problem button with ID ${id} in Docker environment`);
+      } else {
+        // Standard environment, use ORM
+        await db.delete(problemButtons).where(eq(problemButtons.id, id));
+      }
+    } catch (error) {
+      console.error('Error deleting problem button:', error);
+      throw error;
+    }
   }
 
   // Problem events methods

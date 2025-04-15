@@ -1,0 +1,113 @@
+12:43:12 PM [express] GET /api/assets 304 in 84ms :: []
+Running in Docker environment: false
+12:43:15 PM [express] GET /api/problem-events 304 in 23ms :: []
+Available columns in problem_buttons table: [
+  'id',
+  'label',
+  'color',
+  'icon',
+  'default_notes',
+  'default_location',
+  'requires_asset',
+  'creates_work_order'
+]
+Docker schema detected with creates_work_order column
+Executing ultra-safe Docker query:
+          SELECT
+            id,
+            label,
+            color,
+            icon,
+            creates_work_order as "createWorkOrder"
+        , default_notes as "defaultNotes", default_location as "defaultLocation", requires_asset as "requiresAsset", TRUE as active FROM problem_buttons
+12:43:15 PM [express] GET /api/problem-buttons 304 in 56ms :: []
+12:43:23 PM [express] GET /api/health 200 in 2ms :: {"status":"ok","timestamp":"2025-04-15T12:43:23.6…
+12:43:53 PM [express] GET /api/health 200 in 1ms :: {"status":"ok","timestamp":"2025-04-15T12:43:53.7…
+Trying to create work order with ORM
+Falling back to raw SQL query for work order creation
+Error creating work order with ORM: error: invalid input syntax for type json
+    at /app/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22
+    at async DatabaseStorage.createWorkOrder (file:///app/dist/index.js:712:32)
+    at async file:///app/dist/index.js:2456:25 {
+  length: 193,
+  severity: 'ERROR',
+  code: '22P02',
+  detail: 'The input string ended unexpectedly.',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: "JSON data, line 1: \nunnamed portal parameter $11 = ''",
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'jsonfuncs.c',
+  line: '627',
+  routine: 'json_ereport_error'
+}
+Available columns in work_orders table: [
+  'id',             'title',
+  'description',    'status',
+  'priority',       'assigned_to',
+  'asset_id',       'reported_date',
+  'completed_date', 'due_date',
+  'created_at',     'updated_at',
+  'created_by',     'affects_asset_status',
+  'parts_required', 'problem_details',
+  'solution_notes'
+]
+Executing work order creation query with SQL
+Error in createWorkOrder: error: invalid input syntax for type json
+    at /app/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async DatabaseStorage.createWorkOrder (file:///app/dist/index.js:754:26)
+    at async file:///app/dist/index.js:2456:25 {
+  length: 193,
+  severity: 'ERROR',
+  code: '22P02',
+  detail: 'The input string ended unexpectedly.',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: "JSON data, line 1: \nunnamed portal parameter $10 = ''",
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'jsonfuncs.c',
+  line: '627',
+  routine: 'json_ereport_error'
+}
+Error: error: invalid input syntax for type json
+    at /app/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async DatabaseStorage.createWorkOrder (file:///app/dist/index.js:754:26)
+    at async file:///app/dist/index.js:2456:25 {
+  length: 193,
+  severity: 'ERROR',
+  code: '22P02',
+  detail: 'The input string ended unexpectedly.',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: "JSON data, line 1: \nunnamed portal parameter $10 = ''",
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'jsonfuncs.c',
+  line: '627',
+  routine: 'json_ereport_error'
+}
+12:44:03 PM [express] POST /api/work-orders 500 in 169ms :: {"message":"invalid input syntax for type…
+12:44:23 PM [express] GET /api/health 200 in 1ms :: {"status":"ok","timestamp":"2025-04-15T12:44:23.8…
+12:44:53 PM [express] GET /api/health 200 in 1ms :: {"status":"ok","timestamp":"2025-04-15T12:44:53.9…
+12:45:24 PM [express] GET /api/health 200 in 1ms :: {"status":"ok","timestamp":"2025-04-15T12:45:24.0…

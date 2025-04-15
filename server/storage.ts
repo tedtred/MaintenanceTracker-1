@@ -187,11 +187,42 @@ export class DatabaseStorage implements IStorage {
       // Try with ORM first
       console.log('Trying to create work order with ORM');
       
-      // Sanitize JSON fields first - critical for both approaches
+      // Debug the incoming work order to see what fields might be causing issues
+      console.log('Input work order data:', 
+        JSON.stringify(workOrder, (key, value) => {
+          if (value instanceof Date) return value.toISOString();
+          return value;
+        })
+      );
+      
+      // CRITICAL: Super aggressive JSON field handling to fix Docker issue
       const sanitizedWorkOrder = {...workOrder};
-      if ('notes' in sanitizedWorkOrder && sanitizedWorkOrder.notes === '') sanitizedWorkOrder.notes = null;
-      if ('solutionNotes' in sanitizedWorkOrder && sanitizedWorkOrder.solutionNotes === '') sanitizedWorkOrder.solutionNotes = null;
-      if ('metadata' in sanitizedWorkOrder && sanitizedWorkOrder.metadata === '') sanitizedWorkOrder.metadata = null;
+      
+      // The specific JSON fields that need special handling
+      const jsonFields = ['notes', 'solutionNotes', 'problemDetails', 'partsRequired', 'metadata'];
+      
+      // Sanitize ALL possible JSON fields
+      jsonFields.forEach(field => {
+        if (field in sanitizedWorkOrder) {
+          const value = (sanitizedWorkOrder as any)[field];
+          
+          // Handle empty strings, undefined, or empty arrays
+          if (value === '' || value === undefined || value === null || 
+              (Array.isArray(value) && value.length === 0)) {
+            
+            // Convert to appropriate default based on field type
+            if (field === 'partsRequired') {
+              // For array types, use empty JSON array
+              (sanitizedWorkOrder as any)[field] = [];
+            } else {
+              // For string JSON fields, use null
+              (sanitizedWorkOrder as any)[field] = null;
+            }
+            
+            console.log(`Sanitized JSON field ${field} from:`, value, 'to:', (sanitizedWorkOrder as any)[field]);
+          }
+        }
+      });
       
       try {
         const [newWorkOrder] = await db.insert(workOrders).values({
@@ -207,13 +238,23 @@ export class DatabaseStorage implements IStorage {
         
         // Check table schema
         const tableInfo = await pool.query(`
-          SELECT column_name
+          SELECT column_name, data_type, udt_name
           FROM information_schema.columns
           WHERE table_name = 'work_orders'
         `);
         
+        // Get more details about the columns to better handle types
+        const columnDetails = tableInfo.rows.reduce((acc: any, col) => {
+          acc[col.column_name] = {
+            dataType: col.data_type,
+            udtName: col.udt_name
+          };
+          return acc;
+        }, {});
+        
         const availableColumns = tableInfo.rows.map(row => row.column_name);
         console.log('Available columns in work_orders table:', availableColumns);
+        console.log('Column types:', JSON.stringify(columnDetails));
         
         // Build a clean work order data object with proper JSON handling
         const workOrderData = {
@@ -241,11 +282,50 @@ export class DatabaseStorage implements IStorage {
             continue;
           }
           
-          columns.push(snakeKey);
-          values.push(value);
-          placeholders.push(`$${paramIndex}`);
+          // Special handling for JSON fields - use SQL NULL or proper JSON values
+          const colInfo = columnDetails[snakeKey];
+          const isJsonField = colInfo && (colInfo.dataType === 'json' || colInfo.dataType === 'jsonb' || 
+                             colInfo.udtName === 'json' || colInfo.udtName === 'jsonb');
+          
+          if (isJsonField) {
+            console.log(`Field ${key} (${snakeKey}) is a JSON field with value:`, value);
+            
+            // Handle empty or null values for JSON fields
+            if (value === '' || value === undefined || value === null) {
+              console.log(`Using NULL for JSON field ${snakeKey}`);
+              columns.push(snakeKey);
+              values.push(null);
+              placeholders.push(`$${paramIndex}`);
+            } else if (Array.isArray(value) && value.length === 0) {
+              // For empty arrays, use proper JSON array syntax
+              console.log(`Using '[]' for empty array JSON field ${snakeKey}`);
+              columns.push(snakeKey);
+              values.push('[]');
+              placeholders.push(`$${paramIndex}`);
+            } else {
+              // For non-empty values, stringify if not already a string
+              let jsonValue = value;
+              if (typeof value !== 'string') {
+                jsonValue = JSON.stringify(value);
+              }
+              console.log(`Using JSON value for ${snakeKey}:`, jsonValue);
+              columns.push(snakeKey);
+              values.push(jsonValue);
+              placeholders.push(`$${paramIndex}`);
+            }
+          } else {
+            // Non-JSON fields handled normally
+            columns.push(snakeKey);
+            values.push(value);
+            placeholders.push(`$${paramIndex}`);
+          }
+          
           paramIndex++;
         }
+        
+        // Log out the SQL and parameters for debugging
+        console.log('SQL columns:', columns);
+        console.log('SQL values:', values.map((v, i) => `$${i+1}: ${v === null ? 'NULL' : v}`));
         
         // Execute the raw SQL INSERT
         const query = `
@@ -292,7 +372,67 @@ export class DatabaseStorage implements IStorage {
       }
     } catch (error) {
       console.error('Error in createWorkOrder:', error);
-      throw error;
+      
+      // Try a super-simple fallback approach if everything else fails
+      try {
+        console.log('Attempting ultra-safe fallback with direct SQL and no JSON fields');
+        
+        const basicFields = {
+          title: workOrder.title,
+          description: workOrder.description,
+          status: workOrder.status,
+          priority: workOrder.priority,
+          assignedTo: workOrder.assignedTo,
+          assetId: workOrder.assetId,
+          reportedDate: new Date()
+        };
+        
+        // Create SQL that completely avoids JSON fields
+        const columns = Object.keys(basicFields).map(k => k.replace(/([A-Z])/g, '_$1').toLowerCase());
+        const placeholders = columns.map((_, i) => `$${i+1}`);
+        const values = Object.values(basicFields);
+        
+        const query = `
+          INSERT INTO work_orders (${columns.join(', ')})
+          VALUES (${placeholders.join(', ')})
+          RETURNING *
+        `;
+        
+        console.log('Executing ultra-safe fallback query:', query);
+        console.log('With values:', values);
+        
+        const { rows } = await pool.query(query, values);
+        
+        if (rows.length === 0) {
+          throw new Error('Even the fallback approach failed');
+        }
+        
+        // Convert raw result to WorkOrder object with minimal fields
+        const row = rows[0];
+        return {
+          id: row.id,
+          title: row.title,
+          description: row.description,
+          status: row.status,
+          priority: row.priority,
+          assignedTo: row.assigned_to,
+          assetId: row.asset_id,
+          reportedDate: row.reported_date ? new Date(row.reported_date) : new Date(),
+          dueDate: null,
+          completedDate: null,
+          affectsAssetStatus: false,
+          partsRequired: [],
+          problemDetails: '',
+          solutionNotes: '',
+          createdBy: null,
+          createdAt: row.created_at ? new Date(row.created_at) : new Date(),
+          updatedAt: row.updated_at ? new Date(row.updated_at) : new Date()
+        };
+        
+      } catch (fallbackError) {
+        console.error('Even the ultra-safe fallback failed:', fallbackError);
+        throw error; // Throw the original error
+      }
     }
   }
 

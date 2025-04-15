@@ -671,8 +671,94 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createAsset(asset: InsertAsset): Promise<Asset> {
-    const [newAsset] = await db.insert(assets).values(asset).returning();
-    return newAsset;
+    try {
+      // Check columns to detect environment differences
+      const tableInfo = await pool.query(`
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name = 'assets'
+      `);
+      
+      const columns = tableInfo.rows.map(row => row.column_name);
+      console.log('Available columns in assets table:', columns);
+      
+      // Check for Docker environment based on different column names or behavior
+      const isRunningInDocker = process.env.IS_DOCKER === 'true' || process.env.DOCKER_ENV === 'true'
+                              || process.env.RUNNING_IN_DOCKER === 'true';
+      
+      console.log(`Running in Docker environment: ${isRunningInDocker}`);
+      
+      if (isRunningInDocker) {
+        console.log('Docker schema detected for assets table - using custom insertion');
+        
+        // Sanitize the asset data for Docker environment
+        const sanitizedAsset = { ...asset };
+        
+        // Clean up any potential null fields that might cause problems
+        Object.keys(sanitizedAsset).forEach(key => {
+          if (sanitizedAsset[key] === null || sanitizedAsset[key] === undefined || sanitizedAsset[key] === '') {
+            if (typeof sanitizedAsset[key] === 'string') {
+              sanitizedAsset[key] = ''; // Replace null/undefined strings with empty string
+            } else if (key !== 'commissionedDate' && key !== 'lastMaintenance') {
+              delete sanitizedAsset[key]; // Remove other null/undefined fields (except dates)
+            }
+          }
+        });
+        
+        console.log('Sanitized asset data for Docker:', sanitizedAsset);
+        
+        // Build field list for query
+        const fieldNames = Object.keys(sanitizedAsset)
+          .map(key => {
+            // Convert camelCase to snake_case for database columns
+            return key.replace(/([A-Z])/g, '_$1').toLowerCase();
+          })
+          .filter(field => columns.includes(field)); // Only include fields that exist in the table
+          
+        // Build values list
+        const values = fieldNames.map(field => {
+          // Convert snake_case back to camelCase for object keys
+          const camelKey = field.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+          return sanitizedAsset[camelKey];
+        });
+        
+        // Build placeholders for prepared statement
+        const placeholders = fieldNames.map((_, index) => `$${index + 1}`);
+        
+        // Build the query
+        const query = `
+          INSERT INTO assets (${fieldNames.join(', ')})
+          VALUES (${placeholders.join(', ')})
+          RETURNING *
+        `;
+        
+        console.log('Executing Docker-specific asset creation query:', query);
+        console.log('With values:', values);
+        
+        const result = await pool.query(query, values);
+        
+        if (result.rows.length === 0) {
+          throw new Error('Failed to create asset in Docker environment');
+        }
+        
+        // Convert snake_case column names to camelCase for the returned asset
+        const newAsset = {};
+        Object.keys(result.rows[0]).forEach(key => {
+          const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+          newAsset[camelKey] = result.rows[0][key];
+        });
+        
+        console.log('Successfully created asset in Docker environment');
+        return newAsset as Asset;
+      } else {
+        // Regular environment - use ORM
+        const [newAsset] = await db.insert(assets).values(asset).returning();
+        return newAsset;
+      }
+    } catch (error) {
+      console.error('Error creating asset:', error);
+      throw error;
+    }
   }
 
   async getAssets(): Promise<Asset[]> {

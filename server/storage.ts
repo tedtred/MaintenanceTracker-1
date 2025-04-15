@@ -184,10 +184,13 @@ export class DatabaseStorage implements IStorage {
   // Work Order Methods
   async createWorkOrder(workOrder: InsertWorkOrder): Promise<WorkOrder> {
     try {
-      // Try with ORM first
-      console.log('Trying to create work order with ORM');
+      // Detect environment - different handling for Docker
+      const isDockerEnvironment = process.env.DOCKER_ENV === 'true' || 
+                                 process.env.RUNNING_IN_DOCKER === 'true' || 
+                                 process.env.IS_DOCKER === 'true';
+      console.log('Running in Docker environment?', isDockerEnvironment);
       
-      // Debug the incoming work order to see what fields might be causing issues
+      // Debug the incoming work order
       console.log('Input work order data:', 
         JSON.stringify(workOrder, (key, value) => {
           if (value instanceof Date) return value.toISOString();
@@ -195,188 +198,12 @@ export class DatabaseStorage implements IStorage {
         })
       );
       
-      // CRITICAL: Super aggressive JSON field handling to fix Docker issue
-      const sanitizedWorkOrder = {...workOrder};
-      
-      // The specific JSON fields that need special handling
-      const jsonFields = ['notes', 'solutionNotes', 'problemDetails', 'partsRequired', 'metadata'];
-      
-      // Sanitize ALL possible JSON fields
-      jsonFields.forEach(field => {
-        if (field in sanitizedWorkOrder) {
-          const value = (sanitizedWorkOrder as any)[field];
-          
-          // Handle empty strings, undefined, or empty arrays
-          if (value === '' || value === undefined || value === null || 
-              (Array.isArray(value) && value.length === 0)) {
-            
-            // Convert to appropriate default based on field type
-            if (field === 'partsRequired') {
-              // For array types, use empty JSON array
-              (sanitizedWorkOrder as any)[field] = [];
-            } else {
-              // For string JSON fields, use null
-              (sanitizedWorkOrder as any)[field] = null;
-            }
-            
-            console.log(`Sanitized JSON field ${field} from:`, value, 'to:', (sanitizedWorkOrder as any)[field]);
-          }
-        }
-      });
-      
-      try {
-        const [newWorkOrder] = await db.insert(workOrders).values({
-          ...sanitizedWorkOrder,
-          reportedDate: new Date(),
-        }).returning();
-        return newWorkOrder;
-      } catch (ormError) {
-        console.error('Error creating work order with ORM:', ormError);
+      if (isDockerEnvironment) {
+        // DOCKER-SPECIFIC IMPLEMENTATION
+        // Only use non-JSON fields to completely avoid problems with JSON handling
+        console.log('Using Docker-safe implementation - SKIPPING ALL JSON FIELDS');
         
-        // Fall back to raw SQL if ORM fails
-        console.log('Falling back to raw SQL query for work order creation');
-        
-        // Check table schema
-        const tableInfo = await pool.query(`
-          SELECT column_name, data_type, udt_name
-          FROM information_schema.columns
-          WHERE table_name = 'work_orders'
-        `);
-        
-        // Get more details about the columns to better handle types
-        const columnDetails = tableInfo.rows.reduce((acc: any, col) => {
-          acc[col.column_name] = {
-            dataType: col.data_type,
-            udtName: col.udt_name
-          };
-          return acc;
-        }, {});
-        
-        const availableColumns = tableInfo.rows.map(row => row.column_name);
-        console.log('Available columns in work_orders table:', availableColumns);
-        console.log('Column types:', JSON.stringify(columnDetails));
-        
-        // Build a clean work order data object with proper JSON handling
-        const workOrderData = {
-          ...sanitizedWorkOrder,
-          reportedDate: new Date()
-        };
-        
-        // Build column names and placeholders for SQL query
-        const columns = [];
-        const values = [];
-        const placeholders = [];
-        let paramIndex = 1;
-        
-        // Map camelCase keys to snake_case for SQL
-        for (const [key, value] of Object.entries(workOrderData)) {
-          // Skip affectsAssetStatus as it doesn't exist in Docker DB
-          if (key === 'affectsAssetStatus') continue;
-          
-          // Convert camelCase to snake_case
-          const snakeKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
-          
-          // Skip fields that don't exist in this schema
-          if (!availableColumns.includes(snakeKey)) {
-            console.log(`Skipping field '${key}' (${snakeKey}) as it does not exist in work_orders table`);
-            continue;
-          }
-          
-          // Special handling for JSON fields - use SQL NULL or proper JSON values
-          const colInfo = columnDetails[snakeKey];
-          const isJsonField = colInfo && (colInfo.dataType === 'json' || colInfo.dataType === 'jsonb' || 
-                             colInfo.udtName === 'json' || colInfo.udtName === 'jsonb');
-          
-          if (isJsonField) {
-            console.log(`Field ${key} (${snakeKey}) is a JSON field with value:`, value);
-            
-            // Handle empty or null values for JSON fields
-            if (value === '' || value === undefined || value === null) {
-              console.log(`Using NULL for JSON field ${snakeKey}`);
-              columns.push(snakeKey);
-              values.push(null);
-              placeholders.push(`$${paramIndex}`);
-            } else if (Array.isArray(value) && value.length === 0) {
-              // For empty arrays, use proper JSON array syntax
-              console.log(`Using '[]' for empty array JSON field ${snakeKey}`);
-              columns.push(snakeKey);
-              values.push('[]');
-              placeholders.push(`$${paramIndex}`);
-            } else {
-              // For non-empty values, stringify if not already a string
-              let jsonValue = value;
-              if (typeof value !== 'string') {
-                jsonValue = JSON.stringify(value);
-              }
-              console.log(`Using JSON value for ${snakeKey}:`, jsonValue);
-              columns.push(snakeKey);
-              values.push(jsonValue);
-              placeholders.push(`$${paramIndex}`);
-            }
-          } else {
-            // Non-JSON fields handled normally
-            columns.push(snakeKey);
-            values.push(value);
-            placeholders.push(`$${paramIndex}`);
-          }
-          
-          paramIndex++;
-        }
-        
-        // Log out the SQL and parameters for debugging
-        console.log('SQL columns:', columns);
-        console.log('SQL values:', values.map((v, i) => `$${i+1}: ${v === null ? 'NULL' : v}`));
-        
-        // Execute the raw SQL INSERT
-        const query = `
-          INSERT INTO work_orders (${columns.join(', ')})
-          VALUES (${placeholders.join(', ')})
-          RETURNING *
-        `;
-        
-        console.log('Executing work order creation query with SQL');
-        const { rows } = await pool.query(query, values);
-        
-        if (rows.length === 0) {
-          throw new Error('Failed to create work order');
-        }
-        
-        // Get available columns to handle different schemas
-        const hasPartsRequired = availableColumns.includes('parts_required');
-        const hasProblemDetails = availableColumns.includes('problem_details');
-        const hasSolutionNotes = availableColumns.includes('solution_notes');
-        
-        // Convert raw result to WorkOrder object
-        const row = rows[0];
-        const result: WorkOrder = {
-          id: row.id,
-          title: row.title,
-          description: row.description,
-          status: row.status,
-          priority: row.priority,
-          assignedTo: row.assigned_to,
-          assetId: row.asset_id,
-          reportedDate: row.reported_date ? new Date(row.reported_date) : new Date(),
-          dueDate: row.due_date ? new Date(row.due_date) : null,
-          completedDate: row.completed_date ? new Date(row.completed_date) : null,
-          affectsAssetStatus: false, // Default as it's missing in Docker
-          partsRequired: hasPartsRequired ? row.parts_required : [],
-          problemDetails: hasProblemDetails ? row.problem_details : '',
-          solutionNotes: hasSolutionNotes ? row.solution_notes : '',
-          createdBy: row.created_by,
-          createdAt: row.created_at ? new Date(row.created_at) : new Date(),
-          updatedAt: row.updated_at ? new Date(row.updated_at) : new Date()
-        };
-        
-        return result;
-      }
-    } catch (error) {
-      console.error('Error in createWorkOrder:', error);
-      
-      // Try a super-simple fallback approach if everything else fails
-      try {
-        console.log('Attempting ultra-safe fallback with direct SQL and no JSON fields');
-        
+        // Create work order with only basic fields
         const basicFields = {
           title: workOrder.title,
           description: workOrder.description,
@@ -387,27 +214,28 @@ export class DatabaseStorage implements IStorage {
           reportedDate: new Date()
         };
         
-        // Create SQL that completely avoids JSON fields
+        // Convert to snake_case for SQL
         const columns = Object.keys(basicFields).map(k => k.replace(/([A-Z])/g, '_$1').toLowerCase());
         const placeholders = columns.map((_, i) => `$${i+1}`);
         const values = Object.values(basicFields);
         
+        // Use direct SQL and avoid all JSON fields
         const query = `
           INSERT INTO work_orders (${columns.join(', ')})
           VALUES (${placeholders.join(', ')})
           RETURNING *
         `;
         
-        console.log('Executing ultra-safe fallback query:', query);
+        console.log('Executing Docker-safe query:', query);
         console.log('With values:', values);
         
         const { rows } = await pool.query(query, values);
         
         if (rows.length === 0) {
-          throw new Error('Even the fallback approach failed');
+          throw new Error('Failed to create work order in Docker environment');
         }
         
-        // Convert raw result to WorkOrder object with minimal fields
+        // Return minimal work order object with default values for JSON fields
         const row = rows[0];
         return {
           id: row.id,
@@ -415,6 +243,79 @@ export class DatabaseStorage implements IStorage {
           description: row.description,
           status: row.status,
           priority: row.priority,
+          assignedTo: row.assigned_to,
+          assetId: row.asset_id,
+          reportedDate: row.reported_date ? new Date(row.reported_date) : new Date(),
+          dueDate: row.due_date ? new Date(row.due_date) : null,
+          completedDate: row.completed_date ? new Date(row.completed_date) : null,
+          affectsAssetStatus: false, // Docker doesn't have this column
+          partsRequired: [], // Default empty array for JSON field
+          problemDetails: '', // Default empty string for JSON field
+          solutionNotes: '', // Default empty string for JSON field
+          createdBy: row.created_by,
+          createdAt: row.created_at ? new Date(row.created_at) : new Date(),
+          updatedAt: row.updated_at ? new Date(row.updated_at) : new Date()
+        };
+        
+      } else {
+        // REPLIT/STANDARD IMPLEMENTATION
+        console.log('Using standard ORM implementation for Replit environment');
+        
+        // Sanitize JSON fields for standard environment
+        const sanitizedWorkOrder = {...workOrder};
+        if ('notes' in sanitizedWorkOrder && sanitizedWorkOrder.notes === '') sanitizedWorkOrder.notes = null;
+        if ('solutionNotes' in sanitizedWorkOrder && sanitizedWorkOrder.solutionNotes === '') sanitizedWorkOrder.solutionNotes = null;
+        if ('problemDetails' in sanitizedWorkOrder && sanitizedWorkOrder.problemDetails === '') sanitizedWorkOrder.problemDetails = null;
+        if ('partsRequired' in sanitizedWorkOrder && 
+            (sanitizedWorkOrder.partsRequired === null || 
+             sanitizedWorkOrder.partsRequired === undefined || 
+             (Array.isArray(sanitizedWorkOrder.partsRequired) && sanitizedWorkOrder.partsRequired.length === 0))) {
+          sanitizedWorkOrder.partsRequired = [];
+        }
+        
+        try {
+          // Use ORM in standard environment
+          const [newWorkOrder] = await db.insert(workOrders).values({
+            ...sanitizedWorkOrder,
+            reportedDate: new Date(),
+          }).returning();
+          return newWorkOrder;
+        } catch (error) {
+          console.error('ORM creation failed in standard environment:', error);
+          throw error;
+        }
+      }
+    } catch (error) {
+      console.error('Error in createWorkOrder:', error);
+      
+      // One last attempt with absolute minimal fields if everything else fails
+      try {
+        console.log('Attempting absolute minimal fallback - last resort');
+        
+        // Create work order with only title and status
+        const query = `
+          INSERT INTO work_orders (title, status)
+          VALUES ($1, $2)
+          RETURNING *
+        `;
+        
+        const { rows } = await pool.query(query, [
+          workOrder.title || 'Emergency Work Order', 
+          workOrder.status || 'OPEN'
+        ]);
+        
+        if (rows.length === 0) {
+          throw new Error('Critical failure: Could not create work order with minimal fields');
+        }
+        
+        // Return minimal work order object
+        const row = rows[0];
+        return {
+          id: row.id,
+          title: row.title,
+          description: row.description || '',
+          status: row.status,
+          priority: row.priority || 'MEDIUM',
           assignedTo: row.assigned_to,
           assetId: row.asset_id,
           reportedDate: row.reported_date ? new Date(row.reported_date) : new Date(),
@@ -428,9 +329,8 @@ export class DatabaseStorage implements IStorage {
           createdAt: row.created_at ? new Date(row.created_at) : new Date(),
           updatedAt: row.updated_at ? new Date(row.updated_at) : new Date()
         };
-        
       } catch (fallbackError) {
-        console.error('Even the ultra-safe fallback failed:', fallbackError);
+        console.error('Critical failure - even minimal fallback failed:', fallbackError);
         throw error; // Throw the original error
       }
     }

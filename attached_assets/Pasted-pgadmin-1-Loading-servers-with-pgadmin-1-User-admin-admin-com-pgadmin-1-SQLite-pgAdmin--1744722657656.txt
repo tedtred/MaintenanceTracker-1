@@ -1,0 +1,134 @@
+pgadmin_1  | Loading servers with:
+pgadmin_1  | User: admin@admin.com
+pgadmin_1  | SQLite pgAdmin config: /var/lib/pgadmin/pgadmin4.db
+pgadmin_1  | ----------
+app_1      | Serving index.html for path: /dashboard
+app_1      | 1:02:55 PM [express] GET /api/user 401 in 4ms
+pgadmin_1  | Added 0 Server Group(s) and 1 Server(s).
+pgadmin_1  | postfix/postlog: starting the Postfix mail system
+app_1      | 1:03:08 PM [express] GET /api/health 200 in 1ms :: {"status":"ok","timestamp":"2025-04-15T13:03:08.2…
+pgadmin_1  | [2025-04-15 13:03:10 +0000] [1] [INFO] Starting gunicorn 22.0.0
+pgadmin_1  | [2025-04-15 13:03:10 +0000] [1] [INFO] Listening at: http://[::]:80 (1)
+pgadmin_1  | [2025-04-15 13:03:10 +0000] [1] [INFO] Using worker: gthread
+pgadmin_1  | [2025-04-15 13:03:10 +0000] [122] [INFO] Booting worker with pid: 122
+app_1      | 1:03:38 PM [express] GET /api/health 200 in 2ms :: {"status":"ok","timestamp":"2025-04-15T13:03:38.3…
+app_1      | 1:04:08 PM [express] GET /api/health 200 in 4ms :: {"status":"ok","timestamp":"2025-04-15T13:04:08.4…
+app_1      | 1:04:38 PM [express] GET /api/health 200 in 2ms :: {"status":"ok","timestamp":"2025-04-15T13:04:38.5…
+app_1      | 1:05:08 PM [express] GET /api/health 200 in 3ms :: {"status":"ok","timestamp":"2025-04-15T13:05:08.6…
+app_1      | 1:05:38 PM [express] GET /api/health 200 in 2ms :: {"status":"ok","timestamp":"2025-04-15T13:05:38.7…
+app_1      | 1:06:08 PM [express] GET /api/health 200 in 3ms :: {"status":"ok","timestamp":"2025-04-15T13:06:08.9…
+app_1      | 1:06:39 PM [express] GET /api/health 200 in 2ms :: {"status":"ok","timestamp":"2025-04-15T13:06:39.0…
+db_1       | 2025-04-15 13:07:01.823 UTC [27] LOG:  checkpoint starting: time
+app_1      | 1:07:09 PM [express] GET /api/health 200 in 2ms :: {"status":"ok","timestamp":"2025-04-15T13:07:09.1…
+app_1      | 1:07:17 PM [express] POST /api/login 200 in 169ms :: {"id":1,"username":"admin","password":"4d908932…
+app_1      | 1:07:17 PM [express] GET /api/work-orders 304 in 38ms :: []
+app_1      | 1:07:17 PM [express] GET /api/assets 200 in 91ms :: []
+app_1      | 1:07:17 PM [express] GET /api/maintenance-completions 304 in 85ms :: []
+app_1      | 1:07:17 PM [express] GET /api/maintenance-schedules 304 in 104ms :: []
+db_1       | 2025-04-15 13:07:18.979 UTC [27] LOG:  checkpoint complete: wrote 173 buffers (1.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=17.098 s, sync=0.038 s, total=17.157 s; sync files=111, longest=0.009 s, average=0.001 s; distance=989 kB, estimate=989 kB
+app_1      | 1:07:39 PM [express] GET /api/health 200 in 2ms :: {"status":"ok","timestamp":"2025-04-15T13:07:39.2…
+app_1      | 1:08:09 PM [express] GET /api/health 200 in 1ms :: {"status":"ok","timestamp":"2025-04-15T13:08:09.3…
+app_1      | 1:08:39 PM [express] GET /api/health 200 in 4ms :: {"status":"ok","timestamp":"2025-04-15T13:08:39.4…
+app_1      | 1:09:09 PM [express] GET /api/health 200 in 1ms :: {"status":"ok","timestamp":"2025-04-15T13:09:09.5…
+app_1      | 1:09:39 PM [express] GET /api/health 200 in 1ms :: {"status":"ok","timestamp":"2025-04-15T13:09:39.7…
+app_1      | 1:10:09 PM [express] GET /api/health 200 in 2ms :: {"status":"ok","timestamp":"2025-04-15T13:10:09.8…
+app_1      | Trying to create work order with ORM
+db_1       | 2025-04-15 13:10:16.571 UTC [773] ERROR:  invalid input syntax for type json
+db_1       | 2025-04-15 13:10:16.571 UTC [773] DETAIL:  The input string ended unexpectedly.
+db_1       | 2025-04-15 13:10:16.571 UTC [773] CONTEXT:  JSON data, line 1:
+db_1       |    unnamed portal parameter $11 = ''
+db_1       | 2025-04-15 13:10:16.571 UTC [773] STATEMENT:  insert into "work_orders" ("id", "title", "description", "status", "priority", "assigned_to", "asset_id", "reported_date", "due_date", "completed_date", "affects_asset_status", "parts_required", "problem_details", "solution_notes", "created_by", "created_at", "updated_at") values (default, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, default, default, default) returning "id", "title", "description", "status", "priority", "assigned_to", "asset_id", "reported_date", "due_date", "completed_date", "affects_asset_status", "parts_required", "problem_details", "solution_notes", "created_by", "created_at", "updated_at"
+app_1      | Error creating work order with ORM: error: invalid input syntax for type json
+app_1      |     at /app/node_modules/pg-pool/index.js:45:11
+app_1      |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+app_1      |     at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22
+app_1      |     at async DatabaseStorage.createWorkOrder (file:///app/dist/index.js:712:32)
+app_1      |     at async file:///app/dist/index.js:2456:25 {
+app_1      |   length: 193,
+app_1      |   severity: 'ERROR',
+app_1      |   code: '22P02',
+app_1      |   detail: 'The input string ended unexpectedly.',
+app_1      |   hint: undefined,
+app_1      |   position: undefined,
+app_1      |   internalPosition: undefined,
+app_1      |   internalQuery: undefined,
+app_1      |   where: "JSON data, line 1: \nunnamed portal parameter $11 = ''",
+app_1      |   schema: undefined,
+app_1      |   table: undefined,
+app_1      |   column: undefined,
+app_1      |   dataType: undefined,
+app_1      |   constraint: undefined,
+app_1      |   file: 'jsonfuncs.c',
+app_1      |   line: '627',
+app_1      |   routine: 'json_ereport_error'
+app_1      | }
+app_1      | Falling back to raw SQL query for work order creation
+app_1      | Available columns in work_orders table: [
+app_1      |   'id',             'title',
+app_1      |   'description',    'status',
+app_1      |   'priority',       'assigned_to',
+app_1      |   'asset_id',       'reported_date',
+app_1      |   'completed_date', 'due_date',
+app_1      |   'created_at',     'updated_at',
+app_1      |   'created_by',     'affects_asset_status',
+app_1      |   'parts_required', 'problem_details',
+app_1      |   'solution_notes'
+app_1      | ]
+app_1      | Executing work order creation query with SQL
+db_1       | 2025-04-15 13:10:16.640 UTC [774] ERROR:  invalid input syntax for type json
+db_1       | 2025-04-15 13:10:16.640 UTC [774] DETAIL:  The input string ended unexpectedly.
+db_1       | 2025-04-15 13:10:16.640 UTC [774] CONTEXT:  JSON data, line 1:
+db_1       |    unnamed portal parameter $10 = ''
+db_1       | 2025-04-15 13:10:16.640 UTC [774] STATEMENT:
+db_1       |              INSERT INTO work_orders (title, description, status, priority, assigned_to, asset_id, reported_date, due_date, completed_date, parts_required, problem_details, solution_notes)
+db_1       |              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+db_1       |              RETURNING *
+db_1       |
+app_1      | Error in createWorkOrder: error: invalid input syntax for type json
+app_1      |     at /app/node_modules/pg-pool/index.js:45:11
+app_1      |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+app_1      |     at async DatabaseStorage.createWorkOrder (file:///app/dist/index.js:754:26)
+app_1      |     at async file:///app/dist/index.js:2456:25 {
+app_1      |   length: 193,
+app_1      |   severity: 'ERROR',
+app_1      |   code: '22P02',
+app_1      |   detail: 'The input string ended unexpectedly.',
+app_1      |   hint: undefined,
+app_1      |   position: undefined,
+app_1      |   internalPosition: undefined,
+app_1      |   internalQuery: undefined,
+app_1      |   where: "JSON data, line 1: \nunnamed portal parameter $10 = ''",
+app_1      |   schema: undefined,
+app_1      |   table: undefined,
+app_1      |   column: undefined,
+app_1      |   dataType: undefined,
+app_1      |   constraint: undefined,
+app_1      |   file: 'jsonfuncs.c',
+app_1      |   line: '627',
+app_1      |   routine: 'json_ereport_error'
+app_1      | }
+app_1      | Error: error: invalid input syntax for type json
+app_1      |     at /app/node_modules/pg-pool/index.js:45:11
+app_1      |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+app_1      |     at async DatabaseStorage.createWorkOrder (file:///app/dist/index.js:754:26)
+app_1      |     at async file:///app/dist/index.js:2456:25 {
+app_1      |   length: 193,
+app_1      |   severity: 'ERROR',
+app_1      |   code: '22P02',
+app_1      |   detail: 'The input string ended unexpectedly.',
+app_1      |   hint: undefined,
+app_1      |   position: undefined,
+app_1      |   internalPosition: undefined,
+app_1      |   internalQuery: undefined,
+app_1      |   where: "JSON data, line 1: \nunnamed portal parameter $10 = ''",
+app_1      |   schema: undefined,
+app_1      |   table: undefined,
+app_1      |   column: undefined,
+app_1      |   dataType: undefined,
+app_1      |   constraint: undefined,
+app_1      |   file: 'jsonfuncs.c',
+app_1      |   line: '627',
+app_1      |   routine: 'json_ereport_error'
+app_1      | }
+app_1      | 1:10:16 PM [express] POST /api/work-orders 500 in 158ms :: {"message":"invalid input syntax for type…
+

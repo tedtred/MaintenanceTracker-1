@@ -1077,24 +1077,29 @@ export class DatabaseStorage implements IStorage {
       if (isDockerEnvironment) {
         console.log('Docker schema detected for settings table');
         
-        // Use a query specifically for the Docker schema
-        const result = await pool.query(`
-          SELECT 
-            id, 
-            time_zone as "timeZone",
-            date_format as "dateFormat",
-            time_format as "timeFormat",
-            email_notifications as "emailNotifications",
-            maintenance_due_reminder as "maintenanceDueReminder",
-            critical_alerts_only as "criticalAlertsOnly",
-            theme,
-            accent_color as "accentColor",
-            company_name as "companyName",
-            company_logo as "companyLogo"
-          FROM settings
-          ORDER BY id DESC
-          LIMIT 1
-        `);
+        // Build a dynamic query based on actual available columns
+        let query = `SELECT id`;
+        
+        if (columns.includes('time_zone')) query += `, time_zone as "timeZone"`;
+        if (columns.includes('date_format')) query += `, date_format as "dateFormat"`;
+        if (columns.includes('time_format')) query += `, time_format as "timeFormat"`;
+        if (columns.includes('email_notifications')) query += `, email_notifications as "emailNotifications"`;
+        if (columns.includes('maintenance_due_reminder')) query += `, maintenance_due_reminder as "maintenanceDueReminder"`;
+        if (columns.includes('critical_alerts_only')) query += `, critical_alerts_only as "criticalAlertsOnly"`;
+        if (columns.includes('theme')) query += `, theme`;
+        if (columns.includes('accent_color')) query += `, accent_color as "accentColor"`;
+        if (columns.includes('company_name')) query += `, company_name as "companyName"`;
+        if (columns.includes('company_logo')) query += `, company_logo as "companyLogo"`;
+        if (columns.includes('default_priority')) query += `, default_priority as "defaultPriority"`;
+        if (columns.includes('default_asset_id')) query += `, default_asset_id as "defaultAssetId"`;
+        if (columns.includes('default_assigned_to')) query += `, default_assigned_to as "defaultAssignedTo"`;
+        if (columns.includes('notify_maintenance')) query += `, notify_maintenance as "notifyMaintenance"`;
+        if (columns.includes('skip_details_form')) query += `, skip_details_form as "skipDetailsForm"`;
+        
+        query += ` FROM settings ORDER BY id DESC LIMIT 1`;
+        
+        console.log('Executing Docker settings query:', query);
+        const result = await pool.query(query);
         
         if (result.rows.length === 0) {
           // Create default settings
@@ -1361,22 +1366,40 @@ export class DatabaseStorage implements IStorage {
       
       if (hasCreatesWorkOrder) {
         console.log('Docker schema detected with creates_work_order column');
-        // We're in Docker, use a simpler, direct query specifically for Docker schema
-        const result = await pool.query(`
+        
+        // Build a query with only the columns that we know exist in the Docker schema
+        let query = `
           SELECT 
             id, 
             label, 
             color, 
             icon,
-            creates_work_order as "createWorkOrder",
-            work_order_title as "workOrderTitle",
-            work_order_description as "workOrderDescription",
-            work_order_priority as "workOrderPriority",
-            default_asset_id as "defaultAssetId",
-            default_assigned_to as "defaultAssignedTo",
-            active
-          FROM problem_buttons
-        `);
+            creates_work_order as "createWorkOrder"
+        `;
+        
+        // Check for optional Docker-specific columns
+        if (columns.includes('default_notes')) {
+          query += `, default_notes as "defaultNotes"`;
+        }
+        
+        if (columns.includes('default_location')) {
+          query += `, default_location as "defaultLocation"`;
+        }
+        
+        if (columns.includes('requires_asset')) {
+          query += `, requires_asset as "requiresAsset"`;
+        }
+        
+        if (columns.includes('active')) {
+          query += `, active`;
+        } else {
+          query += `, TRUE as active`;
+        }
+        
+        query += ` FROM problem_buttons`;
+        
+        console.log('Executing ultra-safe Docker query:', query);
+        const result = await pool.query(query);
         
         // Transform results to match expected format
         return result.rows.map(row => ({
@@ -1480,23 +1503,40 @@ export class DatabaseStorage implements IStorage {
       
       if (hasCreatesWorkOrder) {
         console.log('Docker schema detected with creates_work_order column');
-        // We're in Docker, use direct Docker-specific query
-        const result = await pool.query(`
+        
+        // Build a query with only the columns that we know exist in the Docker schema
+        let query = `
           SELECT 
             id, 
             label, 
             color, 
             icon,
-            creates_work_order as "createWorkOrder",
-            work_order_title as "workOrderTitle",
-            work_order_description as "workOrderDescription",
-            work_order_priority as "workOrderPriority",
-            default_asset_id as "defaultAssetId",
-            default_assigned_to as "defaultAssignedTo",
-            active
-          FROM problem_buttons
-          WHERE id = $1
-        `, [id]);
+            creates_work_order as "createWorkOrder"
+        `;
+        
+        // Check for optional Docker-specific columns
+        if (columns.includes('default_notes')) {
+          query += `, default_notes as "defaultNotes"`;
+        }
+        
+        if (columns.includes('default_location')) {
+          query += `, default_location as "defaultLocation"`;
+        }
+        
+        if (columns.includes('requires_asset')) {
+          query += `, requires_asset as "requiresAsset"`;
+        }
+        
+        if (columns.includes('active')) {
+          query += `, active`;
+        } else {
+          query += `, TRUE as active`;
+        }
+        
+        query += ` FROM problem_buttons WHERE id = $1`;
+        
+        console.log(`Executing ultra-safe Docker query for button ${id}:`, query);
+        const result = await pool.query(query, [id]);
         
         if (result.rows.length === 0) {
           return undefined;

@@ -1,0 +1,167 @@
+Attaching to maintenancetracker-1_db_1, maintenancetracker-1_pgadmin_1, maintenancetracker-1_app_1
+app_1      | Starting container with entrypoint script at Tue Apr 15 11:41:05 UTC 2025
+app_1      | Running in Docker environment
+app_1      | Running initial browserslist update...
+db_1       |
+db_1       | PostgreSQL Database directory appears to contain a database; Skipping initialization
+db_1       |
+db_1       | 2025-04-15 11:40:59.955 UTC [1] LOG:  starting PostgreSQL 15.12 on x86_64-pc-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit
+db_1       | 2025-04-15 11:40:59.956 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+db_1       | 2025-04-15 11:40:59.956 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+db_1       | 2025-04-15 11:40:59.967 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+db_1       | 2025-04-15 11:40:59.980 UTC [28] LOG:  database system was shut down at 2025-04-15 11:16:13 UTC
+db_1       | 2025-04-15 11:41:00.026 UTC [1] LOG:  database system is ready to accept connections
+pgadmin_1  | email config is {'CHECK_EMAIL_DELIVERABILITY': False, 'ALLOW_SPECIAL_EMAIL_DOMAINS': [], 'GLOBALLY_DELIVERABLE': True}
+app_1      | [2025-04-15T11:41:06.072Z] Starting browserslist database update...
+app_1      | npm warn exec The following package was not found and will be installed: update-browserslist-db@1.1.3
+app_1      | npm notice
+app_1      | npm notice New major version of npm available! 10.8.2 -> 11.3.0
+app_1      | npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.3.0
+app_1      | npm notice To update run: npm install -g npm@11.3.0
+app_1      | npm notice
+app_1      | [2025-04-15T11:41:13.924Z] Update command executed successfully
+app_1      | [2025-04-15T11:41:13.924Z] Latest version:     1.0.30001713
+app_1      | Installed version:  1.0.30001713
+app_1      | caniuse-lite is up to date
+app_1      | caniuse-lite has been successfully updated
+app_1      |
+app_1      | No target browser changes
+app_1      |
+app_1      | [2025-04-15T11:41:13.925Z] Browserslist database update completed successfully
+app_1      | Starting application: node dist/index.js
+app_1      | Environment check:
+app_1      |   - Running in Replit: false
+app_1      |   - Production mode: true
+app_1      |   - FORCE_DB_REBUILD: true
+app_1      |   - Migrations-only mode: false
+app_1      | ⚠️ Database rebuild triggered!
+app_1      | Running in production Docker environment.
+app_1      | Running database migrations...
+app_1      | Successfully connected to database
+app_1      | 🔄 Force rebuilding database...
+app_1      | Running in production mode with FORCE_DB_REBUILD=true
+app_1      | This is typically used for deployment scenarios to ensure database schema matches the application.
+app_1      | ✅ Database schema reset complete
+app_1      | Applying schema...
+app_1      | Database migration completed successfully
+app_1      | Checking for existing admin user...
+app_1      | Creating default admin user...
+app_1      | Default admin user created. Username: admin, Password: admin123
+app_1      | IMPORTANT: Change this password immediately after first login!
+app_1      | Database connection pool closed.
+app_1      | Database rebuilt successfully. Remember to set FORCE_DB_REBUILD=false for subsequent deployments.
+app_1      | Running in production mode
+app_1      | Serving static files from: /app/dist/public
+app_1      | Found required static files
+app_1      | Environment Configuration:
+app_1      | - NODE_ENV: production
+app_1      | - PORT: 5000
+app_1      | - HOST: 0.0.0.0
+app_1      | - DATABASE_URL exists: true
+app_1      | 11:41:16 AM [express] Server started successfully and is serving on port 5000
+app_1      | 11:41:25 AM [express] GET /api/user 401 in 9ms
+pgadmin_1  | NOTE: Configuring authentication for SERVER mode.
+pgadmin_1  |
+pgadmin_1  | pgAdmin 4 - Application Initialisation
+pgadmin_1  | ======================================
+pgadmin_1  |
+app_1      | 11:41:32 AM [express] POST /api/login 200 in 146ms :: {"id":1,"username":"admin","password":"d9927143…
+app_1      | 11:41:32 AM [express] GET /api/maintenance-schedules 304 in 42ms :: []
+app_1      | 11:41:32 AM [express] GET /api/work-orders 304 in 57ms :: []
+app_1      | 11:41:32 AM [express] GET /api/maintenance-completions 304 in 99ms :: []
+app_1      | 11:41:32 AM [express] GET /api/assets 304 in 113ms :: []
+app_1      | 11:41:35 AM [express] GET /api/admin/users 200 in 18ms :: [{"id":1,"username":"admin","password":"d99…
+app_1      | 11:41:35 AM [express] GET /api/admin/pending-users 304 in 19ms :: []
+app_1      | 11:41:35 AM [express] GET /api/health 200 in 2ms :: {"status":"ok","timestamp":"2025-04-15T11:41:35.9…
+app_1      | Running in Docker environment: false
+app_1      | 11:41:36 AM [express] GET /api/problem-events 304 in 44ms :: []
+app_1      | Available columns in problem_buttons table: [
+app_1      |   'id',
+app_1      |   'label',
+app_1      |   'color',
+app_1      |   'icon',
+app_1      |   'default_notes',
+app_1      |   'default_location',
+app_1      |   'requires_asset',
+app_1      |   'creates_work_order'
+app_1      | ]
+app_1      | Docker schema detected with creates_work_order column
+db_1       | 2025-04-15 11:41:36.440 UTC [79] ERROR:  column "work_order_title" does not exist at character 160
+db_1       | 2025-04-15 11:41:36.440 UTC [79] STATEMENT:
+db_1       |              SELECT
+db_1       |                id,
+db_1       |                label,
+db_1       |                color,
+db_1       |                icon,
+db_1       |                creates_work_order as "createWorkOrder",
+db_1       |                work_order_title as "workOrderTitle",
+db_1       |                work_order_description as "workOrderDescription",
+db_1       |                work_order_priority as "workOrderPriority",
+db_1       |                default_asset_id as "defaultAssetId",
+db_1       |                default_assigned_to as "defaultAssignedTo",
+db_1       |                active
+db_1       |              FROM problem_buttons
+db_1       |
+app_1      | All approaches to fetch problem buttons failed: error: column "work_order_title" does not exist
+app_1      |     at /app/node_modules/pg-pool/index.js:45:11
+app_1      |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+app_1      |     at async DatabaseStorage.getProblemButtons (file:///app/dist/index.js:1604:24)
+app_1      |     at async file:///app/dist/index.js:2736:23 {
+app_1      |   length: 117,
+app_1      |   severity: 'ERROR',
+app_1      |   code: '42703',
+app_1      |   detail: undefined,
+app_1      |   hint: undefined,
+app_1      |   position: '160',
+app_1      |   internalPosition: undefined,
+app_1      |   internalQuery: undefined,
+app_1      |   where: undefined,
+app_1      |   schema: undefined,
+app_1      |   table: undefined,
+app_1      |   column: undefined,
+app_1      |   dataType: undefined,
+app_1      |   constraint: undefined,
+app_1      |   file: 'parse_relation.c',
+app_1      |   line: '3665',
+app_1      |   routine: 'errorMissingColumn'
+app_1      | }
+app_1      | Returning empty problem buttons array as last resort fallback
+app_1      | 11:41:36 AM [express] GET /api/problem-buttons 304 in 91ms :: []
+app_1      | Available columns in settings table: [
+app_1      |   'id',
+app_1      |   'company_name',
+app_1      |   'company_logo',
+app_1      |   'default_priority',
+app_1      |   'default_asset_id',
+app_1      |   'default_assigned_to',
+app_1      |   'notify_maintenance',
+app_1      |   'skip_details_form'
+app_1      | ]
+db_1       | 2025-04-15 11:41:39.471 UTC [80] ERROR:  column "work_week_start" does not exist at character 14
+db_1       | 2025-04-15 11:41:39.471 UTC [80] STATEMENT:  select "id", "work_week_start", "work_week_end", "work_day_start", "work_day_end", "time_zone", "date_format", "time_format", "email_notifications", "maintenance_due_reminder", "critical_alerts_only", "theme", "accent_color", "company_name", "company_logo", "holiday_calendar", "role_default_pages", "updated_at" from "settings" order by "settings"."updated_at" desc limit $1
+app_1      | Error getting settings: error: column "work_week_start" does not exist
+app_1      |     at /app/node_modules/pg-pool/index.js:45:11
+app_1      |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+app_1      |     at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22
+app_1      |     at async DatabaseStorage.getSettings (file:///app/dist/index.js:1438:34)
+app_1      |     at async file:///app/dist/index.js:2696:25 {
+app_1      |   length: 115,
+app_1      |   severity: 'ERROR',
+app_1      |   code: '42703',
+app_1      |   detail: undefined,
+app_1      |   hint: undefined,
+app_1      |   position: '14',
+app_1      |   internalPosition: undefined,
+app_1      |   internalQuery: undefined,
+app_1      |   where: undefined,
+app_1      |   schema: undefined,
+app_1      |   table: undefined,
+app_1      |   column: undefined,
+app_1      |   dataType: undefined,
+app_1      |   constraint: undefined,
+app_1      |   file: 'parse_relation.c',
+app_1      |   line: '3665',
+app_1      |   routine: 'errorMissingColumn'
+app_1      | }
+app_1      | 11:41:39 AM [express] GET /api/settings 200 in 53ms :: {"id":1,"workWeekStart":1,"workWeekEnd":5,"wor…
+pgadmin_1  | ----------

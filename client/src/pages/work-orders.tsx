@@ -461,6 +461,7 @@ export default function WorkOrders() {
                           <SelectContent>
                             <SelectItem value={WorkOrderStatus.OPEN}>Open</SelectItem>
                             <SelectItem value={WorkOrderStatus.IN_PROGRESS}>In Progress</SelectItem>
+                            <SelectItem value={WorkOrderStatus.WAITING_ON_PARTS}>Waiting on Parts</SelectItem>
                             <SelectItem value={WorkOrderStatus.COMPLETED}>Completed</SelectItem>
                           </SelectContent>
                         </Select>
@@ -580,6 +581,7 @@ export default function WorkOrders() {
                               <SelectContent>
                                 <SelectItem value={WorkOrderStatus.OPEN}>Open</SelectItem>
                                 <SelectItem value={WorkOrderStatus.IN_PROGRESS}>In Progress</SelectItem>
+                                <SelectItem value={WorkOrderStatus.WAITING_ON_PARTS}>Waiting on Parts</SelectItem>
                                 <SelectItem value={WorkOrderStatus.COMPLETED}>Completed</SelectItem>
                                 <SelectItem value={WorkOrderStatus.ARCHIVED}>Archived</SelectItem>
                               </SelectContent>

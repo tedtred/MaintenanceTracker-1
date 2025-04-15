@@ -1100,18 +1100,155 @@ export class DatabaseStorage implements IStorage {
 
   // Problem tracking methods
   async getProblemButtons(): Promise<ProblemButton[]> {
-    return await db
-      .select()
-      .from(problemButtons)
-      .orderBy(asc(problemButtons.order));
+    try {
+      // Try using the ORM approach first
+      return await db
+        .select()
+        .from(problemButtons)
+        .orderBy(asc(problemButtons.order));
+    } catch (error) {
+      console.error('Error fetching problem buttons with ORM, trying fallback:', error);
+      
+      try {
+        // First check if the 'order' column exists
+        const tableInfo = await pool.query(`
+          SELECT column_name
+          FROM information_schema.columns
+          WHERE table_name = 'problem_buttons'
+        `);
+        
+        const columns = tableInfo.rows.map(row => row.column_name);
+        const hasOrderColumn = columns.includes('order');
+        
+        // Fallback query with or without ORDER BY depending on column existence
+        const query = `
+          SELECT id, label, color, icon, 
+                 create_work_order as "createWorkOrder",
+                 work_order_title as "workOrderTitle", 
+                 work_order_description as "workOrderDescription",
+                 work_order_priority as "workOrderPriority",
+                 default_asset_id as "defaultAssetId",
+                 default_assigned_to as "defaultAssignedTo",
+                 notify_maintenance as "notifyMaintenance",
+                 skip_details_form as "skipDetailsForm",
+                 active
+                 ${hasOrderColumn ? ', "order"' : ''}
+          FROM problem_buttons
+          ${hasOrderColumn ? 'ORDER BY "order" ASC' : ''}
+        `;
+        
+        const result = await pool.query(query);
+        
+        // Convert any raw PostgreSQL results to properly typed objects
+        const buttons = result.rows.map(row => {
+          // Ensure all buttons have order, default to 0 if not present
+          if (!hasOrderColumn) {
+            row.order = 0;
+          }
+          
+          return {
+            id: row.id,
+            label: row.label,
+            color: row.color,
+            icon: row.icon,
+            order: row.order || 0,
+            active: row.active,
+            createWorkOrder: row.createWorkOrder,
+            workOrderTitle: row.workOrderTitle,
+            workOrderDescription: row.workOrderDescription,
+            workOrderPriority: row.workOrderPriority,
+            defaultAssetId: row.defaultAssetId,
+            defaultAssignedTo: row.defaultAssignedTo,
+            notifyMaintenance: row.notifyMaintenance,
+            skipDetailsForm: row.skipDetailsForm,
+            createdAt: new Date(), // Default when not found in DB
+            updatedAt: new Date()  // Default when not found in DB
+          };
+        });
+        
+        return buttons;
+      } catch (fallbackError) {
+        console.error('Fallback query for problem buttons also failed:', fallbackError);
+        throw error; // Throw the original error
+      }
+    }
   }
 
   async getProblemButton(id: number): Promise<ProblemButton | undefined> {
-    const [button] = await db
-      .select()
-      .from(problemButtons)
-      .where(eq(problemButtons.id, id));
-    return button;
+    try {
+      // Try the ORM approach first
+      const [button] = await db
+        .select()
+        .from(problemButtons)
+        .where(eq(problemButtons.id, id));
+      return button;
+    } catch (error) {
+      console.error(`Error fetching problem button ${id} with ORM, trying fallback:`, error);
+      
+      try {
+        // First check if the table structure
+        const tableInfo = await pool.query(`
+          SELECT column_name
+          FROM information_schema.columns
+          WHERE table_name = 'problem_buttons'
+        `);
+        
+        const columns = tableInfo.rows.map(row => row.column_name);
+        const hasOrderColumn = columns.includes('order');
+        
+        // Fallback query with direct SQL
+        const query = `
+          SELECT id, label, color, icon, 
+                 create_work_order as "createWorkOrder",
+                 work_order_title as "workOrderTitle", 
+                 work_order_description as "workOrderDescription",
+                 work_order_priority as "workOrderPriority",
+                 default_asset_id as "defaultAssetId",
+                 default_assigned_to as "defaultAssignedTo",
+                 notify_maintenance as "notifyMaintenance",
+                 skip_details_form as "skipDetailsForm",
+                 active
+                 ${hasOrderColumn ? ', "order"' : ''}
+          FROM problem_buttons
+          WHERE id = $1
+        `;
+        
+        const result = await pool.query(query, [id]);
+        
+        if (result.rows.length === 0) {
+          return undefined;
+        }
+        
+        const row = result.rows[0];
+        
+        // Ensure button has order, default to 0 if not present
+        if (!hasOrderColumn) {
+          row.order = 0;
+        }
+        
+        return {
+          id: row.id,
+          label: row.label,
+          color: row.color,
+          icon: row.icon,
+          order: row.order || 0,
+          active: row.active,
+          createWorkOrder: row.createWorkOrder,
+          workOrderTitle: row.workOrderTitle,
+          workOrderDescription: row.workOrderDescription,
+          workOrderPriority: row.workOrderPriority,
+          defaultAssetId: row.defaultAssetId,
+          defaultAssignedTo: row.defaultAssignedTo,
+          notifyMaintenance: row.notifyMaintenance,
+          skipDetailsForm: row.skipDetailsForm,
+          createdAt: new Date(), // Default when not found in DB
+          updatedAt: new Date()  // Default when not found in DB
+        };
+      } catch (fallbackError) {
+        console.error(`Fallback query for problem button ${id} also failed:`, fallbackError);
+        throw error; // Throw the original error
+      }
+    }
   }
 
   async createProblemButton(button: InsertProblemButton): Promise<ProblemButton> {

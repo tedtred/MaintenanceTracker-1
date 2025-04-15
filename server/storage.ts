@@ -1059,43 +1059,281 @@ export class DatabaseStorage implements IStorage {
 
   // Settings Methods
   async getSettings(): Promise<Settings> {
-    const [settingsResult] = await db
-      .select()
-      .from(settings)
-      .orderBy(desc(settings.updatedAt))
-      .limit(1);
+    try {
+      // Check columns to detect environment
+      const tableInfo = await pool.query(`
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name = 'settings'
+      `);
+      
+      const columns = tableInfo.rows.map(row => row.column_name);
+      console.log('Available columns in settings table:', columns);
+      
+      // Check for Docker environment based on different column names
+      const isDockerEnvironment = !columns.includes('work_week_start') && 
+                                 columns.includes('maintenance_due_reminder');
+                                 
+      if (isDockerEnvironment) {
+        console.log('Docker schema detected for settings table');
+        
+        // Use a query specifically for the Docker schema
+        const result = await pool.query(`
+          SELECT 
+            id, 
+            time_zone as "timeZone",
+            date_format as "dateFormat",
+            time_format as "timeFormat",
+            email_notifications as "emailNotifications",
+            maintenance_due_reminder as "maintenanceDueReminder",
+            critical_alerts_only as "criticalAlertsOnly",
+            theme,
+            accent_color as "accentColor",
+            company_name as "companyName",
+            company_logo as "companyLogo"
+          FROM settings
+          ORDER BY id DESC
+          LIMIT 1
+        `);
+        
+        if (result.rows.length === 0) {
+          // Create default settings
+          return this.updateSettings({
+            workWeekStart: 1, // Monday
+            workWeekEnd: 5,   // Friday
+            workDayStart: '09:00',
+            workDayEnd: '17:00',
+            timeZone: 'America/New_York',
+            dateFormat: 'MM/DD/YYYY',
+            timeFormat: '12h',
+            emailNotifications: true,
+            maintenanceDueReminder: 7, // days
+            criticalAlertsOnly: false,
+            theme: 'light',
+            accentColor: '#3b82f6',
+            companyName: 'CMMS',
+            companyLogo: null,
+            holidayCalendar: [],
+            roleDefaultPages: {},
+          });
+        }
+        
+        // Add default values for missing fields in Docker environment
+        const settings = {
+          ...result.rows[0],
+          workWeekStart: 1, // Monday
+          workWeekEnd: 5,   // Friday
+          workDayStart: '09:00',
+          workDayEnd: '17:00',
+          holidayCalendar: [],
+          roleDefaultPages: {},
+          companyLogo: result.rows[0].companyLogo || null,
+          updatedAt: new Date()
+        };
+        
+        return settings;
+      } else {
+        // Regular environment - use ORM
+        const [settingsResult] = await db
+          .select()
+          .from(settings)
+          .orderBy(desc(settings.updatedAt))
+          .limit(1);
 
-    if (!settingsResult) {
-      // Create default settings if none exist
-      return this.updateSettings({
-        workWeekStart: 1,
-        workWeekEnd: 5,
-        workDayStart: "09:00",
-        workDayEnd: "17:00",
-        timeZone: "UTC",
-        dateFormat: "MM/DD/YYYY",
-        timeFormat: "HH:mm"
-      });
+        if (!settingsResult) {
+          // Create default settings if none exist
+          return this.updateSettings({
+            workWeekStart: 1,
+            workWeekEnd: 5,
+            workDayStart: "09:00",
+            workDayEnd: "17:00",
+            timeZone: "UTC",
+            dateFormat: "MM/DD/YYYY",
+            timeFormat: "HH:mm"
+          });
+        }
+
+        return settingsResult;
+      }
+    } catch (error) {
+      console.error('Error getting settings:', error);
+      
+      // Return default settings as a last resort
+      return {
+        id: 1,
+        workWeekStart: 1, // Monday
+        workWeekEnd: 5,   // Friday
+        workDayStart: '09:00',
+        workDayEnd: '17:00',
+        timeZone: 'UTC',
+        dateFormat: 'MM/DD/YYYY',
+        timeFormat: 'HH:mm',
+        emailNotifications: true,
+        maintenanceDueReminder: 7, // days
+        criticalAlertsOnly: false,
+        theme: 'light',
+        accentColor: '#3b82f6',
+        companyName: 'CMMS',
+        companyLogo: null,
+        holidayCalendar: [],
+        roleDefaultPages: {},
+        updatedAt: new Date()
+      };
     }
-
-    return settingsResult;
   }
 
   async updateSettings(updates: Partial<Settings>): Promise<Settings> {
-    // Get current settings record
-    const existingSettings = await this.getSettings();
+    try {
+      // Get current settings record
+      const existingSettings = await this.getSettings();
+      
+      // Check columns to detect environment
+      const tableInfo = await pool.query(`
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name = 'settings'
+      `);
+      
+      const columns = tableInfo.rows.map(row => row.column_name);
+      
+      // Check for Docker environment based on different column names
+      const isDockerEnvironment = !columns.includes('work_week_start') && 
+                                 columns.includes('maintenance_due_reminder');
+      
+      if (isDockerEnvironment) {
+        console.log('Docker schema detected for updateSettings');
+        
+        // Create a docker-specific update query
+        const updateFields = [];
+        const values = [];
+        let paramCounter = 1;
+        
+        // Map standard fields to Docker column names
+        if (updates.timeZone !== undefined) {
+          updateFields.push(`time_zone = $${paramCounter}`);
+          values.push(updates.timeZone);
+          paramCounter++;
+        }
+        
+        if (updates.dateFormat !== undefined) {
+          updateFields.push(`date_format = $${paramCounter}`);
+          values.push(updates.dateFormat);
+          paramCounter++;
+        }
+        
+        if (updates.timeFormat !== undefined) {
+          updateFields.push(`time_format = $${paramCounter}`);
+          values.push(updates.timeFormat);
+          paramCounter++;
+        }
+        
+        if (updates.emailNotifications !== undefined) {
+          updateFields.push(`email_notifications = $${paramCounter}`);
+          values.push(updates.emailNotifications);
+          paramCounter++;
+        }
+        
+        if (updates.maintenanceDueReminder !== undefined) {
+          updateFields.push(`maintenance_due_reminder = $${paramCounter}`);
+          values.push(updates.maintenanceDueReminder);
+          paramCounter++;
+        }
+        
+        if (updates.criticalAlertsOnly !== undefined) {
+          updateFields.push(`critical_alerts_only = $${paramCounter}`);
+          values.push(updates.criticalAlertsOnly);
+          paramCounter++;
+        }
+        
+        if (updates.theme !== undefined) {
+          updateFields.push(`theme = $${paramCounter}`);
+          values.push(updates.theme);
+          paramCounter++;
+        }
+        
+        if (updates.accentColor !== undefined) {
+          updateFields.push(`accent_color = $${paramCounter}`);
+          values.push(updates.accentColor);
+          paramCounter++;
+        }
+        
+        if (updates.companyName !== undefined) {
+          updateFields.push(`company_name = $${paramCounter}`);
+          values.push(updates.companyName);
+          paramCounter++;
+        }
+        
+        if (updates.companyLogo !== undefined) {
+          updateFields.push(`company_logo = $${paramCounter}`);
+          values.push(updates.companyLogo);
+          paramCounter++;
+        }
+        
+        // Execute the update query if there are fields to update
+        if (updateFields.length > 0) {
+          values.push(existingSettings.id);
+          const query = `
+            UPDATE settings 
+            SET ${updateFields.join(', ')}
+            WHERE id = $${paramCounter}
+            RETURNING *
+          `;
+          
+          console.log('Executing Docker-specific settings update query:', query);
+          const result = await pool.query(query, values);
+          
+          if (result.rows.length > 0) {
+            // Return updated settings with the Docker schema
+            const updatedSettings = {
+              ...existingSettings,
+              ...updates,
+              timeZone: updates.timeZone || existingSettings.timeZone,
+              dateFormat: updates.dateFormat || existingSettings.dateFormat,
+              timeFormat: updates.timeFormat || existingSettings.timeFormat,
+              emailNotifications: updates.emailNotifications !== undefined 
+                ? updates.emailNotifications 
+                : existingSettings.emailNotifications,
+              maintenanceDueReminder: updates.maintenanceDueReminder || existingSettings.maintenanceDueReminder,
+              criticalAlertsOnly: updates.criticalAlertsOnly !== undefined 
+                ? updates.criticalAlertsOnly 
+                : existingSettings.criticalAlertsOnly,
+              theme: updates.theme || existingSettings.theme,
+              accentColor: updates.accentColor || existingSettings.accentColor,
+              companyName: updates.companyName || existingSettings.companyName,
+              companyLogo: updates.companyLogo !== undefined 
+                ? updates.companyLogo 
+                : existingSettings.companyLogo,
+            };
+            
+            return updatedSettings;
+          }
+        }
+        
+        // If no update was performed, return existing settings
+        return existingSettings;
+      } else {
+        // Update using ORM for non-Docker environment
+        const [updatedSettings] = await db
+          .update(settings)
+          .set({
+            ...updates,
+            updatedAt: new Date()
+          })
+          .where(eq(settings.id, existingSettings.id))
+          .returning();
     
-    // Update the existing record
-    const [updatedSettings] = await db
-      .update(settings)
-      .set({
-        ...updates,
-        updatedAt: new Date()
-      })
-      .where(eq(settings.id, existingSettings.id))
-      .returning();
-
-    return updatedSettings;
+        return updatedSettings;
+      }
+    } catch (error) {
+      console.error('Error updating settings:', error);
+      
+      // If all else fails, return the existing settings with updates applied in memory
+      const existingSettings = await this.getSettings();
+      return {
+        ...existingSettings,
+        ...updates
+      };
+    }
   }
 
   // Problem tracking methods

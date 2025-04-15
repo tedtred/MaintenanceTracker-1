@@ -1,0 +1,154 @@
+app_1      | 11:06:46 AM [express] Server started successfully and is serving on port 5000
+pgadmin_1  | NOTE: Configuring authentication for SERVER mode.
+pgadmin_1  |
+pgadmin_1  | pgAdmin 4 - Application Initialisation
+pgadmin_1  | ======================================
+pgadmin_1  |
+app_1      | 11:07:06 AM [express] GET /api/health 200 in 12ms :: {"status":"ok","timestamp":"2025-04-15T11:07:06.…
+pgadmin_1  | ----------
+pgadmin_1  | Loading servers with:
+pgadmin_1  | User: admin@admin.com
+pgadmin_1  | SQLite pgAdmin config: /var/lib/pgadmin/pgadmin4.db
+pgadmin_1  | ----------
+pgadmin_1  | Added 0 Server Group(s) and 1 Server(s).
+pgadmin_1  | postfix/postlog: starting the Postfix mail system
+app_1      | 11:07:36 AM [express] GET /api/health 200 in 2ms :: {"status":"ok","timestamp":"2025-04-15T11:07:36.2…
+pgadmin_1  | [2025-04-15 11:07:42 +0000] [1] [INFO] Starting gunicorn 22.0.0
+pgadmin_1  | [2025-04-15 11:07:42 +0000] [1] [INFO] Listening at: http://[::]:80 (1)
+pgadmin_1  | [2025-04-15 11:07:42 +0000] [1] [INFO] Using worker: gthread
+pgadmin_1  | [2025-04-15 11:07:42 +0000] [121] [INFO] Booting worker with pid: 121
+app_1      | 11:08:06 AM [express] GET /api/health 200 in 2ms :: {"status":"ok","timestamp":"2025-04-15T11:08:06.3…
+app_1      | 11:08:36 AM [express] GET /api/health 200 in 1ms :: {"status":"ok","timestamp":"2025-04-15T11:08:36.5…
+app_1      | 11:08:58 AM [express] GET /api/user 401 in 4ms
+app_1      | 11:09:05 AM [express] POST /api/login 200 in 138ms :: {"id":1,"username":"admin","password":"30c2f30b…
+app_1      | 11:09:05 AM [express] GET /api/work-orders 304 in 30ms :: []
+app_1      | 11:09:05 AM [express] GET /api/maintenance-schedules 304 in 39ms :: []
+app_1      | 11:09:05 AM [express] GET /api/maintenance-completions 304 in 79ms :: []
+app_1      | 11:09:05 AM [express] GET /api/assets 304 in 90ms :: []
+app_1      | 11:09:06 AM [express] GET /api/health 200 in 2ms :: {"status":"ok","timestamp":"2025-04-15T11:09:06.6…
+app_1      | 11:09:36 AM [express] GET /api/health 200 in 3ms :: {"status":"ok","timestamp":"2025-04-15T11:09:36.7…
+app_1      | 11:10:06 AM [express] GET /api/health 200 in 2ms :: {"status":"ok","timestamp":"2025-04-15T11:10:06.8…
+db_1       | 2025-04-15 11:10:07.580 UTC [354] ERROR:  column "work_week_start" does not exist at character 14
+db_1       | 2025-04-15 11:10:07.580 UTC [354] STATEMENT:  select "id", "work_week_start", "work_week_end", "work_day_start", "work_day_end", "time_zone", "date_format", "time_format", "email_notifications", "maintenance_due_reminder", "critical_alerts_only", "theme", "accent_color", "company_name", "company_logo", "holiday_calendar", "role_default_pages", "updated_at" from "settings" order by "settings"."updated_at" desc limit $1
+app_1      | Error: error: column "work_week_start" does not exist
+app_1      |     at /app/node_modules/pg-pool/index.js:45:11
+app_1      |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+app_1      |     at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22
+app_1      |     at async DatabaseStorage.getSettings (file:///app/dist/index.js:1372:30)
+app_1      |     at async file:///app/dist/index.js:2509:25 {
+app_1      |   length: 115,
+app_1      |   severity: 'ERROR',
+app_1      |   code: '42703',
+app_1      |   detail: undefined,
+app_1      |   hint: undefined,
+app_1      |   position: '14',
+app_1      |   internalPosition: undefined,
+app_1      |   internalQuery: undefined,
+app_1      |   where: undefined,
+app_1      |   schema: undefined,
+app_1      |   table: undefined,
+app_1      |   column: undefined,
+app_1      |   dataType: undefined,
+app_1      |   constraint: undefined,
+app_1      |   file: 'parse_relation.c',
+app_1      |   line: '3665',
+app_1      |   routine: 'errorMissingColumn'
+app_1      | }
+app_1      | 11:10:07 AM [express] GET /api/settings 500 in 85ms :: {"message":"column \"work_week_start\" does no…
+db_1       | 2025-04-15 11:10:08.933 UTC [355] ERROR:  column "order" does not exist at character 40
+db_1       | 2025-04-15 11:10:08.933 UTC [355] STATEMENT:  select "id", "label", "color", "icon", "order", "active", "create_work_order", "work_order_title", "work_order_description", "work_order_priority", "default_asset_id", "default_assigned_to", "notify_maintenance", "skip_details_form", "created_at", "updated_at" from "problem_buttons" order by "problem_buttons"."order" asc
+app_1      | Error fetching problem buttons with ORM, trying fallback: error: column "order" does not exist
+app_1      |     at /app/node_modules/pg-pool/index.js:45:11
+app_1      |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+app_1      |     at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22
+app_1      |     at async DatabaseStorage.getProblemButtons (file:///app/dist/index.js:1397:22)
+app_1      |     at async file:///app/dist/index.js:2549:23 {
+app_1      |   length: 105,
+app_1      |   severity: 'ERROR',
+app_1      |   code: '42703',
+app_1      |   detail: undefined,
+app_1      |   hint: undefined,
+app_1      |   position: '40',
+app_1      |   internalPosition: undefined,
+app_1      |   internalQuery: undefined,
+app_1      |   where: undefined,
+app_1      |   schema: undefined,
+app_1      |   table: undefined,
+app_1      |   column: undefined,
+app_1      |   dataType: undefined,
+app_1      |   constraint: undefined,
+app_1      |   file: 'parse_relation.c',
+app_1      |   line: '3665',
+app_1      |   routine: 'errorMissingColumn'
+app_1      | }
+app_1      | 11:10:08 AM [express] GET /api/problem-events 304 in 68ms :: []
+app_1      | Available columns in problem_buttons table: [
+app_1      |   'id',
+app_1      |   'label',
+app_1      |   'color',
+app_1      |   'icon',
+app_1      |   'default_notes',
+app_1      |   'default_location',
+app_1      |   'requires_asset',
+app_1      |   'creates_work_order'
+app_1      | ]
+app_1      | Executing fallback query: SELECT id, label, color, icon, creates_work_order as "createWorkOrder", NULL as "workOrderTitle", NULL as "workOrderDescription", NULL as "workOrderPriority", NULL as "defaultAssetId", NULL as "defaultAssignedTo", FALSE as "notifyMaintenance", FALSE as "skipDetailsForm", TRUE as active FROM problem_buttons
+app_1      | 11:10:09 AM [express] GET /api/problem-buttons 200 in 101ms :: []
+app_1      | 11:10:36 AM [express] GET /api/health 200 in 1ms :: {"status":"ok","timestamp":"2025-04-15T11:10:36.9…
+db_1       | 2025-04-15 11:10:55.731 UTC [423] ERROR:  column "work_week_start" does not exist at character 14
+db_1       | 2025-04-15 11:10:55.731 UTC [423] STATEMENT:  select "id", "work_week_start", "work_week_end", "work_day_start", "work_day_end", "time_zone", "date_format", "time_format", "email_notifications", "maintenance_due_reminder", "critical_alerts_only", "theme", "accent_color", "company_name", "company_logo", "holiday_calendar", "role_default_pages", "updated_at" from "settings" order by "settings"."updated_at" desc limit $1
+app_1      | Error: error: column "work_week_start" does not exist
+app_1      |     at /app/node_modules/pg-pool/index.js:45:11
+app_1      |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+app_1      |     at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22
+app_1      |     at async DatabaseStorage.getSettings (file:///app/dist/index.js:1372:30)
+app_1      |     at async file:///app/dist/index.js:2509:25 {
+app_1      |   length: 115,
+app_1      |   severity: 'ERROR',
+app_1      |   code: '42703',
+app_1      |   detail: undefined,
+app_1      |   hint: undefined,
+app_1      |   position: '14',
+app_1      |   internalPosition: undefined,
+app_1      |   internalQuery: undefined,
+app_1      |   where: undefined,
+app_1      |   schema: undefined,
+app_1      |   table: undefined,
+app_1      |   column: undefined,
+app_1      |   dataType: undefined,
+app_1      |   constraint: undefined,
+app_1      |   file: 'parse_relation.c',
+app_1      |   line: '3665',
+app_1      |   routine: 'errorMissingColumn'
+app_1      | }
+app_1      | 11:10:55 AM [express] GET /api/settings 500 in 78ms :: {"message":"column \"work_week_start\" does no…
+db_1       | 2025-04-15 11:11:06.990 UTC [448] ERROR:  column "work_week_start" does not exist at character 14
+db_1       | 2025-04-15 11:11:06.990 UTC [448] STATEMENT:  select "id", "work_week_start", "work_week_end", "work_day_start", "work_day_end", "time_zone", "date_format", "time_format", "email_notifications", "maintenance_due_reminder", "critical_alerts_only", "theme", "accent_color", "company_name", "company_logo", "holiday_calendar", "role_default_pages", "updated_at" from "settings" order by "settings"."updated_at" desc limit $1
+app_1      | Error: error: column "work_week_start" does not exist
+app_1      |     at /app/node_modules/pg-pool/index.js:45:11
+app_1      |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+app_1      |     at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22
+app_1      |     at async DatabaseStorage.getSettings (file:///app/dist/index.js:1372:30)
+app_1      |     at async file:///app/dist/index.js:2509:25 {
+app_1      |   length: 115,
+app_1      |   severity: 'ERROR',
+app_1      |   code: '42703',
+app_1      |   detail: undefined,
+app_1      |   hint: undefined,
+app_1      |   position: '14',
+app_1      |   internalPosition: undefined,
+app_1      |   internalQuery: undefined,
+app_1      |   where: undefined,
+app_1      |   schema: undefined,
+app_1      |   table: undefined,
+app_1      |   column: undefined,
+app_1      |   dataType: undefined,
+app_1      |   constraint: undefined,
+app_1      |   file: 'parse_relation.c',
+app_1      |   line: '3665',
+app_1      |   routine: 'errorMissingColumn'
+app_1      | }
+app_1      | 11:11:07 AM [express] GET /api/settings 500 in 89ms :: {"message":"column \"work_week_start\" does no…
+app_1      | 11:11:07 AM [express] GET /api/health 200 in 3ms :: {"status":"ok","timestamp":"2025-04-15T11:11:07.0…
+app_1      | 11:11:14 AM [express] GET /api/admin/users 200 in 17ms :: [{"id":1,"username":"admin","password":"30c…
+app_1      | 11:11:14 AM [express] GET /api/admin/pending-users 304 in 50ms :: []

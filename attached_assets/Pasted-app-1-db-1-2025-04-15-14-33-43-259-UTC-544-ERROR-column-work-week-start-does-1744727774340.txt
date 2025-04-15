@@ -1,0 +1,86 @@
+app_1      | ]
+db_1       | 2025-04-15 14:33:43.259 UTC [544] ERROR:  column "work_week_start" does not exist at character 14
+db_1       | 2025-04-15 14:33:43.259 UTC [544] STATEMENT:  select "id", "work_week_start", "work_week_end", "work_day_start", "work_day_end", "time_zone", "date_format", "time_format", "email_notifications", "maintenance_due_reminder", "critical_alerts_only", "theme", "accent_color", "company_name", "company_logo", "holiday_calendar", "role_default_pages", "updated_at" from "settings" order by "settings"."updated_at" desc limit $1
+app_1      | Error getting settings: error: column "work_week_start" does not exist
+app_1      |     at /app/node_modules/pg-pool/index.js:45:11
+app_1      |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+app_1      |     at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22
+app_1      |     at async DatabaseStorage.getSettings (file:///app/dist/index.js:1499:34)
+app_1      |     at async file:///app/dist/index.js:2776:25 {
+app_1      |   length: 115,
+app_1      |   severity: 'ERROR',
+app_1      |   code: '42703',
+app_1      |   detail: undefined,
+app_1      |   hint: undefined,
+app_1      |   position: '14',
+app_1      |   internalPosition: undefined,
+app_1      |   internalQuery: undefined,
+app_1      |   where: undefined,
+app_1      |   schema: undefined,
+app_1      |   table: undefined,
+app_1      |   column: undefined,
+app_1      |   dataType: undefined,
+app_1      |   constraint: undefined,
+app_1      |   file: 'parse_relation.c',
+app_1      |   line: '3665',
+app_1      |   routine: 'errorMissingColumn'
+app_1      | }
+app_1      | 2:33:43 PM [express] GET /api/settings 200 in 112ms :: {"id":1,"workWeekStart":1,"workWeekEnd":5,"wo…
+app_1      | Running in Docker environment: false
+app_1      | Available columns in problem_buttons table: [
+app_1      |   'id',
+app_1      |   'label',
+app_1      |   'color',
+app_1      |   'icon',
+app_1      |   'default_notes',
+app_1      |   'default_location',
+app_1      |   'requires_asset',
+app_1      |   'creates_work_order'
+app_1      | ]
+app_1      | Docker schema detected with creates_work_order column
+app_1      | Executing ultra-safe Docker query:
+app_1      |           SELECT
+app_1      |             id,
+app_1      |             label,
+app_1      |             color,
+app_1      |             icon,
+app_1      |             creates_work_order as "createWorkOrder"
+app_1      |         , default_notes as "defaultNotes", default_location as "defaultLocation", requires_asset as "requiresAsset", TRUE as active FROM problem_buttons
+app_1      | 2:33:44 PM [express] GET /api/problem-buttons 304 in 51ms :: []
+app_1      | 2:33:44 PM [express] GET /api/problem-events 304 in 53ms :: []
+app_1      | 2:34:00 PM [express] GET /api/health 200 in 2ms :: {"status":"ok","timestamp":"2025-04-15T14:34:00.7…
+app_1      | 2:34:17 PM [express] POST /api/maintenance-schedules 400 in 45ms :: {"message":"Validation error","e…
+app_1      | 2:34:18 PM [express] POST /api/maintenance-schedules 400 in 12ms :: {"message":"Validation error","e…
+app_1      | 2:34:19 PM [express] POST /api/maintenance-schedules 400 in 12ms :: {"message":"Validation error","e…
+app_1      | 2:34:30 PM [express] GET /api/health 200 in 1ms :: {"status":"ok","timestamp":"2025-04-15T14:34:30.8…
+app_1      | 2:35:00 PM [express] GET /api/health 200 in 2ms :: {"status":"ok","timestamp":"2025-04-15T14:35:00.9…
+app_1      | 2:35:31 PM [express] GET /api/health 200 in 1ms :: {"status":"ok","timestamp":"2025-04-15T14:35:31.0…
+db_1       | 2025-04-15 14:35:32.865 UTC [704] ERROR:  column "field_name" of relation "maintenance_change_logs" does not exist at character 104
+db_1       | 2025-04-15 14:35:32.865 UTC [704] STATEMENT:  insert into "maintenance_change_logs" ("id", "schedule_id", "changed_by", "changed_at", "change_type", "field_name", "old_value", "new_value", "notes") values (default, $1, $2, default, $3, default, default, $4, default) returning "id", "schedule_id", "changed_by", "changed_at", "change_type", "field_name", "old_value", "new_value", "notes"
+app_1      | Error: error: column "field_name" of relation "maintenance_change_logs" does not exist
+app_1      |     at /app/node_modules/pg-pool/index.js:45:11
+app_1      |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+app_1      |     at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22
+app_1      |     at async DatabaseStorage.createMaintenanceChangeLog (file:///app/dist/index.js:1355:22)
+app_1      |     at async DatabaseStorage.createMaintenanceSchedule (file:///app/dist/index.js:1160:5)
+app_1      |     at async file:///app/dist/index.js:2698:24 {
+app_1      |   length: 147,
+app_1      |   severity: 'ERROR',
+app_1      |   code: '42703',
+app_1      |   detail: undefined,
+app_1      |   hint: undefined,
+app_1      |   position: '104',
+app_1      |   internalPosition: undefined,
+app_1      |   internalQuery: undefined,
+app_1      |   where: undefined,
+app_1      |   schema: undefined,
+app_1      |   table: undefined,
+app_1      |   column: undefined,
+app_1      |   dataType: undefined,
+app_1      |   constraint: undefined,
+app_1      |   file: 'parse_target.c',
+app_1      |   line: '1075',
+app_1      |   routine: 'checkInsertTargets'
+app_1      | }
+app_1      | 2:35:32 PM [express] POST /api/maintenance-schedules 500 in 87ms :: {"message":"column \"field_name\…
+

@@ -2009,6 +2009,12 @@ export class DatabaseStorage implements IStorage {
           icon: button.icon || null
         };
         
+        // Add skipDetailsForm to sanitized input if it exists in both object and column
+        if (columns.includes('skip_details_form') && 'skipDetailsForm' in button) {
+          sanitizedButton.skip_details_form = button.skipDetailsForm;
+          console.log('Adding skipDetailsForm to create:', button.skipDetailsForm);
+        }
+        
         // Map fields to their Docker-specific column names
         if (hasCreatesWorkOrder && 'createWorkOrder' in button) {
           sanitizedButton.creates_work_order = button.createWorkOrder;
@@ -2035,6 +2041,10 @@ export class DatabaseStorage implements IStorage {
         
         if (columns.includes('active')) {
           sanitizedButton.active = button.active !== undefined ? button.active : true;
+        }
+        
+        if (columns.includes('notify_maintenance') && 'notifyMaintenance' in button) {
+          sanitizedButton.notify_maintenance = button.notifyMaintenance;
         }
         
         // Build field list and placeholders for prepared statement
@@ -2169,6 +2179,15 @@ export class DatabaseStorage implements IStorage {
         
         if (columns.includes('active') && 'active' in updates) {
           sanitizedUpdates.active = updates.active;
+        }
+        
+        if (columns.includes('notify_maintenance') && 'notifyMaintenance' in updates) {
+          sanitizedUpdates.notify_maintenance = updates.notifyMaintenance;
+        }
+        
+        if (columns.includes('skip_details_form') && 'skipDetailsForm' in updates) {
+          sanitizedUpdates.skip_details_form = updates.skipDetailsForm;
+          console.log('Adding skipDetailsForm to update:', updates.skipDetailsForm);
         }
         
         // If there's nothing to update, just return the current button

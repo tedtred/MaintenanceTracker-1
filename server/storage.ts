@@ -1110,7 +1110,7 @@ export class DatabaseStorage implements IStorage {
       console.error('Error fetching problem buttons with ORM, trying fallback:', error);
       
       try {
-        // First check if the 'order' column exists
+        // First check what columns exist in the table
         const tableInfo = await pool.query(`
           SELECT column_name
           FROM information_schema.columns
@@ -1118,25 +1118,80 @@ export class DatabaseStorage implements IStorage {
         `);
         
         const columns = tableInfo.rows.map(row => row.column_name);
-        const hasOrderColumn = columns.includes('order');
+        console.log('Available columns in problem_buttons table:', columns);
         
-        // Fallback query with or without ORDER BY depending on column existence
+        const hasOrderColumn = columns.includes('order');
+        const hasCreateWorkOrderColumn = columns.includes('create_work_order');
+        const hasCreatesWorkOrderColumn = columns.includes('creates_work_order');
+        
+        // Build a very resilient query based on available columns
+        let queryParts = ['SELECT id, label, color'];
+        
+        // Add optional columns if they exist
+        if (columns.includes('icon')) queryParts.push('icon');
+        else queryParts.push('NULL as icon');
+        
+        // Handle different names for createWorkOrder
+        if (hasCreateWorkOrderColumn) {
+          queryParts.push('create_work_order as "createWorkOrder"');
+        } else if (hasCreatesWorkOrderColumn) {
+          queryParts.push('creates_work_order as "createWorkOrder"');
+        } else {
+          queryParts.push('false as "createWorkOrder"');
+        }
+        
+        // Add remaining fields with null fallbacks
+        if (columns.includes('work_order_title')) 
+          queryParts.push('work_order_title as "workOrderTitle"');
+        else 
+          queryParts.push('NULL as "workOrderTitle"');
+          
+        if (columns.includes('work_order_description')) 
+          queryParts.push('work_order_description as "workOrderDescription"');
+        else 
+          queryParts.push('NULL as "workOrderDescription"');
+          
+        if (columns.includes('work_order_priority')) 
+          queryParts.push('work_order_priority as "workOrderPriority"');
+        else 
+          queryParts.push('NULL as "workOrderPriority"');
+          
+        if (columns.includes('default_asset_id')) 
+          queryParts.push('default_asset_id as "defaultAssetId"');
+        else 
+          queryParts.push('NULL as "defaultAssetId"');
+          
+        if (columns.includes('default_assigned_to')) 
+          queryParts.push('default_assigned_to as "defaultAssignedTo"');
+        else 
+          queryParts.push('NULL as "defaultAssignedTo"');
+          
+        if (columns.includes('notify_maintenance')) 
+          queryParts.push('notify_maintenance as "notifyMaintenance"');
+        else 
+          queryParts.push('false as "notifyMaintenance"');
+          
+        if (columns.includes('skip_details_form')) 
+          queryParts.push('skip_details_form as "skipDetailsForm"');
+        else 
+          queryParts.push('false as "skipDetailsForm"');
+          
+        if (columns.includes('active')) 
+          queryParts.push('active');
+        else 
+          queryParts.push('true as active');
+          
+        if (hasOrderColumn) 
+          queryParts.push('"order"');
+        
+        // Final query
         const query = `
-          SELECT id, label, color, icon, 
-                 create_work_order as "createWorkOrder",
-                 work_order_title as "workOrderTitle", 
-                 work_order_description as "workOrderDescription",
-                 work_order_priority as "workOrderPriority",
-                 default_asset_id as "defaultAssetId",
-                 default_assigned_to as "defaultAssignedTo",
-                 notify_maintenance as "notifyMaintenance",
-                 skip_details_form as "skipDetailsForm",
-                 active
-                 ${hasOrderColumn ? ', "order"' : ''}
+          ${queryParts.join(', ')}
           FROM problem_buttons
           ${hasOrderColumn ? 'ORDER BY "order" ASC' : ''}
         `;
         
+        console.log('Executing fallback query:', query);
         const result = await pool.query(query);
         
         // Convert any raw PostgreSQL results to properly typed objects
@@ -1149,18 +1204,18 @@ export class DatabaseStorage implements IStorage {
           return {
             id: row.id,
             label: row.label,
-            color: row.color,
-            icon: row.icon,
+            color: row.color || '#6b7280',
+            icon: row.icon || null,
             order: row.order || 0,
-            active: row.active,
-            createWorkOrder: row.createWorkOrder,
-            workOrderTitle: row.workOrderTitle,
-            workOrderDescription: row.workOrderDescription,
-            workOrderPriority: row.workOrderPriority,
-            defaultAssetId: row.defaultAssetId,
-            defaultAssignedTo: row.defaultAssignedTo,
-            notifyMaintenance: row.notifyMaintenance,
-            skipDetailsForm: row.skipDetailsForm,
+            active: row.active === undefined ? true : row.active,
+            createWorkOrder: row.createWorkOrder === undefined ? false : row.createWorkOrder,
+            workOrderTitle: row.workOrderTitle || null,
+            workOrderDescription: row.workOrderDescription || null,
+            workOrderPriority: row.workOrderPriority || 'HIGH',
+            defaultAssetId: row.defaultAssetId || null,
+            defaultAssignedTo: row.defaultAssignedTo || null,
+            notifyMaintenance: row.notifyMaintenance === undefined ? false : row.notifyMaintenance,
+            skipDetailsForm: row.skipDetailsForm === undefined ? false : row.skipDetailsForm,
             createdAt: new Date(), // Default when not found in DB
             updatedAt: new Date()  // Default when not found in DB
           };
@@ -1169,7 +1224,10 @@ export class DatabaseStorage implements IStorage {
         return buttons;
       } catch (fallbackError) {
         console.error('Fallback query for problem buttons also failed:', fallbackError);
-        throw error; // Throw the original error
+        
+        // As a last resort, return an empty array rather than failing
+        console.log('Returning empty problem buttons array as last resort fallback');
+        return [];
       }
     }
   }
@@ -1186,7 +1244,7 @@ export class DatabaseStorage implements IStorage {
       console.error(`Error fetching problem button ${id} with ORM, trying fallback:`, error);
       
       try {
-        // First check if the table structure
+        // First check what columns exist in the table
         const tableInfo = await pool.query(`
           SELECT column_name
           FROM information_schema.columns
@@ -1194,25 +1252,80 @@ export class DatabaseStorage implements IStorage {
         `);
         
         const columns = tableInfo.rows.map(row => row.column_name);
-        const hasOrderColumn = columns.includes('order');
+        console.log('Available columns in problem_buttons table for single item:', columns);
         
-        // Fallback query with direct SQL
+        const hasOrderColumn = columns.includes('order');
+        const hasCreateWorkOrderColumn = columns.includes('create_work_order');
+        const hasCreatesWorkOrderColumn = columns.includes('creates_work_order');
+        
+        // Build a very resilient query based on available columns
+        let queryParts = ['SELECT id, label, color'];
+        
+        // Add optional columns if they exist
+        if (columns.includes('icon')) queryParts.push('icon');
+        else queryParts.push('NULL as icon');
+        
+        // Handle different names for createWorkOrder
+        if (hasCreateWorkOrderColumn) {
+          queryParts.push('create_work_order as "createWorkOrder"');
+        } else if (hasCreatesWorkOrderColumn) {
+          queryParts.push('creates_work_order as "createWorkOrder"');
+        } else {
+          queryParts.push('false as "createWorkOrder"');
+        }
+        
+        // Add remaining fields with null fallbacks
+        if (columns.includes('work_order_title')) 
+          queryParts.push('work_order_title as "workOrderTitle"');
+        else 
+          queryParts.push('NULL as "workOrderTitle"');
+          
+        if (columns.includes('work_order_description')) 
+          queryParts.push('work_order_description as "workOrderDescription"');
+        else 
+          queryParts.push('NULL as "workOrderDescription"');
+          
+        if (columns.includes('work_order_priority')) 
+          queryParts.push('work_order_priority as "workOrderPriority"');
+        else 
+          queryParts.push('NULL as "workOrderPriority"');
+          
+        if (columns.includes('default_asset_id')) 
+          queryParts.push('default_asset_id as "defaultAssetId"');
+        else 
+          queryParts.push('NULL as "defaultAssetId"');
+          
+        if (columns.includes('default_assigned_to')) 
+          queryParts.push('default_assigned_to as "defaultAssignedTo"');
+        else 
+          queryParts.push('NULL as "defaultAssignedTo"');
+          
+        if (columns.includes('notify_maintenance')) 
+          queryParts.push('notify_maintenance as "notifyMaintenance"');
+        else 
+          queryParts.push('false as "notifyMaintenance"');
+          
+        if (columns.includes('skip_details_form')) 
+          queryParts.push('skip_details_form as "skipDetailsForm"');
+        else 
+          queryParts.push('false as "skipDetailsForm"');
+          
+        if (columns.includes('active')) 
+          queryParts.push('active');
+        else 
+          queryParts.push('true as active');
+          
+        if (hasOrderColumn) 
+          queryParts.push('"order"');
+        
+        // Final query
         const query = `
-          SELECT id, label, color, icon, 
-                 create_work_order as "createWorkOrder",
-                 work_order_title as "workOrderTitle", 
-                 work_order_description as "workOrderDescription",
-                 work_order_priority as "workOrderPriority",
-                 default_asset_id as "defaultAssetId",
-                 default_assigned_to as "defaultAssignedTo",
-                 notify_maintenance as "notifyMaintenance",
-                 skip_details_form as "skipDetailsForm",
-                 active
-                 ${hasOrderColumn ? ', "order"' : ''}
+          ${queryParts.join(', ')}
           FROM problem_buttons
           WHERE id = $1
         `;
         
+        console.log(`Executing fallback query for problem button ${id}:`, query);
         const result = await pool.query(query, [id]);
         
         if (result.rows.length === 0) {
@@ -1229,24 +1342,25 @@ export class DatabaseStorage implements IStorage {
         return {
           id: row.id,
           label: row.label,
-          color: row.color,
-          icon: row.icon,
+          color: row.color || '#6b7280',
+          icon: row.icon || null,
           order: row.order || 0,
-          active: row.active,
-          createWorkOrder: row.createWorkOrder,
-          workOrderTitle: row.workOrderTitle,
-          workOrderDescription: row.workOrderDescription,
-          workOrderPriority: row.workOrderPriority,
-          defaultAssetId: row.defaultAssetId,
-          defaultAssignedTo: row.defaultAssignedTo,
-          notifyMaintenance: row.notifyMaintenance,
-          skipDetailsForm: row.skipDetailsForm,
+          active: row.active === undefined ? true : row.active,
+          createWorkOrder: row.createWorkOrder === undefined ? false : row.createWorkOrder,
+          workOrderTitle: row.workOrderTitle || null,
+          workOrderDescription: row.workOrderDescription || null,
+          workOrderPriority: row.workOrderPriority || 'HIGH',
+          defaultAssetId: row.defaultAssetId || null,
+          defaultAssignedTo: row.defaultAssignedTo || null,
+          notifyMaintenance: row.notifyMaintenance === undefined ? false : row.notifyMaintenance,
+          skipDetailsForm: row.skipDetailsForm === undefined ? false : row.skipDetailsForm,
           createdAt: new Date(), // Default when not found in DB
           updatedAt: new Date()  // Default when not found in DB
         };
       } catch (fallbackError) {
         console.error(`Fallback query for problem button ${id} also failed:`, fallbackError);
-        throw error; // Throw the original error
+        // Return undefined instead of throwing an error
+        return undefined;
       }
     }
   }

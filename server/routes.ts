@@ -232,12 +232,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (isRunningInDocker) {
         // For Docker, use custom validation that's more forgiving
-        if (!req.body.name || !req.body.description || !req.body.location || !req.body.status || !req.body.category) {
+        // Only check essential fields (name, location, status, category) - allow empty description
+        if (!req.body.name || !req.body.location || !req.body.status || !req.body.category) {
           return res.status(400).json({
             message: "Validation error",
             errors: {
               name: !req.body.name ? "Name is required" : undefined,
-              description: !req.body.description ? "Description is required" : undefined,
               location: !req.body.location ? "Location is required" : undefined, 
               status: !req.body.status ? "Status is required" : undefined,
               category: !req.body.category ? "Category is required" : undefined
@@ -248,7 +248,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Prepare sanitized data with correct type assertion
         const sanitizedData: Partial<InsertAsset> = {
           name: req.body.name,
-          description: req.body.description,
+          description: req.body.description || '', // Use empty string if description is missing
           location: req.body.location,
           status: req.body.status,
           category: req.body.category,

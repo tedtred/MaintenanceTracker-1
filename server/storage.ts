@@ -694,6 +694,11 @@ export class DatabaseStorage implements IStorage {
         // Sanitize the asset data for Docker environment
         const sanitizedAsset = { ...asset };
         
+        // Make sure description is never null or undefined
+        if (sanitizedAsset.description === null || sanitizedAsset.description === undefined) {
+          sanitizedAsset.description = ''; // Always ensure description has at least an empty string
+        }
+        
         // Clean up any potential null fields that might cause problems
         Object.keys(sanitizedAsset).forEach(key => {
           if (sanitizedAsset[key] === null || sanitizedAsset[key] === undefined || sanitizedAsset[key] === '') {

@@ -65,10 +65,29 @@ export async function runMigrations(forceRebuild = false) {
   });
 
   try {
-    // Test the connection
-    const client = await pool.connect();
-    client.release();
-    console.log("Successfully connected to database");
+    // Test the connection with retries
+    let connected = false;
+    let retries = 0;
+    const maxRetries = 5;
+    
+    while (!connected && retries < maxRetries) {
+      try {
+        const client = await pool.connect();
+        client.release();
+        connected = true;
+        console.log("Successfully connected to database");
+      } catch (connErr: any) {
+        retries++;
+        const errorMessage = connErr?.message || 'Unknown connection error';
+        console.error(`Connection attempt ${retries}/${maxRetries} failed:`, errorMessage);
+        if (retries < maxRetries) {
+          console.log(`Retrying in 2 seconds...`);
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        } else {
+          throw new Error(`Failed to connect to database after ${maxRetries} attempts: ${errorMessage}`);
+        }
+      }
+    }
 
     // Force rebuild if requested and confirmed
     if (shouldResetDb) {
@@ -112,7 +131,11 @@ export async function runMigrations(forceRebuild = false) {
         due_date TIMESTAMP,
         created_at TIMESTAMP DEFAULT NOW() NOT NULL,
         updated_at TIMESTAMP DEFAULT NOW() NOT NULL,
-        created_by INTEGER REFERENCES users(id)
+        created_by INTEGER REFERENCES users(id),
+        affects_asset_status BOOLEAN DEFAULT false,
+        parts_required JSONB DEFAULT '[]',
+        problem_details TEXT DEFAULT '',
+        solution_notes TEXT DEFAULT ''
       );
 
       CREATE TABLE IF NOT EXISTS assets (
@@ -212,11 +235,49 @@ export async function runMigrations(forceRebuild = false) {
     await db.execute(`
       DO $$
       BEGIN
+        -- Add foreign key constraint if it doesn't exist
         IF NOT EXISTS (
           SELECT 1 FROM pg_constraint WHERE conname = 'work_orders_asset_id_fkey'
         ) THEN
           ALTER TABLE work_orders ADD CONSTRAINT work_orders_asset_id_fkey
           FOREIGN KEY (asset_id) REFERENCES assets(id);
+        END IF;
+        
+        -- Add missing columns to work_orders table if they don't exist
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'work_orders' AND column_name = 'affects_asset_status'
+        ) THEN
+          ALTER TABLE work_orders ADD COLUMN affects_asset_status BOOLEAN DEFAULT false;
+        END IF;
+        
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'work_orders' AND column_name = 'parts_required'
+        ) THEN
+          ALTER TABLE work_orders ADD COLUMN parts_required JSONB DEFAULT '[]';
+        END IF;
+        
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'work_orders' AND column_name = 'problem_details'
+        ) THEN
+          ALTER TABLE work_orders ADD COLUMN problem_details TEXT DEFAULT '';
+        END IF;
+        
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'work_orders' AND column_name = 'solution_notes'
+        ) THEN
+          ALTER TABLE work_orders ADD COLUMN solution_notes TEXT DEFAULT '';
+        END IF;
+        
+        -- Check and add missing columns to maintenance_schedules table
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'maintenance_schedules' AND column_name = 'affects_asset_status'
+        ) THEN
+          ALTER TABLE maintenance_schedules ADD COLUMN affects_asset_status BOOLEAN DEFAULT false;
         END IF;
       END $$;
     `);
@@ -250,12 +311,31 @@ export async function runMigrations(forceRebuild = false) {
       console.log("Admin user already exists, skipping default admin creation");
     }
 
-  } catch (error) {
-    console.error("Migration error:", error);
+  } catch (error: any) {
+    console.error("Migration error:", error.message || error);
+    
+    // Additional error handling for common database issues
+    if (error.code === '3D000') {
+      console.error("Database does not exist. Please ensure the database has been created.");
+    } else if (error.code === '28P01') {
+      console.error("Invalid password for database user. Check your DATABASE_URL environment variable.");
+    } else if (error.code === 'ECONNREFUSED') {
+      console.error("Could not connect to the database server. Make sure PostgreSQL is running and accessible.");
+    } else if (error.code === '42P01') {
+      console.error("One or more tables do not exist. This may indicate a schema mismatch.");
+    } else if (error.code === '42703') {
+      console.error("Column referenced in query doesn't exist. This may indicate a schema version mismatch.");
+    }
+    
     throw error;
   } finally {
-    // Close the pool
-    await pool.end();
+    try {
+      // Close the pool
+      await pool.end();
+      console.log("Database connection pool closed.");
+    } catch (poolError: any) {
+      console.error("Error while closing connection pool:", poolError?.message || poolError);
+    }
   }
 }
 

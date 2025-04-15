@@ -1,0 +1,191 @@
+app_1      | 10:57:13 AM [express] GET /api/problem-buttons 500 in 96ms :: {"message":"column \"order\" does not e…
+db_1       | 2025-04-15 10:57:15.084 UTC [103] ERROR:  column "order" does not exist at character 40
+db_1       | 2025-04-15 10:57:15.084 UTC [103] STATEMENT:  select "id", "label", "color", "icon", "order", "active", "create_work_order", "work_order_title", "work_order_description", "work_order_priority", "default_asset_id", "default_assigned_to", "notify_maintenance", "skip_details_form", "created_at", "updated_at" from "problem_buttons" order by "problem_buttons"."order" asc
+app_1      | Error fetching problem buttons with ORM, trying fallback: error: column "order" does not exist
+app_1      |     at /app/node_modules/pg-pool/index.js:45:11
+app_1      |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+app_1      |     at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22
+app_1      |     at async DatabaseStorage.getProblemButtons (file:///app/dist/index.js:1397:14)
+app_1      |     at async file:///app/dist/index.js:2404:23 {
+app_1      |   length: 105,
+app_1      |   severity: 'ERROR',
+app_1      |   code: '42703',
+app_1      |   detail: undefined,
+app_1      |   hint: undefined,
+app_1      |   position: '40',
+app_1      |   internalPosition: undefined,
+app_1      |   internalQuery: undefined,
+app_1      |   where: undefined,
+app_1      |   schema: undefined,
+app_1      |   table: undefined,
+app_1      |   column: undefined,
+app_1      |   dataType: undefined,
+app_1      |   constraint: undefined,
+app_1      |   file: 'parse_relation.c',
+app_1      |   line: '3665',
+app_1      |   routine: 'errorMissingColumn'
+app_1      | }
+db_1       | 2025-04-15 10:57:15.145 UTC [111] ERROR:  column "create_work_order" does not exist at character 61
+db_1       | 2025-04-15 10:57:15.145 UTC [111] HINT:  Perhaps you meant to reference the column "problem_buttons.creates_work_order".
+db_1       | 2025-04-15 10:57:15.145 UTC [111] STATEMENT:
+db_1       |              SELECT id, label, color, icon,
+db_1       |                     create_work_order as "createWorkOrder",
+db_1       |                     work_order_title as "workOrderTitle",
+db_1       |                     work_order_description as "workOrderDescription",
+db_1       |                     work_order_priority as "workOrderPriority",
+db_1       |                     default_asset_id as "defaultAssetId",
+db_1       |                     default_assigned_to as "defaultAssignedTo",
+db_1       |                     notify_maintenance as "notifyMaintenance",
+db_1       |                     skip_details_form as "skipDetailsForm",
+db_1       |                     active
+db_1       |
+db_1       |              FROM problem_buttons
+db_1       |
+db_1       |
+app_1      | Fallback query for problem buttons also failed: error: column "create_work_order" does not exist
+app_1      |     at /app/node_modules/pg-pool/index.js:45:11
+app_1      |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+app_1      |     at async DatabaseStorage.getProblemButtons (file:///app/dist/index.js:1423:24)
+app_1      |     at async file:///app/dist/index.js:2404:23 {
+app_1      |   length: 198,
+app_1      |   severity: 'ERROR',
+app_1      |   code: '42703',
+app_1      |   detail: undefined,
+app_1      |   hint: 'Perhaps you meant to reference the column "problem_buttons.creates_work_order".',
+app_1      |   position: '61',
+app_1      |   internalPosition: undefined,
+app_1      |   internalQuery: undefined,
+app_1      |   where: undefined,
+app_1      |   schema: undefined,
+app_1      |   table: undefined,
+app_1      |   column: undefined,
+app_1      |   dataType: undefined,
+app_1      |   constraint: undefined,
+app_1      |   file: 'parse_relation.c',
+app_1      |   line: '3665',
+app_1      |   routine: 'errorMissingColumn'
+app_1      | }
+app_1      | Error: error: column "order" does not exist
+app_1      |     at /app/node_modules/pg-pool/index.js:45:11
+app_1      |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+app_1      |     at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22
+app_1      |     at async DatabaseStorage.getProblemButtons (file:///app/dist/index.js:1397:14)
+app_1      |     at async file:///app/dist/index.js:2404:23 {
+app_1      |   length: 105,
+app_1      |   severity: 'ERROR',
+app_1      |   code: '42703',
+app_1      |   detail: undefined,
+app_1      |   hint: undefined,
+app_1      |   position: '40',
+app_1      |   internalPosition: undefined,
+app_1      |   internalQuery: undefined,
+app_1      |   where: undefined,
+app_1      |   schema: undefined,
+app_1      |   table: undefined,
+app_1      |   column: undefined,
+app_1      |   dataType: undefined,
+app_1      |   constraint: undefined,
+app_1      |   file: 'parse_relation.c',
+app_1      |   line: '3665',
+app_1      |   routine: 'errorMissingColumn'
+app_1      | }
+app_1      | 10:57:15 AM [express] GET /api/problem-buttons 500 in 117ms :: {"message":"column \"order\" does not …
+pgadmin_1  | Added 0 Server Group(s) and 1 Server(s).
+pgadmin_1  | postfix/postlog: starting the Postfix mail system
+db_1       | 2025-04-15 10:57:21.210 UTC [112] ERROR:  column "order" does not exist at character 40
+db_1       | 2025-04-15 10:57:21.210 UTC [112] STATEMENT:  select "id", "label", "color", "icon", "order", "active", "create_work_order", "work_order_title", "work_order_description", "work_order_priority", "default_asset_id", "default_assigned_to", "notify_maintenance", "skip_details_form", "created_at", "updated_at" from "problem_buttons" order by "problem_buttons"."order" asc
+app_1      | Error fetching problem buttons with ORM, trying fallback: error: column "order" does not exist
+app_1      |     at /app/node_modules/pg-pool/index.js:45:11
+app_1      |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+app_1      |     at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22
+app_1      |     at async DatabaseStorage.getProblemButtons (file:///app/dist/index.js:1397:14)
+app_1      |     at async file:///app/dist/index.js:2404:23 {
+app_1      |   length: 105,
+app_1      |   severity: 'ERROR',
+app_1      |   code: '42703',
+app_1      |   detail: undefined,
+app_1      |   hint: undefined,
+app_1      |   position: '40',
+app_1      |   internalPosition: undefined,
+app_1      |   internalQuery: undefined,
+app_1      |   where: undefined,
+app_1      |   schema: undefined,
+app_1      |   table: undefined,
+app_1      |   column: undefined,
+app_1      |   dataType: undefined,
+app_1      |   constraint: undefined,
+app_1      |   file: 'parse_relation.c',
+app_1      |   line: '3665',
+app_1      |   routine: 'errorMissingColumn'
+app_1      | }
+db_1       | 2025-04-15 10:57:21.272 UTC [120] ERROR:  column "create_work_order" does not exist at character 61
+db_1       | 2025-04-15 10:57:21.272 UTC [120] HINT:  Perhaps you meant to reference the column "problem_buttons.creates_work_order".
+db_1       | 2025-04-15 10:57:21.272 UTC [120] STATEMENT:
+db_1       |              SELECT id, label, color, icon,
+db_1       |                     create_work_order as "createWorkOrder",
+db_1       |                     work_order_title as "workOrderTitle",
+db_1       |                     work_order_description as "workOrderDescription",
+db_1       |                     work_order_priority as "workOrderPriority",
+db_1       |                     default_asset_id as "defaultAssetId",
+db_1       |                     default_assigned_to as "defaultAssignedTo",
+db_1       |                     notify_maintenance as "notifyMaintenance",
+db_1       |                     skip_details_form as "skipDetailsForm",
+db_1       |                     active
+db_1       |
+db_1       |              FROM problem_buttons
+db_1       |
+db_1       |
+app_1      | Fallback query for problem buttons also failed: error: column "create_work_order" does not exist
+app_1      |     at /app/node_modules/pg-pool/index.js:45:11
+app_1      |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+app_1      |     at async DatabaseStorage.getProblemButtons (file:///app/dist/index.js:1423:24)
+app_1      |     at async file:///app/dist/index.js:2404:23 {
+app_1      |   length: 198,
+app_1      |   severity: 'ERROR',
+app_1      |   code: '42703',
+app_1      |   detail: undefined,
+app_1      |   hint: 'Perhaps you meant to reference the column "problem_buttons.creates_work_order".',
+app_1      |   position: '61',
+app_1      |   internalPosition: undefined,
+app_1      |   internalQuery: undefined,
+app_1      |   where: undefined,
+app_1      |   schema: undefined,
+app_1      |   table: undefined,
+app_1      |   column: undefined,
+app_1      |   dataType: undefined,
+app_1      |   constraint: undefined,
+app_1      |   file: 'parse_relation.c',
+app_1      |   line: '3665',
+app_1      |   routine: 'errorMissingColumn'
+app_1      | }
+app_1      | Error: error: column "order" does not exist
+app_1      |     at /app/node_modules/pg-pool/index.js:45:11
+app_1      |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+app_1      |     at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22
+app_1      |     at async DatabaseStorage.getProblemButtons (file:///app/dist/index.js:1397:14)
+app_1      |     at async file:///app/dist/index.js:2404:23 {
+app_1      |   length: 105,
+app_1      |   severity: 'ERROR',
+app_1      |   code: '42703',
+app_1      |   detail: undefined,
+app_1      |   hint: undefined,
+app_1      |   position: '40',
+app_1      |   internalPosition: undefined,
+app_1      |   internalQuery: undefined,
+app_1      |   where: undefined,
+app_1      |   schema: undefined,
+app_1      |   table: undefined,
+app_1      |   column: undefined,
+app_1      |   dataType: undefined,
+app_1      |   constraint: undefined,
+app_1      |   file: 'parse_relation.c',
+app_1      |   line: '3665',
+app_1      |   routine: 'errorMissingColumn'
+app_1      | }
+app_1      | 10:57:21 AM [express] GET /api/problem-buttons 500 in 111ms :: {"message":"column \"order\" does not …
+app_1      | 10:57:29 AM [express] GET /api/health 200 in 1ms :: {"status":"ok","timestamp":"2025-04-15T10:57:29.6…
+pgadmin_1  | [2025-04-15 10:57:32 +0000] [1] [INFO] Starting gunicorn 22.0.0
+pgadmin_1  | [2025-04-15 10:57:32 +0000] [1] [INFO] Listening at: http://[::]:80 (1)
+pgadmin_1  | [2025-04-15 10:57:32 +0000] [1] [INFO] Using worker: gthread
+pgadmin_1  | [2025-04-15 10:57:32 +0000] [121] [INFO] Booting worker with pid: 121
+

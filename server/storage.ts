@@ -1101,123 +1101,52 @@ export class DatabaseStorage implements IStorage {
   // Problem tracking methods
   async getProblemButtons(): Promise<ProblemButton[]> {
     try {
-      // Try using the ORM approach first
-      const result = await db
-        .select()
-        .from(problemButtons)
-        .orderBy(asc(problemButtons.order));
-      return result;
-    } catch (error) {
-      console.error('Error fetching problem buttons with ORM, trying fallback:', error);
+      // Skip ORM approach entirely - we know it will fail in Docker
+      // Instead check for Docker environment by checking for 'creates_work_order' column
+      // which is only present in Docker
       
-      try {
-        // Directly query the database to see what columns exist in this environment
-        const tableInfo = await pool.query(`
-          SELECT column_name
-          FROM information_schema.columns
-          WHERE table_name = 'problem_buttons'
+      const isInDocker = process.env.IN_DOCKER === "true";
+      console.log('Running in Docker environment:', isInDocker);
+      
+      // Directly check the database structure
+      const tableInfo = await pool.query(`
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name = 'problem_buttons'
+      `);
+      
+      const columns = tableInfo.rows.map(row => row.column_name);
+      console.log('Available columns in problem_buttons table:', columns);
+      
+      // Check if we're in Docker environment based on schema differences
+      const hasCreatesWorkOrder = columns.includes('creates_work_order');
+      
+      if (hasCreatesWorkOrder) {
+        console.log('Docker schema detected with creates_work_order column');
+        // We're in Docker, use a simpler, direct query specifically for Docker schema
+        const result = await pool.query(`
+          SELECT 
+            id, 
+            label, 
+            color, 
+            icon,
+            creates_work_order as "createWorkOrder",
+            work_order_title as "workOrderTitle",
+            work_order_description as "workOrderDescription",
+            work_order_priority as "workOrderPriority",
+            default_asset_id as "defaultAssetId",
+            default_assigned_to as "defaultAssignedTo",
+            active
+          FROM problem_buttons
         `);
         
-        const columns = tableInfo.rows.map(row => row.column_name);
-        console.log('Available columns in problem_buttons table:', columns);
-        
-        // Safety check - if the table doesn't exist or has no columns, return empty array
-        if (columns.length === 0) {
-          console.log('No columns found in problem_buttons table, returning empty array');
-          return [];
-        }
-        
-        // Create the most basic query first that should work in any environment
-        let query = `SELECT id, label, color`;
-        
-        // Conditionally add other columns based on what exists in the database
-        if (columns.includes('icon')) {
-          query += `, icon`;
-        } else {
-          query += `, NULL as icon`;
-        }
-        
-        // Special handling for the different work_order column name variants
-        if (columns.includes('create_work_order')) {
-          query += `, create_work_order as "createWorkOrder"`;
-        } else if (columns.includes('creates_work_order')) {
-          query += `, creates_work_order as "createWorkOrder"`;
-        } else {
-          query += `, FALSE as "createWorkOrder"`;
-        }
-        
-        // Check for all other possible columns
-        if (columns.includes('work_order_title')) {
-          query += `, work_order_title as "workOrderTitle"`;
-        } else {
-          query += `, NULL as "workOrderTitle"`;
-        }
-        
-        if (columns.includes('work_order_description')) {
-          query += `, work_order_description as "workOrderDescription"`;
-        } else {
-          query += `, NULL as "workOrderDescription"`;
-        }
-        
-        if (columns.includes('work_order_priority')) {
-          query += `, work_order_priority as "workOrderPriority"`;
-        } else {
-          query += `, NULL as "workOrderPriority"`;
-        }
-        
-        if (columns.includes('default_asset_id')) {
-          query += `, default_asset_id as "defaultAssetId"`;
-        } else {
-          query += `, NULL as "defaultAssetId"`;
-        }
-        
-        if (columns.includes('default_assigned_to')) {
-          query += `, default_assigned_to as "defaultAssignedTo"`;
-        } else {
-          query += `, NULL as "defaultAssignedTo"`;
-        }
-        
-        if (columns.includes('notify_maintenance')) {
-          query += `, notify_maintenance as "notifyMaintenance"`;
-        } else {
-          query += `, FALSE as "notifyMaintenance"`;
-        }
-        
-        if (columns.includes('skip_details_form')) {
-          query += `, skip_details_form as "skipDetailsForm"`;
-        } else {
-          query += `, FALSE as "skipDetailsForm"`;
-        }
-        
-        if (columns.includes('active')) {
-          query += `, active`;
-        } else {
-          query += `, TRUE as active`;
-        }
-        
-        // Handle "order" column specially since it's a reserved keyword in SQL
-        if (columns.includes('order')) {
-          query += `, "order"`;
-        }
-        
-        // Generate the FROM clause
-        query += ` FROM problem_buttons`;
-        
-        // Add ORDER BY only if the column exists
-        if (columns.includes('order')) {
-          query += ` ORDER BY "order" ASC`;
-        }
-        
-        console.log('Executing fallback query:', query);
-        const result = await pool.query(query);
-        
-        // Transform the results into the expected format with defaults
+        // Transform results to match expected format
         return result.rows.map(row => ({
           id: row.id,
           label: row.label,
           color: row.color || '#6b7280',
           icon: row.icon || null,
-          order: row.order || 0,
+          order: 0, // Default value for Docker
           active: row.active === undefined ? true : row.active,
           createWorkOrder: row.createWorkOrder === undefined ? false : row.createWorkOrder,
           workOrderTitle: row.workOrderTitle || null,
@@ -1225,45 +1154,74 @@ export class DatabaseStorage implements IStorage {
           workOrderPriority: row.workOrderPriority || 'HIGH',
           defaultAssetId: row.defaultAssetId || null,
           defaultAssignedTo: row.defaultAssignedTo || null,
-          notifyMaintenance: row.notifyMaintenance === undefined ? false : row.notifyMaintenance,
-          skipDetailsForm: row.skipDetailsForm === undefined ? false : row.skipDetailsForm,
-          createdAt: new Date(), // Default when not found in DB
-          updatedAt: new Date()  // Default when not found in DB
+          notifyMaintenance: false, // Default for Docker
+          skipDetailsForm: false,   // Default for Docker
+          createdAt: new Date(),    // Default when not found in DB
+          updatedAt: new Date()     // Default when not found in DB
         }));
-      } catch (fallbackError) {
-        console.error('Fallback query for problem buttons also failed:', fallbackError);
-        
-        // Try one more ultra-simple query as a last resort
+      } else {
+        // Not in Docker, try ORM approach
         try {
-          console.log('Attempting ultra-simple query as last resort');
-          const result = await pool.query(`
-            SELECT id, label, color FROM problem_buttons
-          `);
+          const result = await db
+            .select()
+            .from(problemButtons)
+            .orderBy(asc(problemButtons.order));
+          return result;
+        } catch (ormError) {
+          console.error('Error fetching problem buttons with ORM:', ormError);
           
-          console.log('Ultra-simple query succeeded, returning simplified buttons');
+          // If ORM fails, use a simple query based on available columns
+          let query = `SELECT id, label, color`;
+          
+          // Add optional columns if they exist
+          if (columns.includes('icon')) query += `, icon`;
+          if (columns.includes('order')) query += `, "order"`;
+          if (columns.includes('active')) query += `, active`;
+          if (columns.includes('create_work_order')) query += `, create_work_order as "createWorkOrder"`;
+          if (columns.includes('work_order_title')) query += `, work_order_title as "workOrderTitle"`;
+          if (columns.includes('work_order_description')) query += `, work_order_description as "workOrderDescription"`;
+          if (columns.includes('work_order_priority')) query += `, work_order_priority as "workOrderPriority"`;
+          if (columns.includes('default_asset_id')) query += `, default_asset_id as "defaultAssetId"`;
+          if (columns.includes('default_assigned_to')) query += `, default_assigned_to as "defaultAssignedTo"`;
+          if (columns.includes('notify_maintenance')) query += `, notify_maintenance as "notifyMaintenance"`;
+          if (columns.includes('skip_details_form')) query += `, skip_details_form as "skipDetailsForm"`;
+          
+          query += ` FROM problem_buttons`;
+          
+          // Add ORDER BY only if the column exists
+          if (columns.includes('order')) {
+            query += ` ORDER BY "order" ASC`;
+          }
+          
+          console.log('Executing non-Docker fallback query:', query);
+          const result = await pool.query(query);
+          
           return result.rows.map(row => ({
             id: row.id,
             label: row.label,
             color: row.color || '#6b7280',
-            icon: null,
-            order: 0,
-            active: true,
-            createWorkOrder: false,
-            workOrderTitle: null,
-            workOrderDescription: null,
-            workOrderPriority: 'HIGH',
-            defaultAssetId: null,
-            defaultAssignedTo: null,
-            notifyMaintenance: false,
-            skipDetailsForm: false,
-            createdAt: new Date(),
-            updatedAt: new Date()
+            icon: row.icon || null,
+            order: row.order || 0,
+            active: row.active === undefined ? true : row.active,
+            createWorkOrder: row.createWorkOrder === undefined ? false : row.createWorkOrder,
+            workOrderTitle: row.workOrderTitle || null,
+            workOrderDescription: row.workOrderDescription || null,
+            workOrderPriority: row.workOrderPriority || 'HIGH',
+            defaultAssetId: row.defaultAssetId || null,
+            defaultAssignedTo: row.defaultAssignedTo || null,
+            notifyMaintenance: row.notifyMaintenance === undefined ? false : row.notifyMaintenance,
+            skipDetailsForm: row.skipDetailsForm === undefined ? false : row.skipDetailsForm,
+            createdAt: new Date(), // Default when not found in DB
+            updatedAt: new Date()  // Default when not found in DB
           }));
-        } catch (lastResortError) {
-          console.error('Even ultra-simple query failed, returning empty array');
-          return [];
         }
       }
+    } catch (error) {
+      console.error('All approaches to fetch problem buttons failed:', error);
+      
+      // Last resort fallback - return empty array
+      console.log('Returning empty problem buttons array as last resort fallback');
+      return [];
     }
   }
 

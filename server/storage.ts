@@ -2047,6 +2047,26 @@ export class DatabaseStorage implements IStorage {
           sanitizedButton.notify_maintenance = button.notifyMaintenance;
         }
         
+        // Double check for existing columns and add them to our query
+        // This is a more aggressive approach to ensure we're capturing all fields
+        const tableScan = await pool.query(`
+          SELECT * FROM problem_buttons LIMIT 0
+        `);
+        
+        // Get column names directly from the result fields
+        const actualColumns = tableScan.fields.map(field => field.name);
+        console.log('Confirmed actual columns from table scan:', actualColumns);
+        
+        if (actualColumns.includes('skip_details_form') && 'skipDetailsForm' in button) {
+          console.log('Table scan confirmed skip_details_form column exists, adding to query');
+          sanitizedButton.skip_details_form = button.skipDetailsForm;
+        }
+        
+        if (actualColumns.includes('notify_maintenance') && 'notifyMaintenance' in button) {
+          console.log('Table scan confirmed notify_maintenance column exists, adding to query');
+          sanitizedButton.notify_maintenance = button.notifyMaintenance;
+        }
+      
         // Build field list and placeholders for prepared statement
         const fieldNames = Object.keys(sanitizedButton);
         const placeholders = fieldNames.map((_, index) => `$${index + 1}`);
@@ -2188,6 +2208,25 @@ export class DatabaseStorage implements IStorage {
         if (columns.includes('skip_details_form') && 'skipDetailsForm' in updates) {
           sanitizedUpdates.skip_details_form = updates.skipDetailsForm;
           console.log('Adding skipDetailsForm to update:', updates.skipDetailsForm);
+        }
+        
+        // Double-check with table scan to get actual columns
+        const tableScan = await pool.query(`
+          SELECT * FROM problem_buttons LIMIT 0
+        `);
+        
+        // Get column names directly from the result fields
+        const actualColumns = tableScan.fields.map(field => field.name);
+        console.log('Confirmed actual columns from table scan for update:', actualColumns);
+        
+        if (actualColumns.includes('skip_details_form') && 'skipDetailsForm' in updates) {
+          console.log('Table scan confirmed skip_details_form column exists for update, adding to query');
+          sanitizedUpdates.skip_details_form = updates.skipDetailsForm;
+        }
+        
+        if (actualColumns.includes('notify_maintenance') && 'notifyMaintenance' in updates) {
+          console.log('Table scan confirmed notify_maintenance column exists for update, adding to query');
+          sanitizedUpdates.notify_maintenance = updates.notifyMaintenance;
         }
         
         // If there's nothing to update, just return the current button

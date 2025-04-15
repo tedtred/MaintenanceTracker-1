@@ -185,109 +185,114 @@ export class DatabaseStorage implements IStorage {
   async createWorkOrder(workOrder: InsertWorkOrder): Promise<WorkOrder> {
     try {
       // Try with ORM first
-      const [newWorkOrder] = await db.insert(workOrders).values({
-        ...workOrder,
-        reportedDate: new Date(),
-      }).returning();
-      return newWorkOrder;
-    } catch (error) {
-      console.error('Error creating work order with ORM:', error);
+      console.log('Trying to create work order with ORM');
       
-      // Check if this is a column error (missing affects_asset_status)
-      if (error.message && error.message.includes('affects_asset_status')) {
+      // Sanitize JSON fields first - critical for both approaches
+      const sanitizedWorkOrder = {...workOrder};
+      if ('notes' in sanitizedWorkOrder && sanitizedWorkOrder.notes === '') sanitizedWorkOrder.notes = null;
+      if ('solutionNotes' in sanitizedWorkOrder && sanitizedWorkOrder.solutionNotes === '') sanitizedWorkOrder.solutionNotes = null;
+      if ('metadata' in sanitizedWorkOrder && sanitizedWorkOrder.metadata === '') sanitizedWorkOrder.metadata = null;
+      
+      try {
+        const [newWorkOrder] = await db.insert(workOrders).values({
+          ...sanitizedWorkOrder,
+          reportedDate: new Date(),
+        }).returning();
+        return newWorkOrder;
+      } catch (ormError) {
+        console.error('Error creating work order with ORM:', ormError);
+        
+        // Fall back to raw SQL if ORM fails
         console.log('Falling back to raw SQL query for work order creation');
         
-        try {
-          // Create an object with all fields except affectsAssetStatus
-          const workOrderData = {
-            ...workOrder,
-            reportedDate: new Date()
-          };
+        // Check table schema
+        const tableInfo = await pool.query(`
+          SELECT column_name
+          FROM information_schema.columns
+          WHERE table_name = 'work_orders'
+        `);
+        
+        const availableColumns = tableInfo.rows.map(row => row.column_name);
+        console.log('Available columns in work_orders table:', availableColumns);
+        
+        // Build a clean work order data object with proper JSON handling
+        const workOrderData = {
+          ...sanitizedWorkOrder,
+          reportedDate: new Date()
+        };
+        
+        // Build column names and placeholders for SQL query
+        const columns = [];
+        const values = [];
+        const placeholders = [];
+        let paramIndex = 1;
+        
+        // Map camelCase keys to snake_case for SQL
+        for (const [key, value] of Object.entries(workOrderData)) {
+          // Skip affectsAssetStatus as it doesn't exist in Docker DB
+          if (key === 'affectsAssetStatus') continue;
           
-          // Build column names and placeholders for SQL query
-          const columns = [];
-          const values = [];
-          const placeholders = [];
-          let paramIndex = 1;
+          // Convert camelCase to snake_case
+          const snakeKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
           
-          // Get available columns to handle different schemas
-          const tableInfo = await pool.query(`
-            SELECT column_name
-            FROM information_schema.columns
-            WHERE table_name = 'work_orders'
-          `);
-          
-          const availableColumns = tableInfo.rows.map(row => row.column_name);
-          
-          // Map camelCase keys to snake_case for SQL
-          for (const [key, value] of Object.entries(workOrderData)) {
-            // Skip affectsAssetStatus as it doesn't exist in Docker DB
-            if (key === 'affectsAssetStatus') continue;
-            
-            // Convert camelCase to snake_case
-            const snakeKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
-            
-            // Skip fields that don't exist in this schema
-            if (!availableColumns.includes(snakeKey)) {
-              console.log(`Skipping field '${key}' (${snakeKey}) as it does not exist in work_orders table`);
-              continue;
-            }
-            
-            columns.push(snakeKey);
-            values.push(value);
-            placeholders.push(`$${paramIndex}`);
-            paramIndex++;
+          // Skip fields that don't exist in this schema
+          if (!availableColumns.includes(snakeKey)) {
+            console.log(`Skipping field '${key}' (${snakeKey}) as it does not exist in work_orders table`);
+            continue;
           }
           
-          // Execute the raw SQL INSERT
-          const query = `
-            INSERT INTO work_orders (${columns.join(', ')})
-            VALUES (${placeholders.join(', ')})
-            RETURNING *
-          `;
-          
-          const { rows } = await pool.query(query, values);
-          
-          if (rows.length === 0) {
-            throw new Error('Failed to create work order');
-          }
-          
-          // Get available columns to handle different schemas
-          const hasPartsRequired = availableColumns.includes('parts_required');
-          const hasProblemDetails = availableColumns.includes('problem_details');
-          const hasSolutionNotes = availableColumns.includes('solution_notes');
-          
-          // Convert raw result to WorkOrder object
-          const row = rows[0];
-          const result = {
-            id: row.id,
-            title: row.title,
-            description: row.description,
-            status: row.status,
-            priority: row.priority,
-            assignedTo: row.assigned_to,
-            assetId: row.asset_id,
-            reportedDate: row.reported_date ? new Date(row.reported_date) : null,
-            dueDate: row.due_date ? new Date(row.due_date) : null,
-            completedDate: row.completed_date ? new Date(row.completed_date) : null,
-            affectsAssetStatus: false, // Default as it's missing in Docker
-            partsRequired: hasPartsRequired ? row.parts_required : [],
-            problemDetails: hasProblemDetails ? row.problem_details : '',
-            solutionNotes: hasSolutionNotes ? row.solution_notes : '',
-            createdBy: row.created_by,
-            createdAt: row.created_at ? new Date(row.created_at) : null,
-            updatedAt: row.updated_at ? new Date(row.updated_at) : null
-          };
-          
-          return result;
-        } catch (fallbackError) {
-          console.error('Error in createWorkOrder fallback method:', fallbackError);
-          throw fallbackError;
+          columns.push(snakeKey);
+          values.push(value);
+          placeholders.push(`$${paramIndex}`);
+          paramIndex++;
         }
-      } else {
-        // If it's not related to missing column, re-throw the original error
-        throw error;
+        
+        // Execute the raw SQL INSERT
+        const query = `
+          INSERT INTO work_orders (${columns.join(', ')})
+          VALUES (${placeholders.join(', ')})
+          RETURNING *
+        `;
+        
+        console.log('Executing work order creation query with SQL');
+        const { rows } = await pool.query(query, values);
+        
+        if (rows.length === 0) {
+          throw new Error('Failed to create work order');
+        }
+        
+        // Get available columns to handle different schemas
+        const hasPartsRequired = availableColumns.includes('parts_required');
+        const hasProblemDetails = availableColumns.includes('problem_details');
+        const hasSolutionNotes = availableColumns.includes('solution_notes');
+        
+        // Convert raw result to WorkOrder object
+        const row = rows[0];
+        const result: WorkOrder = {
+          id: row.id,
+          title: row.title,
+          description: row.description,
+          status: row.status,
+          priority: row.priority,
+          assignedTo: row.assigned_to,
+          assetId: row.asset_id,
+          reportedDate: row.reported_date ? new Date(row.reported_date) : new Date(),
+          dueDate: row.due_date ? new Date(row.due_date) : null,
+          completedDate: row.completed_date ? new Date(row.completed_date) : null,
+          affectsAssetStatus: false, // Default as it's missing in Docker
+          partsRequired: hasPartsRequired ? row.parts_required : [],
+          problemDetails: hasProblemDetails ? row.problem_details : '',
+          solutionNotes: hasSolutionNotes ? row.solution_notes : '',
+          createdBy: row.created_by,
+          createdAt: row.created_at ? new Date(row.created_at) : new Date(),
+          updatedAt: row.updated_at ? new Date(row.updated_at) : new Date()
+        };
+        
+        return result;
       }
+    } catch (error) {
+      console.error('Error in createWorkOrder:', error);
+      throw error;
     }
   }
 

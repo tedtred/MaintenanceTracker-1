@@ -1,0 +1,53 @@
+
+12:18:39 PM [express] GET /api/health 200 in 2ms :: {"status":"ok","timestamp":"2025-04-15T12:18:39.4…
+Error creating work order with ORM: error: invalid input syntax for type json
+    at /app/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22
+    at async DatabaseStorage.createWorkOrder (file:///app/dist/index.js:703:30)
+    at async file:///app/dist/index.js:2450:25 {
+  length: 193,
+  severity: 'ERROR',
+  code: '22P02',
+  detail: 'The input string ended unexpectedly.',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: "JSON data, line 1: \nunnamed portal parameter $11 = ''",
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'jsonfuncs.c',
+  line: '627',
+  routine: 'json_ereport_error'
+}
+Error: error: invalid input syntax for type json
+    at /app/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22
+    at async DatabaseStorage.createWorkOrder (file:///app/dist/index.js:703:30)
+    at async file:///app/dist/index.js:2450:25 {
+  length: 193,
+  severity: 'ERROR',
+  code: '22P02',
+  detail: 'The input string ended unexpectedly.',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: "JSON data, line 1: \nunnamed portal parameter $11 = ''",
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'jsonfuncs.c',
+  line: '627',
+  routine: 'json_ereport_error'
+}
+12:18:54 PM [express] POST /api/work-orders 500 in 98ms :: {"message":"invalid input syntax for type …
+12:19:09 PM [express] GET /api/health 200 in 1ms :: {"status":"ok","timestamp":"2025-04-15T12:19:09.5…
+

@@ -4,17 +4,20 @@
 
 We've implemented several critical fixes to ensure cross-environment compatibility between Replit and Docker deployments:
 
-1. **Database Schema Adapters**: Created a comprehensive database migration script (CommonJS format) that detects and adds any missing columns needed in the Docker environment.
+1. **Pre-compiled JavaScript Files**: Created vanilla JavaScript versions of critical files to bypass TypeScript compilation issues in Docker:
+   - `add-missing-columns-for-docker.js`: CommonJS version of database migration script
+   - `docker-server.js`: Production-ready server without TypeScript dependencies
 
-2. **Module System Compatibility**: Created a CommonJS version (.cjs) of scripts to ensure compatibility with Docker environments regardless of Node.js module settings.
+2. **Database Schema Adapters**: Implemented comprehensive database migration that detects and fixes schema differences between environments (column names, missing fields, etc.)
 
-3. **Production Server Configuration**: Added a production-specific server entry point that doesn't require Vite in production.
+3. **Fallback Mechanisms**: Added multiple fallback options in the entrypoint script to ensure the application starts even if certain components fail:
+   - Tries pre-compiled JS files first
+   - Falls back to TypeScript files if JS versions aren't available
+   - Continues execution even if migration scripts fail
 
-4. **TypeScript Integration**: Updated Docker configuration to use TypeScript in the container through the `tsx` package.
+4. **Environment Detection**: Added consistent environment variables (`IS_DOCKER`, `DOCKER_ENV`, `RUNNING_IN_DOCKER`) to detect Docker environments correctly.
 
-5. **Environment Detection**: Added consistent environment variables to detect Docker environments correctly.
-
-6. **Filename Extensions**: Updated import statements to use correct extension-less imports for TypeScript compatibility.
+5. **Vite Bypass**: Disabled Vite in production Docker environments to avoid frontend build tool issues.
 
 ## Deploying with Docker
 
@@ -39,9 +42,40 @@ The application can be configured through environment variables in the docker-co
 
 If you experience issues with the Docker deployment:
 
-1. Check logs with `docker-compose logs app`
-2. Ensure database is accessible with `docker-compose logs db`
-3. For schema issues, you can try setting `FORCE_DB_REBUILD=true` temporarily in docker-compose.yml
+1. **Check container logs:**
+   ```bash
+   docker-compose logs app    # Application logs
+   docker-compose logs db     # Database logs
+   docker-compose logs        # All container logs together
+   ```
+
+2. **Database schema issues:**
+   - Set `FORCE_DB_REBUILD=true` temporarily in docker-compose.yml (WARNING: This will wipe your database)
+   - Alternatively, run the migration script manually:
+     ```bash
+     docker-compose exec app node /app/add-missing-columns-for-docker.js
+     ```
+
+3. **Container fails to start:**
+   - Try rebuilding the container:
+     ```bash
+     docker-compose down
+     docker-compose build --no-cache
+     docker-compose up -d
+     ```
+
+4. **Application runs but API endpoints fail:**
+   - Check if the database connection is working:
+     ```bash
+     docker-compose exec app npx drizzle-kit introspect:pg
+     ```
+   
+5. **Frontend loads but API returns 500 errors:**
+   - Inspect network requests in browser dev tools
+   - Check if API route exists:
+     ```bash 
+     docker-compose exec app curl http://localhost:5000/api/health
+     ```
 
 ## Known Differences Between Environments
 

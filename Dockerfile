@@ -30,7 +30,7 @@ COPY package*.json ./
 COPY drizzle.config.ts ./
 
 # Install production dependencies and required for migrations
-RUN npm ci --omit=dev && npm install --no-save vite drizzle-orm drizzle-kit pg dotenv
+RUN npm ci --omit=dev && npm install --no-save vite drizzle-orm drizzle-kit pg dotenv @vitejs/plugin-react @replit/vite-plugin-cartographer @replit/vite-plugin-runtime-error-modal @replit/vite-plugin-shadcn-theme-json
 
 # Copy schema and migrations
 COPY shared ./shared
@@ -45,9 +45,10 @@ RUN apk add --no-cache postgresql-client
 RUN addgroup -g 1001 -S nodejs
 RUN adduser -S nextjs -u 1001
 
-# Copy our entrypoint script and update script
+# Copy our entrypoint script and utility scripts
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
 COPY update-browserslist.mjs /app/update-browserslist.mjs
+COPY add-missing-columns.js /app/add-missing-columns.js
 
 # Set proper permissions and make the entrypoint script executable
 USER root
@@ -62,6 +63,8 @@ ENV HOST=0.0.0.0
 ENV IS_DOCKER=true
 ENV DOCKER_ENV=true
 ENV RUNNING_IN_DOCKER=true
+ENV VITE_ENABLED=false
+ENV USE_VITE=false
 
 # Expose port
 EXPOSE 5000

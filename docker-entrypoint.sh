@@ -40,13 +40,20 @@ if [ -f /.dockerenv ]; then
   node /app/docker-build.cjs || echo "Build patching failed but continuing"
 fi
 
-# Check if the command to execute is node dist/index.js, and if the file doesn't exist
-if [ "$1" = "node" ] && [ "$2" = "dist/index.js" ] && [ ! -f /app/dist/index.js ]; then
-  echo "Warning: /app/dist/index.js not found, checking for alternatives..."
+# Check if the command to execute is for a server file that doesn't exist
+if [ "$1" = "node" ] && [ ! -f "/app/$2" ]; then
+  echo "Warning: /app/$2 not found, checking for alternatives..."
   
-  # Check if we have a prod-server.js file we can execute instead
-  if [ -f /app/dist/prod-server.js ]; then
-    echo "Found prod-server.js, executing that instead"
+  # First try our dedicated Docker server file
+  if [ -f /app/dist/docker-server.js ]; then
+    echo "Found dist/docker-server.js, executing that instead"
+    exec node /app/dist/docker-server.js
+  # Then try other server files
+  elif [ -f /app/server/docker-server.js ]; then
+    echo "Found server/docker-server.js, executing that instead"
+    exec node /app/server/docker-server.js
+  elif [ -f /app/dist/prod-server.js ]; then
+    echo "Found dist/prod-server.js, executing that instead"
     exec node /app/dist/prod-server.js
   elif [ -f /app/server/prod-server.js ]; then
     echo "Found server/prod-server.js, executing that instead"

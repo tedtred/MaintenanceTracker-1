@@ -28,6 +28,9 @@ RUN chmod +x ./docker-build.cjs
 # Build the application using Docker-specific build script that removes Vite references
 RUN node ./docker-build.cjs
 
+# Compile our dedicated Docker production server (with no Vite dependencies)
+RUN npx esbuild server/docker-server.js --bundle --platform=node --outfile=dist/docker-server.js --format=esm
+
 # Production stage
 FROM node:18-alpine AS runner
 
@@ -86,4 +89,4 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
 
 # Use our entrypoint script
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
-CMD ["node", "dist/index.js"]
+CMD ["node", "dist/docker-server.js"]

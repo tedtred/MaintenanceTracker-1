@@ -2,7 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import path from "path";
 import fs from "fs";
-import { log, isProduction, isReplit } from "./utils";
+import { log, isProduction, isReplit, isDocker } from "./utils";
 import { createServer } from 'http';
 
 // Import migrations
@@ -112,8 +112,11 @@ app.use((req, res, next) => {
   }
 
 
-  // In production, serve static files first
-  if (isProduction) {
+  // Log Docker environment status
+  console.log("Docker environment:", isDocker ? "Yes" : "No");
+  
+  // In production or Docker, serve static files first
+  if (isProduction || isDocker) {
     console.log("Running in production mode");
     const distPath = path.resolve(process.cwd(), "dist", "public");
     console.log("Serving static files from:", distPath);
@@ -151,11 +154,15 @@ app.use((req, res, next) => {
     console.log("- PORT:", process.env.PORT);
     console.log("- HOST:", process.env.HOST);
     console.log("- DATABASE_URL exists:", !!process.env.DATABASE_URL);
+    console.log("- IS_DOCKER:", process.env.IS_DOCKER);
+    console.log("- DOCKER_ENV:", process.env.DOCKER_ENV);
+    console.log("- RUNNING_IN_DOCKER:", process.env.RUNNING_IN_DOCKER);
   } else {
     console.log("Running in development mode");
     if (isReplit) {
       console.log("Detected Replit environment");
     }
+    
     // In development, import and setup Vite dynamically
     try {
       // Use dynamic import with explicit file path to avoid issues
@@ -164,13 +171,8 @@ app.use((req, res, next) => {
       await viteModule.setupDevServer(app, server);
     } catch (error) {
       console.error("Failed to setup development server:", error);
-      if (isProduction) {
-        // In production, continue without Vite if there's an error
-        console.log("Continuing without development server in production mode");
-      } else {
-        // Only exit in development if Vite is required
-        process.exit(1);
-      }
+      // Only exit in development if Vite is required
+      process.exit(1);
     }
   }
 

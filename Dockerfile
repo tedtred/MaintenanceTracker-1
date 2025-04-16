@@ -29,8 +29,18 @@ WORKDIR /app
 COPY package*.json ./
 COPY drizzle.config.ts ./
 
-# Install production dependencies and required for migrations
-RUN npm ci --omit=dev && npm install --no-save vite@5.4.14 @vitejs/plugin-react@4.3.2 @replit/vite-plugin-runtime-error-modal @replit/vite-plugin-shadcn-theme-json drizzle-orm drizzle-kit pg dotenv
+# Install production dependencies and required dependencies
+RUN npm ci --omit=dev && npm install --no-save \
+    vite@5.4.14 \
+    @vitejs/plugin-react@4.3.2 \
+    @replit/vite-plugin-runtime-error-modal \
+    @replit/vite-plugin-shadcn-theme-json \
+    @replit/vite-plugin-cartographer \
+    nanoid \
+    drizzle-orm \
+    drizzle-kit \
+    pg \
+    dotenv
 
 # Copy schema and migrations
 COPY shared ./shared

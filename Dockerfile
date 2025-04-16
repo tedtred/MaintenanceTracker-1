@@ -81,9 +81,9 @@ ENV RUNNING_IN_DOCKER=true
 # Expose port
 EXPOSE 5000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:5000/api/health || exit 1
+# More lenient health check with longer startup time and more retries
+HEALTHCHECK --interval=60s --timeout=30s --start-period=90s --retries=5 \
+    CMD wget --no-verbose --tries=3 --timeout=15 --spider http://localhost:5000/api/health || exit 1
 
 # Use our entrypoint script
 ENTRYPOINT ["/app/docker-entrypoint.sh"]

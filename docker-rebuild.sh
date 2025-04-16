@@ -1,39 +1,69 @@
 #!/bin/bash
 
-# Helper script to optimize Docker builds
+# Simple Docker rebuild script with improved stability
 # Usage: ./docker-rebuild.sh [service_name] [--no-cache]
 
-# Default values
-SERVICE="app"
+set -e
+
+# Check if we need to rebuild the entire project or just a specific service
+SERVICE=${1:-""}
 NO_CACHE=""
 
-# Parse arguments
-if [ "$1" != "" ]; then
-  SERVICE="$1"
-fi
-
-if [ "$2" == "--no-cache" ]; then
+# Check for --no-cache flag
+if [[ "$*" == *--no-cache* ]]; then
   NO_CACHE="--no-cache"
+  echo "Rebuilding without cache"
 fi
 
-echo "🚀 Optimized Docker rebuild for $SERVICE service"
+# Stop any running containers
+echo "Stopping containers..."
+docker-compose down || true
 
-# Stop only the selected service
-echo "📌 Stopping existing $SERVICE service..."
-docker-compose stop $SERVICE
+# Remove any existing containers (force)
+echo "Removing existing containers..."
+if [ -n "$SERVICE" ]; then
+  docker-compose rm -f "$SERVICE" || true
+else
+  docker-compose rm -f || true
+fi
 
-# Remove the selected service container 
-echo "📌 Removing $SERVICE container..."
-docker-compose rm -f $SERVICE
+# If rebuilding the app service specifically, do some cleanup
+if [ "$SERVICE" == "app" ] || [ -z "$SERVICE" ]; then
+  echo "Cleaning build artifacts..."
+  rm -rf dist/* || true
+  
+  echo "Ensuring directories exist..."
+  mkdir -p dist/public
+  mkdir -p logs
+  
+  echo "Copying production server..."
+  cp cmms-prod-server.js dist/ || true
+fi
 
-# Build with optimized settings
-echo "📌 Building $SERVICE with optimized settings $NO_CACHE..."
-DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker-compose build $NO_CACHE $SERVICE
+# Build the service(s)
+echo "Building service(s)..."
+if [ -n "$SERVICE" ]; then
+  docker-compose build $NO_CACHE "$SERVICE"
+else
+  docker-compose build $NO_CACHE
+fi
 
-# Start only the selected service
-echo "📌 Starting $SERVICE service..."
-docker-compose up -d $SERVICE
+# Start the rebuilt containers
+echo "Starting containers..."
+docker-compose up -d
 
-# Show logs for debug purposes
-echo "📌 Showing logs for $SERVICE..."
-docker-compose logs -f $SERVICE
+# Wait a moment for services to start
+echo "Waiting for services to start..."
+sleep 5
+
+# Show running containers
+echo "Currently running containers:"
+docker-compose ps
+
+# Show logs for the app service if applicable
+if [ "$SERVICE" == "app" ] || [ -z "$SERVICE" ]; then
+  echo "Recent app logs:"
+  docker-compose logs --tail=50 app
+fi
+
+echo "Rebuild completed! Check the logs for any errors."

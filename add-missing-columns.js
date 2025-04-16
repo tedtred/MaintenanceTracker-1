@@ -11,122 +11,98 @@ async function main() {
   });
 
   try {
-    console.log('Checking problem_buttons table structure...');
+    // Map of tables and their required columns with default values
+    const requiredColumns = {
+      problem_buttons: {
+        'skip_details_form': 'BOOLEAN NOT NULL DEFAULT FALSE',
+        'notify_maintenance': 'BOOLEAN NOT NULL DEFAULT FALSE',
+        'work_order_title': 'TEXT',
+        'work_order_description': 'TEXT',
+        'work_order_priority': 'TEXT',
+        'default_asset_id': 'INTEGER',
+        'default_assigned_to': 'INTEGER',
+        'order': 'INTEGER NOT NULL DEFAULT 0',
+        'field_name': 'TEXT',
+        'creates_work_order': 'BOOLEAN NOT NULL DEFAULT TRUE',
+      },
+      settings: {
+        'work_week_start': 'TEXT NOT NULL DEFAULT \'SUNDAY\'',
+      }
+    };
+
+    // Process each table and its columns
+    for (const [tableName, columnDefinitions] of Object.entries(requiredColumns)) {
+      console.log(`Checking ${tableName} table structure...`);
+      
+      // Get existing columns for the table
+      const columnsResult = await pool.query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = '${tableName}'
+      `);
+      
+      const existingColumns = columnsResult.rows.map(row => row.column_name);
+      console.log(`Current columns in ${tableName}:`, existingColumns);
+      
+      // Add missing columns
+      for (const [columnName, columnDefinition] of Object.entries(columnDefinitions)) {
+        // Handle special case for "order" which is a reserved keyword
+        const quotedColumnName = columnName === 'order' ? '"order"' : columnName;
+        
+        if (!existingColumns.includes(columnName)) {
+          console.log(`Adding ${columnName} column to ${tableName} table...`);
+          await pool.query(`
+            ALTER TABLE ${tableName} 
+            ADD COLUMN ${quotedColumnName} ${columnDefinition}
+          `);
+          console.log(`${columnName} column added successfully`);
+        } else {
+          console.log(`${columnName} column already exists in ${tableName}`);
+        }
+      }
+      
+      // Verify the updated structure
+      const verifyResult = await pool.query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = '${tableName}'
+      `);
+      
+      console.log(`Updated columns in ${tableName}:`, verifyResult.rows.map(row => row.column_name));
+    }
     
-    // Check if skip_details_form column exists
-    const columnsResult = await pool.query(`
+    // Fix "create_work_order" vs "creates_work_order" discrepancy if needed
+    const problemButtonsColumnsCheck = await pool.query(`
       SELECT column_name 
       FROM information_schema.columns 
       WHERE table_name = 'problem_buttons'
     `);
     
-    const columns = columnsResult.rows.map(row => row.column_name);
-    console.log('Current columns:', columns);
+    const buttonColumns = problemButtonsColumnsCheck.rows.map(row => row.column_name);
     
-    // Add skip_details_form column if it doesn't exist
-    if (!columns.includes('skip_details_form')) {
-      console.log('Adding skip_details_form column to problem_buttons table...');
+    // If both columns exist, migrate data from old to new and drop the old one
+    if (buttonColumns.includes('create_work_order') && buttonColumns.includes('creates_work_order')) {
+      console.log('Both create_work_order and creates_work_order exist. Migrating data...');
+      await pool.query(`
+        UPDATE problem_buttons 
+        SET creates_work_order = create_work_order 
+        WHERE creates_work_order IS NULL
+      `);
+      
+      console.log('Dropping old create_work_order column...');
       await pool.query(`
         ALTER TABLE problem_buttons 
-        ADD COLUMN skip_details_form BOOLEAN NOT NULL DEFAULT FALSE
+        DROP COLUMN create_work_order
       `);
-      console.log('skip_details_form column added successfully');
-    } else {
-      console.log('skip_details_form column already exists');
-    }
-    
-    // Add notify_maintenance column if it doesn't exist
-    if (!columns.includes('notify_maintenance')) {
-      console.log('Adding notify_maintenance column to problem_buttons table...');
+    } 
+    // If only the old column exists, rename it to the new one
+    else if (buttonColumns.includes('create_work_order') && !buttonColumns.includes('creates_work_order')) {
+      console.log('Renaming create_work_order to creates_work_order...');
       await pool.query(`
         ALTER TABLE problem_buttons 
-        ADD COLUMN notify_maintenance BOOLEAN NOT NULL DEFAULT FALSE
+        RENAME COLUMN create_work_order TO creates_work_order
       `);
-      console.log('notify_maintenance column added successfully');
-    } else {
-      console.log('notify_maintenance column already exists');
     }
-    
-    // Add work_order_title column if it doesn't exist
-    if (!columns.includes('work_order_title')) {
-      console.log('Adding work_order_title column to problem_buttons table...');
-      await pool.query(`
-        ALTER TABLE problem_buttons 
-        ADD COLUMN work_order_title TEXT
-      `);
-      console.log('work_order_title column added successfully');
-    } else {
-      console.log('work_order_title column already exists');
-    }
-    
-    // Add work_order_description column if it doesn't exist
-    if (!columns.includes('work_order_description')) {
-      console.log('Adding work_order_description column to problem_buttons table...');
-      await pool.query(`
-        ALTER TABLE problem_buttons 
-        ADD COLUMN work_order_description TEXT
-      `);
-      console.log('work_order_description column added successfully');
-    } else {
-      console.log('work_order_description column already exists');
-    }
-    
-    // Add work_order_priority column if it doesn't exist
-    if (!columns.includes('work_order_priority')) {
-      console.log('Adding work_order_priority column to problem_buttons table...');
-      await pool.query(`
-        ALTER TABLE problem_buttons 
-        ADD COLUMN work_order_priority TEXT
-      `);
-      console.log('work_order_priority column added successfully');
-    } else {
-      console.log('work_order_priority column already exists');
-    }
-    
-    // Add default_asset_id column if it doesn't exist
-    if (!columns.includes('default_asset_id')) {
-      console.log('Adding default_asset_id column to problem_buttons table...');
-      await pool.query(`
-        ALTER TABLE problem_buttons 
-        ADD COLUMN default_asset_id INTEGER
-      `);
-      console.log('default_asset_id column added successfully');
-    } else {
-      console.log('default_asset_id column already exists');
-    }
-    
-    // Add default_assigned_to column if it doesn't exist
-    if (!columns.includes('default_assigned_to')) {
-      console.log('Adding default_assigned_to column to problem_buttons table...');
-      await pool.query(`
-        ALTER TABLE problem_buttons 
-        ADD COLUMN default_assigned_to INTEGER
-      `);
-      console.log('default_assigned_to column added successfully');
-    } else {
-      console.log('default_assigned_to column already exists');
-    }
-    
-    // Check if order column exists
-    if (!columns.includes('order')) {
-      console.log('Adding order column to problem_buttons table...');
-      await pool.query(`
-        ALTER TABLE problem_buttons 
-        ADD COLUMN "order" INTEGER NOT NULL DEFAULT 0
-      `);
-      console.log('order column added successfully');
-    } else {
-      console.log('order column already exists');
-    }
-    
-    // Verify the updated structure
-    const verifyResult = await pool.query(`
-      SELECT column_name 
-      FROM information_schema.columns 
-      WHERE table_name = 'problem_buttons'
-    `);
-    
-    console.log('Updated columns:', verifyResult.rows.map(row => row.column_name));
     
     console.log('Database schema update completed successfully');
   } catch (error) {

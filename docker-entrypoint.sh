@@ -35,6 +35,26 @@ if [ -f /.dockerenv ]; then
   node /app/add-missing-columns.js || echo "Database schema update failed but continuing"
 fi
 
-# Execute the main command (node application)
+# In production Docker environment, use the production server file if available
+if [ -f /.dockerenv ] && [ "$NODE_ENV" = "production" ]; then
+  if [ -f /app/server/prod-index.ts ]; then
+    echo "Using production-specific server file"
+    # Compile the TypeScript file
+    echo "Compiling production server file..."
+    npx tsc --esModuleInterop --target es2020 --module nodenext --moduleResolution nodenext /app/server/prod-index.ts --outDir /app/dist/server/
+    
+    # Set environment variables for Vite
+    export VITE_ENABLED=false
+    export USE_VITE=false
+    
+    # Use the compiled production server file
+    echo "Starting production server..."
+    exec node /app/dist/server/prod-index.js
+  else
+    echo "Production server file not found, using default server"
+  fi
+fi
+
+# Execute the main command (node application) if not using production server
 echo "Starting application: $@"
 exec "$@"

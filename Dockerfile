@@ -38,6 +38,9 @@ COPY shared ./shared
 # Copy built assets from builder
 COPY --from=builder /app/dist ./dist
 
+# Copy server directory for custom prod server file
+COPY server ./server
+
 # Add postgresql-client for database operations
 RUN apk add --no-cache postgresql-client
 

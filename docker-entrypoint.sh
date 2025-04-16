@@ -15,17 +15,6 @@ mkdir -p /app/logs
 if [ -f /.dockerenv ]; then
   echo "Running in Docker environment"
   
-  # Set environment variables for Docker detection
-  export IS_DOCKER=true
-  export DOCKER_ENV=true
-  export RUNNING_IN_DOCKER=true
-  
-  # Write environment variables to .env file for persistence
-  echo "# Docker environment detection" >> /app/.env
-  echo "IS_DOCKER=true" >> /app/.env
-  echo "DOCKER_ENV=true" >> /app/.env
-  echo "RUNNING_IN_DOCKER=true" >> /app/.env
-  
   # Run initial browserslist update without failing if it errors
   echo "Running initial browserslist update..."
   node /app/update-browserslist.mjs || echo "Browserslist update failed but continuing"

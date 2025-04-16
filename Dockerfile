@@ -16,12 +16,8 @@ COPY . .
 # Set production environment for build
 ENV NODE_ENV=production
 
-# Build the application - run full build
+# Build the application
 RUN npm run build
-
-# Verify the build directory structure
-RUN ls -la dist/
-RUN ls -la dist/public/
 
 # Production stage
 FROM node:18-alpine AS runner
@@ -33,15 +29,11 @@ WORKDIR /app
 COPY package*.json ./
 COPY drizzle.config.ts ./
 
-# Install production dependencies plus database dependencies for migrations
-RUN npm ci --omit=dev && npm install --no-save drizzle-orm drizzle-kit pg dotenv
-# We are not using Vite in production anymore, removed the dependency
+# Install production dependencies and required for migrations
+RUN npm ci --omit=dev && npm install --no-save vite drizzle-orm drizzle-kit pg dotenv
 
-# Copy schema, migrations, and server files
+# Copy schema and migrations
 COPY shared ./shared
-COPY server/docker-server.js ./server/
-COPY server/docker-routes.js ./server/
-COPY server/docker-storage.js ./server/
 
 # Copy built assets from builder
 COPY --from=builder /app/dist ./dist
@@ -53,10 +45,9 @@ RUN apk add --no-cache postgresql-client
 RUN addgroup -g 1001 -S nodejs
 RUN adduser -S nextjs -u 1001
 
-# Copy our entrypoint script and update scripts
+# Copy our entrypoint script and update script
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
-# Copy both possible versions of the update scripts (mjs and js)
-COPY update-browserslist.* /app/
+COPY update-browserslist.mjs /app/update-browserslist.mjs
 
 # Set proper permissions and make the entrypoint script executable
 USER root
@@ -81,5 +72,4 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
 
 # Use our entrypoint script
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
-# Use the dedicated Docker server instead of the index.js file
-CMD ["node", "server/docker-server.js"]
+CMD ["node", "dist/index.js"]

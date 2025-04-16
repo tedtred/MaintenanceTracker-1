@@ -43,53 +43,25 @@ export function formatConnectionError(error: unknown, url: string): Error {
   }
   
   // Import isDockerEnvironment from config module
-  // Dynamic import to avoid circular dependency issues
-  let isDockerEnv = false;
-  try {
-    // First check if we're in an obvious Docker environment
-    isDockerEnv = 
-      window.location.hostname.match(/^(\d{1,3}\.){3}\d{1,3}$/) !== null ||
-      window.location.hostname === 'host.docker.internal' ||
-      window.location.hostname === 'docker.for.mac.localhost' ||
-      window.location.hostname === 'docker.for.win.localhost' || 
-      // Check specific ports which are typically used in Docker deployments
-      (window.location.hostname === 'localhost' && 
-        (window.location.port === '5000' || window.location.port === '80' || 
-        window.location.port === '443')) || 
-      document.cookie.includes('docker=true') ||
-      (window as any).__IS_DOCKER__ === true ||
-      (window as any).RUNNING_IN_DOCKER === true ||
-      (window as any).DOCKER_ENV === true;
-  } catch (e) {
-    console.error('Error detecting Docker environment', e);
-    // If we can't detect the environment, assume it's not Docker
-    isDockerEnv = false;
-  }
+  const isDockerEnv = 
+    window.location.hostname.match(/^(\d{1,3}\.){3}\d{1,3}$/) !== null ||
+    window.location.hostname === 'host.docker.internal' ||
+    window.location.hostname === 'docker.for.mac.localhost' ||
+    window.location.hostname === 'docker.for.win.localhost' ||
+    (window as any).__IS_DOCKER__ === true;
   
   // Format connection errors specially for Docker environment
   if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
     // Special message for the Docker environment
     if (isDockerEnv) {
-      const urlParts = new URL(url);
-      const port = urlParts.port || '5000';
-      
       return new ConnectionError(
         `Docker Connection Error: Unable to connect to the API at ${url}. This may be caused by:
         
         1. The API container might not be running
         2. CORS settings might be blocking your request
-        3. The container may not be properly exposing port ${port}
-        4. Network connectivity issues between containers
+        3. The container may not be properly exposing port 5000
         
-        Check your Docker configuration and ensure the server is running. Common commands:
-        
-        - Check logs: docker-compose logs app
-        - Check containers: docker-compose ps
-        - Check running containers: docker ps
-        - Try restarting: docker-compose restart app
-        - Try rebuilding: docker-compose build app && docker-compose up -d
-        
-        If you've just started the Docker containers, please wait a moment as the server may still be initializing.`,
+        Check your Docker configuration and ensure the server is running.`,
         error
       );
     }

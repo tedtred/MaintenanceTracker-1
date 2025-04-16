@@ -62,22 +62,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     credentials: true
   }));
 
-  // Add a health check endpoint with detailed environment information
+  // Add a health check endpoint
   app.get('/api/health', (req, res) => {
-    const isDocker = process.env.IS_DOCKER === 'true' || 
-                     process.env.DOCKER_ENV === 'true' || 
-                     process.env.RUNNING_IN_DOCKER === 'true';
-    
-    res.json({
-      status: 'ok',
-      timestamp: new Date().toISOString(),
-      environment: {
-        node_env: process.env.NODE_ENV || 'development',
-        is_docker: isDocker,
-        server_port: process.env.PORT || '5000',
-        server_host: process.env.HOST || '0.0.0.0'
-      }
-    });
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
   setupAuth(app);
   setupEnvironmentRoutes(app);
@@ -245,12 +232,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (isRunningInDocker) {
         // For Docker, use custom validation that's more forgiving
-        // Only check essential fields (name, location, status, category) - allow empty description
-        if (!req.body.name || !req.body.location || !req.body.status || !req.body.category) {
+        if (!req.body.name || !req.body.description || !req.body.location || !req.body.status || !req.body.category) {
           return res.status(400).json({
             message: "Validation error",
             errors: {
               name: !req.body.name ? "Name is required" : undefined,
+              description: !req.body.description ? "Description is required" : undefined,
               location: !req.body.location ? "Location is required" : undefined, 
               status: !req.body.status ? "Status is required" : undefined,
               category: !req.body.category ? "Category is required" : undefined
@@ -261,7 +248,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Prepare sanitized data with correct type assertion
         const sanitizedData: Partial<InsertAsset> = {
           name: req.body.name,
-          description: req.body.description || '', // Use empty string if description is missing
+          description: req.body.description,
           location: req.body.location,
           status: req.body.status,
           category: req.body.category,

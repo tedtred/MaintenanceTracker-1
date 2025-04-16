@@ -62,9 +62,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     credentials: true
   }));
 
-  // Add a health check endpoint
+  // Add a health check endpoint with detailed environment information
   app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+    const isDocker = process.env.IS_DOCKER === 'true' || 
+                     process.env.DOCKER_ENV === 'true' || 
+                     process.env.RUNNING_IN_DOCKER === 'true';
+    
+    res.json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      environment: {
+        node_env: process.env.NODE_ENV || 'development',
+        is_docker: isDocker,
+        server_port: process.env.PORT || '5000',
+        server_host: process.env.HOST || '0.0.0.0'
+      }
+    });
   });
   setupAuth(app);
   setupEnvironmentRoutes(app);

@@ -43,25 +43,43 @@ export function formatConnectionError(error: unknown, url: string): Error {
   }
   
   // Import isDockerEnvironment from config module
-  const isDockerEnv = 
-    window.location.hostname.match(/^(\d{1,3}\.){3}\d{1,3}$/) !== null ||
-    window.location.hostname === 'host.docker.internal' ||
-    window.location.hostname === 'docker.for.mac.localhost' ||
-    window.location.hostname === 'docker.for.win.localhost' ||
-    (window as any).__IS_DOCKER__ === true;
+  // Dynamic import to avoid circular dependency issues
+  let isDockerEnv = false;
+  try {
+    // First check if we're in an obvious Docker environment
+    isDockerEnv = 
+      window.location.hostname.match(/^(\d{1,3}\.){3}\d{1,3}$/) !== null ||
+      window.location.hostname === 'host.docker.internal' ||
+      window.location.hostname === 'docker.for.mac.localhost' ||
+      window.location.hostname === 'docker.for.win.localhost' || 
+      document.cookie.includes('docker=true') ||
+      (window as any).__IS_DOCKER__ === true;
+  } catch (e) {
+    console.error('Error detecting Docker environment', e);
+    // If we can't detect the environment, assume it's not Docker
+    isDockerEnv = false;
+  }
   
   // Format connection errors specially for Docker environment
   if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
     // Special message for the Docker environment
     if (isDockerEnv) {
+      const urlParts = new URL(url);
+      const port = urlParts.port || '5000';
+      
       return new ConnectionError(
         `Docker Connection Error: Unable to connect to the API at ${url}. This may be caused by:
         
         1. The API container might not be running
         2. CORS settings might be blocking your request
-        3. The container may not be properly exposing port 5000
+        3. The container may not be properly exposing port ${port}
+        4. Network connectivity issues between containers
         
-        Check your Docker configuration and ensure the server is running.`,
+        Check your Docker configuration and ensure the server is running. Specific commands:
+        
+        - Check logs: docker-compose logs app
+        - Check containers: docker-compose ps
+        - Try restarting: docker-compose restart app`,
         error
       );
     }

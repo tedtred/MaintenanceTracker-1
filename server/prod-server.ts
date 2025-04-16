@@ -18,6 +18,23 @@ async function startProductionServer() {
   const app = express();
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));
+  
+  // Set Docker-specific headers to avoid CORS issues
+  app.use((req, res, next) => {
+    // Add CORS headers for Docker environment
+    if (process.env.IS_DOCKER === 'true' || 
+        process.env.DOCKER_ENV === 'true' || 
+        process.env.RUNNING_IN_DOCKER === 'true') {
+      res.header('Access-Control-Allow-Origin', '*');
+      res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,PATCH,OPTIONS');
+      res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+      // Handle preflight requests
+      if (req.method === 'OPTIONS') {
+        return res.sendStatus(200);
+      }
+    }
+    next();
+  });
 
   // Logging middleware
   app.use((req, res, next) => {

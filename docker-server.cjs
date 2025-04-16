@@ -21,10 +21,11 @@ function log(message, source = "express") {
 async function waitForModules() {
   log("Checking if server modules are available...", "server");
   
+  // In Docker, the paths are relative to the Docker container's /app directory
   const modules = [
-    {name: "storage", path: "./server/storage", export: "storage"},
-    {name: "auth", path: "./server/auth", export: "setupAuth"},
-    {name: "routes", path: "./server/routes", export: "registerRoutes"}
+    {name: "storage", path: "/app/server/storage", export: "storage"},
+    {name: "auth", path: "/app/server/auth", export: "setupAuth"},
+    {name: "routes", path: "/app/server/routes", export: "registerRoutes"}
   ];
   
   const loadedModules = {};
@@ -123,8 +124,8 @@ async function startProductionServer() {
     res.status(statusCode).json({ message });
   });
 
-  // Serve static files in production
-  const distPath = path.join(__dirname, 'dist');
+  // Serve static files in production - in Docker, dist is in /app/dist
+  const distPath = path.join('/app', 'dist');
   app.use(express.static(distPath));
   
   // Serve index.html for any other route to support client-side routing

@@ -22,7 +22,9 @@ We've implemented several critical fixes to ensure cross-environment compatibili
 
 5. **Environment Detection**: Added consistent environment variables (`IS_DOCKER`, `DOCKER_ENV`, `RUNNING_IN_DOCKER`) for reliable Docker detection.
 
-6. **Vite Bypass**: Disabled Vite in production Docker environments to avoid frontend build tool issues.
+6. **Docker-specific Paths**: Using absolute paths within Docker container (/app/server/...) instead of relative paths to fix module loading issues.
+
+7. **Vite Bypass**: Disabled Vite in production Docker environments to avoid frontend build tool issues.
 
 ## Deploying with Docker
 
@@ -80,6 +82,16 @@ If you experience issues with the Docker deployment:
    - Check if API route exists:
      ```bash 
      docker-compose exec app curl http://localhost:5000/api/health
+     ```
+
+6. **Module loading issues:**
+   - If you see "Cannot find module" errors, it's likely a path resolution issue 
+   - Our server is configured to use absolute paths (/app/server/...) in Docker
+   - If custom modules are added, make sure to use absolute paths in docker-server.cjs
+   - You can examine the container's file structure:
+     ```bash
+     docker-compose exec app ls -la /app
+     docker-compose exec app ls -la /app/server
      ```
 
 ## Known Differences Between Environments

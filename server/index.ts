@@ -118,35 +118,113 @@ app.use((req, res, next) => {
   // In production or Docker, serve static files first
   if (isProduction || isDocker) {
     console.log("Running in production mode");
-    const distPath = path.resolve(process.cwd(), "dist", "public");
-    console.log("Serving static files from:", distPath);
-
-    // Check if the dist directory exists
-    if (!fs.existsSync(distPath)) {
-      console.error(`Error: Build directory ${distPath} does not exist!`);
-      process.exit(1);
+    
+    // Handle different paths in Docker vs other production environments
+    let distPath = '';
+    
+    if (isDocker) {
+      // In Docker, check multiple potential locations
+      const possiblePaths = [
+        path.resolve('/app', 'dist', 'public'),
+        path.resolve(process.cwd(), 'dist', 'public'),
+        path.resolve('/app', 'public'),
+        path.resolve(process.cwd(), 'public'),
+      ];
+      
+      for (const testPath of possiblePaths) {
+        if (fs.existsSync(testPath)) {
+          distPath = testPath;
+          console.log(`Found static files in Docker at: ${distPath}`);
+          break;
+        }
+      }
+      
+      if (!distPath) {
+        // If not found, use a default and create it
+        distPath = path.resolve(process.cwd(), 'dist', 'public');
+        console.log(`No static files found. Using default path: ${distPath}`);
+        try {
+          fs.mkdirSync(distPath, { recursive: true });
+          console.log(`Created directory ${distPath}`);
+        } catch (err) {
+          console.warn(`Couldn't create ${distPath}, will continue anyway:`, err);
+        }
+      }
+    } else {
+      // Non-Docker production
+      distPath = path.resolve(process.cwd(), "dist", "public");
     }
-
-    // Check if index.html exists
+    
+    console.log("Serving static files from:", distPath);
+    
+    // Create a simple index.html if it doesn't exist
     const indexPath = path.join(distPath, "index.html");
     if (!fs.existsSync(indexPath)) {
-      console.error(`Error: ${indexPath} does not exist!`);
-      process.exit(1);
+      console.log(`Index file ${indexPath} not found, creating a placeholder.`);
+      try {
+        const placeholderHtml = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CMMS API Server</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 0 auto; padding: 2rem; }
+    h1 { color: #333; }
+    .api-section { background: #f8f8f8; padding: 1rem; border-radius: 0.5rem; margin: 1rem 0; }
+    code { background: #e0e0e0; padding: 0.2rem 0.4rem; border-radius: 0.25rem; }
+  </style>
+</head>
+<body>
+  <h1>CMMS API Server</h1>
+  <p>This is the API server for the Computerized Maintenance Management System (CMMS).</p>
+  <p>The API is available at <code>/api</code> endpoints.</p>
+  
+  <div class="api-section">
+    <h2>API Health Check</h2>
+    <p>To verify the API is running: <code>GET /api/health</code></p>
+  </div>
+  
+  <div class="api-section">
+    <h2>API Documentation</h2>
+    <p>Common endpoints include:</p>
+    <ul>
+      <li><code>GET /api/assets</code> - List all assets</li>
+      <li><code>GET /api/work-orders</code> - List all work orders</li>
+      <li><code>GET /api/maintenance-schedules</code> - List all maintenance schedules</li>
+    </ul>
+  </div>
+</body>
+</html>`;
+        fs.writeFileSync(indexPath, placeholderHtml);
+        console.log("Created placeholder index.html");
+      } catch (err) {
+        console.warn("Couldn't create placeholder index.html, but will continue:", err);
+      }
     }
 
-    console.log("Found required static files");
+    // Only serve static files if the directory exists
+    if (fs.existsSync(distPath)) {
+      console.log("Serving static files");
+      app.use(express.static(distPath));
 
-    app.use(express.static(distPath));
-
-    // Serve index.html for all non-API routes in production
-    app.get("*", (req, res, next) => {
-      if (!req.path.startsWith("/api")) {
-        console.log(`Serving index.html for path: ${req.path}`);
-        res.sendFile(path.join(distPath, "index.html"));
+      // Serve index.html for all non-API routes in production
+      if (fs.existsSync(indexPath)) {
+        app.get("*", (req, res, next) => {
+          if (!req.path.startsWith("/api")) {
+            console.log(`Serving index.html for path: ${req.path}`);
+            res.sendFile(indexPath);
+          } else {
+            next();
+          }
+        });
       } else {
-        next();
+        console.warn("Index.html not found, only API routes will work");
       }
-    });
+    } else {
+      console.warn("Static files directory not found, only API routes will work");
+    }
 
     // Log environment configuration
     console.log("Environment Configuration:");

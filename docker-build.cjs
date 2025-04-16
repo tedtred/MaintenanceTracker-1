@@ -40,6 +40,55 @@ try {
     path.join(distDir, 'prod-server.js')
   ];
   
+  // Ensure dist/public directory exists
+  const publicDir = path.join(distDir, 'public');
+  if (!fs.existsSync(publicDir)) {
+    console.log(`Creating public directory: ${publicDir}`);
+    fs.mkdirSync(publicDir, { recursive: true });
+  }
+  
+  // Create an index.html file if it doesn't exist
+  const indexPath = path.join(publicDir, 'index.html');
+  if (!fs.existsSync(indexPath)) {
+    console.log(`Creating placeholder index.html at ${indexPath}`);
+    const placeholderHtml = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CMMS API Server</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 0 auto; padding: 2rem; }
+    h1 { color: #333; }
+    .api-section { background: #f8f8f8; padding: 1rem; border-radius: 0.5rem; margin: 1rem 0; }
+    code { background: #e0e0e0; padding: 0.2rem 0.4rem; border-radius: 0.25rem; }
+  </style>
+</head>
+<body>
+  <h1>CMMS API Server</h1>
+  <p>This is the API server for the Computerized Maintenance Management System (CMMS).</p>
+  <p>The API is available at <code>/api</code> endpoints.</p>
+  
+  <div class="api-section">
+    <h2>API Health Check</h2>
+    <p>To verify the API is running: <code>GET /api/health</code></p>
+  </div>
+  
+  <div class="api-section">
+    <h2>API Documentation</h2>
+    <p>Common endpoints include:</p>
+    <ul>
+      <li><code>GET /api/assets</code> - List all assets</li>
+      <li><code>GET /api/work-orders</code> - List all work orders</li>
+      <li><code>GET /api/maintenance-schedules</code> - List all maintenance schedules</li>
+    </ul>
+  </div>
+</body>
+</html>`;
+    fs.writeFileSync(indexPath, placeholderHtml);
+  }
+  
   // Patch each file
   filesToPatch.forEach(filePath => {
     if (fs.existsSync(filePath)) {

@@ -48,8 +48,11 @@ RUN npm ci --omit=dev && npm install --no-save \
 # Copy schema and migrations
 COPY shared ./shared
 
-# Copy built assets from builder
+# Copy built assets from builder - ensure we get all necessary directories
 COPY --from=builder /app/dist ./dist
+
+# Create public directory structure to avoid errors
+RUN mkdir -p ./dist/public
 
 # Add postgresql-client for database operations
 RUN apk add --no-cache postgresql-client

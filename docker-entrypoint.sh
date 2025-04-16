@@ -28,7 +28,15 @@ if [ -f /.dockerenv ]; then
   
   # Run initial browserslist update without failing if it errors
   echo "Running initial browserslist update..."
-  node /app/update-browserslist.mjs || echo "Browserslist update failed but continuing"
+  
+  # Check which browserslist update file exists and use it
+  if [ -f /app/update-browserslist.mjs ]; then
+    node /app/update-browserslist.mjs || echo "Browserslist update failed but continuing"
+  elif [ -f /app/update-browserslist.js ]; then
+    node /app/update-browserslist.js || echo "Browserslist update failed but continuing"
+  else
+    echo "No browserslist update file found, skipping update"
+  fi
 fi
 
 # Execute the main command (node application)

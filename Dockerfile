@@ -47,9 +47,10 @@ RUN apk add --no-cache postgresql-client
 RUN addgroup -g 1001 -S nodejs
 RUN adduser -S nextjs -u 1001
 
-# Copy our entrypoint script and update script
+# Copy our entrypoint script and update scripts
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
-COPY update-browserslist.mjs /app/update-browserslist.mjs
+# Copy both possible versions of the update scripts (mjs and js)
+COPY update-browserslist.* /app/
 
 # Set proper permissions and make the entrypoint script executable
 USER root

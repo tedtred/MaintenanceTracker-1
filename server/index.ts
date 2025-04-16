@@ -157,29 +157,35 @@ app.use((req, res, next) => {
       console.log("Detected Replit environment");
     }
     
-    // Check if this is a Docker environment before trying to load Vite
+    // Check if this is a Docker environment
     const isDocker = process.env.IS_DOCKER === 'true' || 
                     process.env.DOCKER_ENV === 'true' || 
                     process.env.RUNNING_IN_DOCKER === 'true';
     
-    if (isDocker) {
-      console.log("Docker environment detected, skipping Vite development server");
-    } else {
-      // Only in development and non-Docker environments, import and setup Vite
+    if (isDocker || isProduction) {
+      console.log("Docker or production environment detected, skipping Vite development server");
+      
+      // Import the static server module directly
       try {
-        // Use dynamic import with explicit file path to avoid issues
-        // @ts-ignore - Dynamic import
-        const viteModule = await import("./dev-server.js");
-        await viteModule.setupDevServer(app, server);
+        // Use a simpler require approach to avoid issues with ESM imports
+        const staticServer = require('./static-server');
+        staticServer.setupStaticServer(app);
+        console.log("Static file server configured successfully");
+      } catch (error) {
+        console.error("Failed to setup static file server:", error);
+        console.log("Will continue without static file serving");
+      }
+    } else {
+      // Only in regular development, import and setup Vite
+      try {
+        // Dynamically import Vite only in dev mode
+        const viteModulePath = "./dev-server";
+        const { setupDevServer } = await Function('return import("' + viteModulePath + '")')();
+        await setupDevServer(app, server);
       } catch (error) {
         console.error("Failed to setup development server:", error);
-        if (isProduction) {
-          // In production, continue without Vite if there's an error
-          console.log("Continuing without development server in production mode");
-        } else {
-          // Only exit in development if Vite is required
-          process.exit(1);
-        }
+        // Only exit in development if Vite is required
+        process.exit(1);
       }
     }
   }

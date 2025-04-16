@@ -1,7 +1,7 @@
 #!/bin/sh
 
-# Simple entrypoint script for Docker container
-# Designed to be minimal and robust
+# Enhanced entrypoint script for Docker container
+# Designed to be robust in production environments
 
 set -e
 
@@ -19,12 +19,14 @@ if [ -f /.dockerenv ]; then
   export IS_DOCKER=true
   export DOCKER_ENV=true
   export RUNNING_IN_DOCKER=true
+  export NODE_ENV=production
   
   # Write environment variables to .env file for persistence
-  echo "# Docker environment detection" >> /app/.env
+  echo "# Docker environment configuration" > /app/.env
   echo "IS_DOCKER=true" >> /app/.env
   echo "DOCKER_ENV=true" >> /app/.env
   echo "RUNNING_IN_DOCKER=true" >> /app/.env
+  echo "NODE_ENV=production" >> /app/.env
   
   # Run initial browserslist update without failing if it errors
   echo "Running initial browserslist update..."
@@ -38,6 +40,16 @@ if [ -f /.dockerenv ]; then
     echo "No browserslist update file found, skipping update"
   fi
 fi
+
+# Verify that dist/public directory exists
+if [ ! -d "/app/dist/public" ]; then
+  echo "WARNING: /app/dist/public directory not found. Frontend assets may be missing."
+  mkdir -p /app/dist/public
+fi
+
+# Make sure Vite isn't being imported
+grep -v "vite" /app/dist/index.js > /app/dist/index.js.new || true
+mv /app/dist/index.js.new /app/dist/index.js
 
 # Execute the main command (node application)
 echo "Starting application: $@"

@@ -16,8 +16,12 @@ COPY . .
 # Set production environment for build
 ENV NODE_ENV=production
 
-# Build the application
+# Build the application - run full build
 RUN npm run build
+
+# Verify the build directory structure
+RUN ls -la dist/
+RUN ls -la dist/public/
 
 # Production stage
 FROM node:18-alpine AS runner
@@ -29,10 +33,9 @@ WORKDIR /app
 COPY package*.json ./
 COPY drizzle.config.ts ./
 
-# Install production dependencies plus development dependencies required for the build
+# Install production dependencies plus database dependencies for migrations
 RUN npm ci --omit=dev && npm install --no-save drizzle-orm drizzle-kit pg dotenv
-# Install Vite as a dependency rather than dev dependency to avoid import errors
-RUN npm install --no-save vite @vitejs/plugin-react
+# We are not using Vite in production anymore, removed the dependency
 
 # Copy schema and migrations
 COPY shared ./shared

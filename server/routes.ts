@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { 
-  insertWorkOrderSchema, insertAssetSchema, 
+  insertWorkOrderSchema, insertAssetSchema, InsertAsset,
   insertMaintenanceScheduleSchema, insertMaintenanceCompletionSchema, 
   insertProblemButtonSchema, insertProblemEventSchema,
   WorkOrderStatus, WorkOrderPriority
@@ -223,16 +223,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/assets", async (req, res, next) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
-      const parsed = insertAssetSchema.safeParse(req.body);
-      if (!parsed.success) {
-        return res.status(400).json({
-          message: "Validation error",
-          errors: handleZodError(parsed.error),
-        });
+      // Check for Docker environment
+      const isRunningInDocker = process.env.IS_DOCKER === 'true' || process.env.DOCKER_ENV === 'true'
+                              || process.env.RUNNING_IN_DOCKER === 'true';
+      
+      console.log(`Asset creation - Docker environment: ${isRunningInDocker}`);
+      console.log('Request body:', JSON.stringify(req.body));
+      
+      if (isRunningInDocker) {
+        // For Docker, use custom validation that's more forgiving
+        // Only check essential fields (name, location, status, category) - allow empty description
+        if (!req.body.name || !req.body.location || !req.body.status || !req.body.category) {
+          return res.status(400).json({
+            message: "Validation error",
+            errors: {
+              name: !req.body.name ? "Name is required" : undefined,
+              location: !req.body.location ? "Location is required" : undefined, 
+              status: !req.body.status ? "Status is required" : undefined,
+              category: !req.body.category ? "Category is required" : undefined
+            }
+          });
+        }
+        
+        // Prepare sanitized data with correct type assertion
+        const sanitizedData: Partial<InsertAsset> = {
+          name: req.body.name,
+          description: req.body.description || '', // Use empty string if description is missing
+          location: req.body.location,
+          status: req.body.status,
+          category: req.body.category,
+          // Add null values for required fields in the database schema
+          commissionedDate: null,
+          lastMaintenance: null,
+          assetTag: req.body.assetTag || null,
+          modelNumber: req.body.modelNumber || null,
+          serialNumber: req.body.serialNumber || null,
+          manufacturer: req.body.manufacturer || null
+        };
+        
+        console.log('Bypassing Zod validation for Docker environment, using sanitized data:', sanitizedData);
+        
+        const asset = await storage.createAsset(sanitizedData);
+        return res.status(201).json(asset);
+      } else {
+        // For regular environments, use Zod schema validation
+        const parsed = insertAssetSchema.safeParse(req.body);
+        if (!parsed.success) {
+          return res.status(400).json({
+            message: "Validation error",
+            errors: handleZodError(parsed.error),
+          });
+        }
+        const asset = await storage.createAsset(parsed.data);
+        return res.status(201).json(asset);
       }
-      const asset = await storage.createAsset(parsed.data);
-      res.status(201).json(asset);
     } catch (error) {
+      console.error('Error creating asset:', error);
       next(error);
     }
   });
@@ -523,16 +569,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/problem-buttons", async (req, res, next) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
-      const parsed = insertProblemButtonSchema.safeParse(req.body);
-      if (!parsed.success) {
-        return res.status(400).json({
-          message: "Validation error",
-          errors: handleZodError(parsed.error),
-        });
+      // Check for Docker environment
+      const isRunningInDocker = process.env.IS_DOCKER === 'true' || process.env.DOCKER_ENV === 'true'
+                             || process.env.RUNNING_IN_DOCKER === 'true';
+      
+      console.log(`Problem button creation - Docker environment: ${isRunningInDocker}`);
+      console.log('Request body:', JSON.stringify(req.body));
+      
+      if (isRunningInDocker) {
+        // For Docker, use custom validation that's more forgiving
+        // Only validate the essential fields
+        if (!req.body.label) {
+          return res.status(400).json({
+            message: "Validation error",
+            errors: {
+              label: "Label is required"
+            }
+          });
+        }
+        
+        // Prepare sanitized data for Docker environment
+        const sanitizedData = {
+          label: req.body.label,
+          color: req.body.color || '#6b7280', // Default gray if no color specified
+          icon: req.body.icon || null,
+          order: req.body.order !== undefined ? req.body.order : 0,
+          active: req.body.active !== undefined ? req.body.active : true,
+          createWorkOrder: req.body.createWorkOrder !== undefined ? req.body.createWorkOrder : false,
+          workOrderTitle: req.body.workOrderTitle || null,
+          workOrderDescription: req.body.workOrderDescription || null,
+          workOrderPriority: req.body.workOrderPriority || 'HIGH',
+          defaultAssetId: req.body.defaultAssetId || null,
+          defaultAssignedTo: req.body.defaultAssignedTo || null,
+          notifyMaintenance: req.body.notifyMaintenance !== undefined ? req.body.notifyMaintenance : false,
+          skipDetailsForm: req.body.skipDetailsForm !== undefined ? req.body.skipDetailsForm : false
+        };
+        
+        console.log('Bypassing Zod validation for Docker environment, using sanitized data:', sanitizedData);
+        
+        const button = await storage.createProblemButton(sanitizedData);
+        return res.status(201).json(button);
+      } else {
+        // For regular environments, use Zod schema validation
+        const parsed = insertProblemButtonSchema.safeParse(req.body);
+        if (!parsed.success) {
+          return res.status(400).json({
+            message: "Validation error",
+            errors: handleZodError(parsed.error),
+          });
+        }
+        const button = await storage.createProblemButton(parsed.data);
+        return res.status(201).json(button);
       }
-      const button = await storage.createProblemButton(parsed.data);
-      res.status(201).json(button);
     } catch (error) {
+      console.error('Error creating problem button:', error);
       next(error);
     }
   });
@@ -541,9 +631,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
       const id = parseInt(req.params.id);
-      const button = await storage.updateProblemButton(id, req.body);
+      
+      // Check for Docker environment
+      const isRunningInDocker = process.env.IS_DOCKER === 'true' || process.env.DOCKER_ENV === 'true'
+                             || process.env.RUNNING_IN_DOCKER === 'true';
+      
+      console.log(`Problem button update - Docker environment: ${isRunningInDocker}`);
+      console.log('Update request body:', JSON.stringify(req.body));
+      
+      // For both environments, sanitize the update data
+      const sanitizedData = { ...req.body };
+      
+      // Convert string values to appropriate types if needed
+      if (sanitizedData.order !== undefined && typeof sanitizedData.order === 'string') {
+        sanitizedData.order = parseInt(sanitizedData.order);
+      }
+      
+      if (sanitizedData.active !== undefined && typeof sanitizedData.active === 'string') {
+        sanitizedData.active = sanitizedData.active === 'true';
+      }
+      
+      if (sanitizedData.createWorkOrder !== undefined && typeof sanitizedData.createWorkOrder === 'string') {
+        sanitizedData.createWorkOrder = sanitizedData.createWorkOrder === 'true';
+      }
+      
+      if (sanitizedData.notifyMaintenance !== undefined && typeof sanitizedData.notifyMaintenance === 'string') {
+        sanitizedData.notifyMaintenance = sanitizedData.notifyMaintenance === 'true';
+      }
+      
+      if (sanitizedData.skipDetailsForm !== undefined && typeof sanitizedData.skipDetailsForm === 'string') {
+        sanitizedData.skipDetailsForm = sanitizedData.skipDetailsForm === 'true';
+      }
+      
+      console.log('Sanitized update data:', sanitizedData);
+      
+      const button = await storage.updateProblemButton(id, sanitizedData);
       res.json(button);
     } catch (error) {
+      console.error('Error updating problem button:', error);
       next(error);
     }
   });

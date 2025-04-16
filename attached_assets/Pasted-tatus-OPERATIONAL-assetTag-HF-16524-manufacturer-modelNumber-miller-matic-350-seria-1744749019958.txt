@@ -1,0 +1,316 @@
+tatus":"OPERATIONAL","assetTag":"HF-16524","manufacturer":"","modelNumber":"miller matic 350","serialNumber":"16682468"}
+app_1      | Bypassing Zod validation for Docker environment, using sanitized data: {
+app_1      |   name: 'MIG Welder',
+app_1      |   description: '',
+app_1      |   location: 'welding line',
+app_1      |   status: 'OPERATIONAL',
+app_1      |   category: 'MACHINERY',
+app_1      |   commissionedDate: null,
+app_1      |   lastMaintenance: null,
+app_1      |   assetTag: 'HF-16524',
+app_1      |   modelNumber: 'miller matic 350',
+app_1      |   serialNumber: '16682468',
+app_1      |   manufacturer: null
+app_1      | }
+app_1      | Available columns in assets table: [
+app_1      |   'id',
+app_1      |   'name',
+app_1      |   'description',
+app_1      |   'location',
+app_1      |   'status',
+app_1      |   'category',
+app_1      |   'asset_tag',
+app_1      |   'model_number',
+app_1      |   'serial_number',
+app_1      |   'manufacturer',
+app_1      |   'commissioned_date',
+app_1      |   'last_maintenance'
+app_1      | ]
+app_1      | Running in Docker environment: true
+app_1      | Docker schema detected for assets table - using custom insertion
+app_1      | Sanitized asset data for Docker: {
+app_1      |   name: 'MIG Welder',
+app_1      |   description: '',
+app_1      |   location: 'welding line',
+app_1      |   status: 'OPERATIONAL',
+app_1      |   category: 'MACHINERY',
+app_1      |   commissionedDate: null,
+app_1      |   lastMaintenance: null,
+app_1      |   assetTag: 'HF-16524',
+app_1      |   modelNumber: 'miller matic 350',
+app_1      |   serialNumber: '16682468'
+app_1      | }
+app_1      | Executing Docker-specific asset creation query:
+app_1      |           INSERT INTO assets (name, description, location, status, category, commissioned_date, last_maintenance, asset_tag, model_number, serial_number)
+app_1      |           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+app_1      |           RETURNING *
+app_1      |
+app_1      | With values: [
+app_1      |   'MIG Welder',
+app_1      |   '',
+app_1      |   'welding line',
+app_1      |   'OPERATIONAL',
+app_1      |   'MACHINERY',
+app_1      |   null,
+app_1      |   null,
+app_1      |   'HF-16524',
+app_1      |   'miller matic 350',
+app_1      |   '16682468'
+app_1      | ]
+app_1      | Successfully created asset in Docker environment
+app_1      | 8:22:36 PM [express] POST /api/assets 201 in 88ms :: {"id":1,"name":"MIG Welder","description":"","l…
+app_1      | 8:22:36 PM [express] GET /api/assets 200 in 14ms :: [{"id":1,"name":"MIG Welder","description":"","l…
+app_1      | Available columns in settings table: [
+app_1      |   'id',
+app_1      |   'company_name',
+app_1      |   'company_logo',
+app_1      |   'default_priority',
+app_1      |   'default_asset_id',
+app_1      |   'default_assigned_to',
+app_1      |   'notify_maintenance',
+app_1      |   'skip_details_form'
+app_1      | ]
+db_1       | 2025-04-15 20:22:43.940 UTC [575] ERROR:  column "work_week_start" does not exist at character 14
+db_1       | 2025-04-15 20:22:43.940 UTC [575] STATEMENT:  select "id", "work_week_start", "work_week_end", "work_day_start", "work_day_end", "time_zone", "date_format", "time_format", "email_notifications", "maintenance_due_reminder", "critical_alerts_only", "theme", "accent_color", "company_name", "company_logo", "holiday_calendar", "role_default_pages", "updated_at" from "settings" order by "settings"."updated_at" desc limit $1
+app_1      | Error getting settings: error: column "work_week_start" does not exist
+app_1      |     at /app/node_modules/pg-pool/index.js:45:11
+app_1      |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+app_1      |     at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22
+app_1      |     at async DatabaseStorage.getSettings (file:///app/dist/index.js:1625:34)
+app_1      |     at async file:///app/dist/index.js:3217:25 {
+app_1      |   length: 115,
+app_1      |   severity: 'ERROR',
+app_1      |   code: '42703',
+app_1      |   detail: undefined,
+app_1      |   hint: undefined,
+app_1      |   position: '14',
+app_1      |   internalPosition: undefined,
+app_1      |   internalQuery: undefined,
+app_1      |   where: undefined,
+app_1      |   schema: undefined,
+app_1      |   table: undefined,
+app_1      |   column: undefined,
+app_1      |   dataType: undefined,
+app_1      |   constraint: undefined,
+app_1      |   file: 'parse_relation.c',
+app_1      |   line: '3665',
+app_1      |   routine: 'errorMissingColumn'
+app_1      | }
+app_1      | 8:22:43 PM [express] GET /api/settings 200 in 64ms :: {"id":1,"workWeekStart":1,"workWeekEnd":5,"wor…
+app_1      | Running in Docker environment: false
+app_1      | Available columns in problem_buttons table: [
+app_1      |   'id',
+app_1      |   'label',
+app_1      |   'color',
+app_1      |   'icon',
+app_1      |   'default_notes',
+app_1      |   'default_location',
+app_1      |   'requires_asset',
+app_1      |   'creates_work_order'
+app_1      | ]
+app_1      | Docker schema detected with creates_work_order column
+app_1      | Executing ultra-safe Docker query:
+app_1      |           SELECT
+app_1      |             id,
+app_1      |             label,
+app_1      |             color,
+app_1      |             icon,
+app_1      |             creates_work_order as "createWorkOrder"
+app_1      |         , default_notes as "defaultNotes", default_location as "defaultLocation", requires_asset as "requiresAsset", TRUE as active FROM problem_buttons
+app_1      | 8:22:45 PM [express] GET /api/problem-events 304 in 53ms :: []
+app_1      | 8:22:45 PM [express] GET /api/problem-buttons 200 in 58ms :: []
+app_1      | 8:22:52 PM [express] GET /api/admin/users 200 in 15ms :: [{"id":1,"username":"admin","password":"a39…
+app_1      | 8:22:52 PM [express] GET /api/admin/pending-users 304 in 16ms :: []
+app_1      | 8:23:05 PM [express] GET /api/health 200 in 1ms :: {"status":"ok","timestamp":"2025-04-15T20:23:05.4…
+app_1      | 8:23:35 PM [express] GET /api/health 200 in 2ms :: {"status":"ok","timestamp":"2025-04-15T20:23:35.5…
+app_1      | Problem button creation - Docker environment: true
+app_1      | Request body: {"label":"MIG Problem","color":"#f6b956","icon":"AlertTriangle","active":true,"skipDetailsForm":true,"createWorkOrder":true,"workOrderTitle":"MIG Problem","workOrderDescription":"","workOrderPriority":"CRITICAL","defaultAssetId":1,"defaultAssignedTo":1,"notifyMaintenance":false,"order":0}
+app_1      | Bypassing Zod validation for Docker environment, using sanitized data: {
+app_1      |   label: 'MIG Problem',
+app_1      |   color: '#f6b956',
+app_1      |   icon: 'AlertTriangle',
+app_1      |   order: 0,
+app_1      |   active: true,
+app_1      |   createWorkOrder: true,
+app_1      |   workOrderTitle: 'MIG Problem',
+app_1      |   workOrderDescription: null,
+app_1      |   workOrderPriority: 'CRITICAL',
+app_1      |   defaultAssetId: 1,
+app_1      |   defaultAssignedTo: 1,
+app_1      |   notifyMaintenance: false,
+app_1      |   skipDetailsForm: true
+app_1      | }
+app_1      | Running in Docker environment: false
+app_1      | Available columns in problem_buttons table: [
+app_1      |   'id',
+app_1      |   'label',
+app_1      |   'color',
+app_1      |   'icon',
+app_1      |   'default_notes',
+app_1      |   'default_location',
+app_1      |   'requires_asset',
+app_1      |   'creates_work_order'
+app_1      | ]
+app_1      | Docker schema detected with creates_work_order column
+app_1      | Executing ultra-safe Docker query:
+app_1      |           SELECT
+app_1      |             id,
+app_1      |             label,
+app_1      |             color,
+app_1      |             icon,
+app_1      |             creates_work_order as "createWorkOrder"
+app_1      |         , default_notes as "defaultNotes", default_location as "defaultLocation", requires_asset as "requiresAsset", TRUE as active FROM problem_buttons
+app_1      | Available columns in problem_buttons table for creation: [
+app_1      |   'id',
+app_1      |   'label',
+app_1      |   'color',
+app_1      |   'icon',
+app_1      |   'default_notes',
+app_1      |   'default_location',
+app_1      |   'requires_asset',
+app_1      |   'creates_work_order'
+app_1      | ]
+app_1      | Creating problem button - Docker environment: true
+app_1      | Problem button data: {
+app_1      |   label: 'MIG Problem',
+app_1      |   color: '#f6b956',
+app_1      |   icon: 'AlertTriangle',
+app_1      |   order: 0,
+app_1      |   active: true,
+app_1      |   createWorkOrder: true,
+app_1      |   workOrderTitle: 'MIG Problem',
+app_1      |   workOrderDescription: null,
+app_1      |   workOrderPriority: 'CRITICAL',
+app_1      |   defaultAssetId: 1,
+app_1      |   defaultAssignedTo: 1,
+app_1      |   notifyMaintenance: false,
+app_1      |   skipDetailsForm: true
+app_1      | }
+app_1      | Using Docker-specific approach for creating problem button
+app_1      | Executing Docker-specific problem button creation query:
+app_1      |           INSERT INTO problem_buttons (label, color, icon, creates_work_order)
+app_1      |           VALUES ($1, $2, $3, $4)
+app_1      |           RETURNING *
+app_1      |
+app_1      | With values: [ 'MIG Problem', '#f6b956', 'AlertTriangle', true ]
+app_1      | Successfully created problem button in Docker: {
+app_1      |   id: 1,
+app_1      |   label: 'MIG Problem',
+app_1      |   color: '#f6b956',
+app_1      |   icon: 'AlertTriangle',
+app_1      |   order: 0,
+app_1      |   active: true,
+app_1      |   createWorkOrder: true,
+app_1      |   workOrderTitle: null,
+app_1      |   workOrderDescription: null,
+app_1      |   workOrderPriority: 'HIGH',
+app_1      |   defaultAssetId: null,
+app_1      |   defaultAssignedTo: null,
+app_1      |   notifyMaintenance: false,
+app_1      |   skipDetailsForm: false,
+app_1      |   createdAt: 2025-04-15T20:23:36.700Z,
+app_1      |   updatedAt: 2025-04-15T20:23:36.700Z
+app_1      | }
+app_1      | 8:23:36 PM [express] POST /api/problem-buttons 201 in 105ms :: {"id":1,"label":"MIG Problem","color"…
+app_1      | Running in Docker environment: false
+app_1      | Available columns in problem_buttons table: [
+app_1      |   'id',
+app_1      |   'label',
+app_1      |   'color',
+app_1      |   'icon',
+app_1      |   'default_notes',
+app_1      |   'default_location',
+app_1      |   'requires_asset',
+app_1      |   'creates_work_order'
+app_1      | ]
+app_1      | Docker schema detected with creates_work_order column
+app_1      | Executing ultra-safe Docker query:
+app_1      |           SELECT
+app_1      |             id,
+app_1      |             label,
+app_1      |             color,
+app_1      |             icon,
+app_1      |             creates_work_order as "createWorkOrder"
+app_1      |         , default_notes as "defaultNotes", default_location as "defaultLocation", requires_asset as "requiresAsset", TRUE as active FROM problem_buttons
+app_1      | 8:23:36 PM [express] GET /api/problem-buttons 200 in 23ms :: [{"id":1,"label":"MIG Problem","color":…
+app_1      | Problem button update - Docker environment: true
+app_1      | Update request body: {"label":"MIG Problem","color":"#f6b956","icon":"AlertTriangle","active":true,"skipDetailsForm":true,"createWorkOrder":true,"workOrderTitle":"","workOrderDescription":"","workOrderPriority":"HIGH","defaultAssetId":null,"defaultAssignedTo":null,"notifyMaintenance":false}
+app_1      | Sanitized update data: {
+app_1      |   label: 'MIG Problem',
+app_1      |   color: '#f6b956',
+app_1      |   icon: 'AlertTriangle',
+app_1      |   active: true,
+app_1      |   skipDetailsForm: true,
+app_1      |   createWorkOrder: true,
+app_1      |   workOrderTitle: '',
+app_1      |   workOrderDescription: '',
+app_1      |   workOrderPriority: 'HIGH',
+app_1      |   defaultAssetId: null,
+app_1      |   defaultAssignedTo: null,
+app_1      |   notifyMaintenance: false
+app_1      | }
+app_1      | Updating problem button 1 - Docker environment: true
+app_1      | Problem button updates: {
+app_1      |   label: 'MIG Problem',
+app_1      |   color: '#f6b956',
+app_1      |   icon: 'AlertTriangle',
+app_1      |   active: true,
+app_1      |   skipDetailsForm: true,
+app_1      |   createWorkOrder: true,
+app_1      |   workOrderTitle: '',
+app_1      |   workOrderDescription: '',
+app_1      |   workOrderPriority: 'HIGH',
+app_1      |   defaultAssetId: null,
+app_1      |   defaultAssignedTo: null,
+app_1      |   notifyMaintenance: false
+app_1      | }
+app_1      | Using Docker-specific approach for updating problem button
+app_1      | Executing Docker-specific problem button update query:
+app_1      |           UPDATE problem_buttons
+app_1      |           SET label = $2, color = $3, icon = $4, creates_work_order = $5
+app_1      |           WHERE id = $1
+app_1      |           RETURNING *
+app_1      |
+app_1      | With values: [ 1, 'MIG Problem', '#f6b956', 'AlertTriangle', true ]
+app_1      | Successfully updated problem button in Docker: {
+app_1      |   id: 1,
+app_1      |   label: 'MIG Problem',
+app_1      |   color: '#f6b956',
+app_1      |   icon: 'AlertTriangle',
+app_1      |   order: 0,
+app_1      |   active: true,
+app_1      |   createWorkOrder: true,
+app_1      |   workOrderTitle: null,
+app_1      |   workOrderDescription: null,
+app_1      |   workOrderPriority: 'HIGH',
+app_1      |   defaultAssetId: null,
+app_1      |   defaultAssignedTo: null,
+app_1      |   notifyMaintenance: false,
+app_1      |   skipDetailsForm: false,
+app_1      |   createdAt: 2025-04-15T20:24:04.877Z,
+app_1      |   updatedAt: 2025-04-15T20:24:04.877Z
+app_1      | }
+app_1      | 8:24:04 PM [express] PATCH /api/problem-buttons/1 200 in 59ms :: {"id":1,"label":"MIG Problem","colo…
+app_1      | Running in Docker environment: false
+app_1      | Available columns in problem_buttons table: [
+app_1      |   'id',
+app_1      |   'label',
+app_1      |   'color',
+app_1      |   'icon',
+app_1      |   'default_notes',
+app_1      |   'default_location',
+app_1      |   'requires_asset',
+app_1      |   'creates_work_order'
+app_1      | ]
+app_1      | Docker schema detected with creates_work_order column
+app_1      | Executing ultra-safe Docker query:
+app_1      |           SELECT
+app_1      |             id,
+app_1      |             label,
+app_1      |             color,
+app_1      |             icon,
+app_1      |             creates_work_order as "createWorkOrder"
+app_1      |         , default_notes as "defaultNotes", default_location as "defaultLocation", requires_asset as "requiresAsset", TRUE as active FROM problem_buttons
+app_1      | 8:24:04 PM [express] GET /api/problem-buttons 200 in 23ms :: [{"id":1,"label":"MIG Problem","color":…
+app_1      | 8:24:05 PM [express] GET /api/health 200 in 2ms :: {"status":"ok","timestamp":"2025-04-15T20:24:05.6…
+

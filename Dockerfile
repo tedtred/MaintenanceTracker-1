@@ -37,8 +37,11 @@ COPY drizzle.config.ts ./
 RUN npm ci --omit=dev && npm install --no-save drizzle-orm drizzle-kit pg dotenv
 # We are not using Vite in production anymore, removed the dependency
 
-# Copy schema and migrations
+# Copy schema, migrations, and server files
 COPY shared ./shared
+COPY server/docker-server.js ./server/
+COPY server/docker-routes.js ./server/
+COPY server/docker-storage.js ./server/
 
 # Copy built assets from builder
 COPY --from=builder /app/dist ./dist
@@ -78,4 +81,5 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
 
 # Use our entrypoint script
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
-CMD ["node", "dist/index.js"]
+# Use the dedicated Docker server instead of the index.js file
+CMD ["node", "server/docker-server.js"]

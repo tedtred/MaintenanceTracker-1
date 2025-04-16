@@ -47,9 +47,8 @@ if [ ! -d "/app/dist/public" ]; then
   mkdir -p /app/dist/public
 fi
 
-# Make sure Vite isn't being imported
-grep -v "vite" /app/dist/index.js > /app/dist/index.js.new || true
-mv /app/dist/index.js.new /app/dist/index.js
+# No need to modify the index.js file anymore as we're using a dedicated Docker server
+# that doesn't import Vite at all
 
 # Execute the main command (node application)
 echo "Starting application: $@"

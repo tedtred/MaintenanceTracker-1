@@ -30,16 +30,13 @@ COPY package*.json ./
 COPY drizzle.config.ts ./
 
 # Install production dependencies and required for migrations
-RUN npm ci --omit=dev && npm install --no-save vite drizzle-orm drizzle-kit pg dotenv typescript ts-node tsx @vitejs/plugin-react @replit/vite-plugin-cartographer @replit/vite-plugin-runtime-error-modal @replit/vite-plugin-shadcn-theme-json
+RUN npm ci --omit=dev && npm install --no-save vite drizzle-orm drizzle-kit pg dotenv
 
 # Copy schema and migrations
 COPY shared ./shared
 
 # Copy built assets from builder
 COPY --from=builder /app/dist ./dist
-
-# Copy server directory for custom prod server file
-COPY server ./server
 
 # Add postgresql-client for database operations
 RUN apk add --no-cache postgresql-client
@@ -48,11 +45,9 @@ RUN apk add --no-cache postgresql-client
 RUN addgroup -g 1001 -S nodejs
 RUN adduser -S nextjs -u 1001
 
-# Copy our entrypoint script and utility scripts
+# Copy our entrypoint script and update script
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
 COPY update-browserslist.mjs /app/update-browserslist.mjs
-COPY add-missing-columns-for-docker.cjs /app/add-missing-columns-for-docker.cjs
-COPY docker-server.cjs /app/docker-server.cjs
 
 # Set proper permissions and make the entrypoint script executable
 USER root
@@ -67,8 +62,6 @@ ENV HOST=0.0.0.0
 ENV IS_DOCKER=true
 ENV DOCKER_ENV=true
 ENV RUNNING_IN_DOCKER=true
-ENV VITE_ENABLED=false
-ENV USE_VITE=false
 
 # Expose port
 EXPOSE 5000
@@ -79,4 +72,4 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
 
 # Use our entrypoint script
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
-CMD ["npx", "tsx", "server/index.ts"]
+CMD ["node", "dist/index.js"]

@@ -28,8 +28,8 @@ RUN chmod +x ./docker-build.cjs
 # Build the application using Docker-specific build script that removes Vite references
 RUN node ./docker-build.cjs
 
-# Compile our dedicated Docker production server (with no Vite dependencies)
-RUN npx esbuild server/docker-server.js --bundle --platform=node --outfile=dist/docker-server.js --format=esm
+# Copy the production server file instead of using esbuild
+COPY cmms-prod-server.js dist/docker-server.js
 
 # Production stage
 FROM node:18-alpine AS runner
@@ -46,9 +46,7 @@ COPY drizzle.config.ts ./
 RUN npm ci --omit=dev --no-audit --prefer-offline && npm install --no-save --no-audit --prefer-offline \
     pg \
     drizzle-orm \
-    drizzle-kit \
-    @vitejs/plugin-react \
-    vite
+    drizzle-kit
 
 # Copy schema and migrations
 COPY shared ./shared
@@ -65,7 +63,7 @@ RUN apk add --no-cache postgresql-client && \
     adduser -S nextjs -u 1001
 
 # Copy our entrypoint script and utility scripts
-COPY docker-entrypoint.sh update-browserslist.mjs add-missing-columns.cjs docker-build.cjs docker-vite-mock.cjs /app/
+COPY docker-entrypoint.sh update-browserslist.mjs add-missing-columns.cjs docker-build.cjs docker-vite-mock.cjs cmms-prod-server.js /app/
 
 # Set proper permissions in a single command
 USER root
@@ -89,4 +87,4 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
 
 # Use our entrypoint script
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
-CMD ["node", "dist/docker-server.js"]
+CMD ["node", "cmms-prod-server.js"]

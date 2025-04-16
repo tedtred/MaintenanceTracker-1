@@ -44,8 +44,12 @@ fi
 if [ "$1" = "node" ] && [ ! -f "/app/$2" ]; then
   echo "Warning: /app/$2 not found, checking for alternatives..."
   
-  # First try our dedicated Docker server file
-  if [ -f /app/dist/docker-server.js ]; then
+  # PRIORITY: First use our super simple CMMS production server
+  if [ -f /app/cmms-prod-server.js ]; then
+    echo "Found cmms-prod-server.js, executing that instead (MOST RELIABLE)"
+    exec node /app/cmms-prod-server.js
+  # Then try our dedicated Docker server file
+  elif [ -f /app/dist/docker-server.js ]; then
     echo "Found dist/docker-server.js, executing that instead"
     exec node /app/dist/docker-server.js
   # Then try other server files
@@ -62,7 +66,9 @@ if [ "$1" = "node" ] && [ ! -f "/app/$2" ]; then
     echo "Found server/index.js, executing that instead"
     exec node /app/server/index.js
   else
-    echo "No alternative server file found, will try to run original command anyway"
+    echo "No alternative server file found, will try direct execution of cmms-prod-server.js"
+    cp /app/cmms-prod-server.js /app/dist/docker-server.js
+    exec node /app/cmms-prod-server.js
   fi
 fi
 

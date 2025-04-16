@@ -59,6 +59,14 @@ if [ "$1" = "node" ] && [ "$2" = "dist/index.js" ] && [ ! -f /app/dist/index.js 
   fi
 fi
 
+# Ensure stub modules work correctly by setting NODE_PATH
+export NODE_PATH="/app/node_modules"
+echo "Set NODE_PATH=${NODE_PATH}"
+
+# Set special flag to indicate we're using stubs
+export USE_VITE_STUBS=true
+echo "Set USE_VITE_STUBS=true"
+
 # Execute the main command (node application)
 echo "Starting application: $@"
 exec "$@"

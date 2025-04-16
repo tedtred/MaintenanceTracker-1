@@ -89,6 +89,77 @@ try {
     fs.writeFileSync(indexPath, placeholderHtml);
   }
   
+  // Create stub Vite modules for Docker environment
+  const nodeModulesDir = path.join(process.cwd(), 'node_modules');
+  
+  // Create @vitejs directory if it doesn't exist
+  const vitejsPluginDir = path.join(nodeModulesDir, '@vitejs', 'plugin-react');
+  if (!fs.existsSync(vitejsPluginDir)) {
+    console.log('Creating stub @vitejs/plugin-react module');
+    fs.mkdirSync(path.join(nodeModulesDir, '@vitejs'), { recursive: true });
+    fs.mkdirSync(vitejsPluginDir, { recursive: true });
+    
+    // Create a stub index.js file
+    const stubPluginCode = `
+// Stub @vitejs/plugin-react for Docker environment
+// This is a placeholder that does nothing but prevents import errors
+export default function viteReactPlugin() {
+  return {
+    name: 'vite-plugin-react-stub',
+    // No actual implementation needed
+  };
+}
+`;
+    fs.writeFileSync(path.join(vitejsPluginDir, 'index.js'), stubPluginCode);
+    
+    // Create a package.json
+    const stubPackageJson = `{
+  "name": "@vitejs/plugin-react",
+  "version": "0.0.0",
+  "description": "Stub for Docker",
+  "main": "index.js",
+  "type": "module"
+}`;
+    fs.writeFileSync(path.join(vitejsPluginDir, 'package.json'), stubPackageJson);
+  }
+  
+  // Create vite stub directory
+  const viteDir = path.join(nodeModulesDir, 'vite');
+  if (!fs.existsSync(viteDir)) {
+    console.log('Creating stub vite module');
+    fs.mkdirSync(viteDir, { recursive: true });
+    
+    // Create a stub index.js file
+    const stubViteCode = `
+// Stub vite module for Docker environment
+// This is a placeholder that prevents import errors
+export function createServer() {
+  return {
+    middlewares: {
+      use: () => {},
+    },
+    listen: () => {},
+    config: { server: {}, root: '/' },
+  };
+}
+
+export default {
+  createServer,
+};
+`;
+    fs.writeFileSync(path.join(viteDir, 'index.js'), stubViteCode);
+    
+    // Create a package.json
+    const stubVitePackageJson = `{
+  "name": "vite",
+  "version": "0.0.0",
+  "description": "Stub for Docker",
+  "main": "index.js",
+  "type": "module"
+}`;
+    fs.writeFileSync(path.join(viteDir, 'package.json'), stubVitePackageJson);
+  }
+  
   // Patch each file
   filesToPatch.forEach(filePath => {
     if (fs.existsSync(filePath)) {

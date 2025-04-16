@@ -43,7 +43,9 @@ COPY drizzle.config.ts ./
 RUN npm ci --omit=dev --no-audit --prefer-offline && npm install --no-save --no-audit --prefer-offline \
     pg \
     drizzle-orm \
-    drizzle-kit
+    drizzle-kit \
+    @vitejs/plugin-react \
+    vite
 
 # Copy schema and migrations
 COPY shared ./shared
@@ -60,7 +62,7 @@ RUN apk add --no-cache postgresql-client && \
     adduser -S nextjs -u 1001
 
 # Copy our entrypoint script and utility scripts
-COPY docker-entrypoint.sh update-browserslist.mjs add-missing-columns.cjs docker-build.cjs /app/
+COPY docker-entrypoint.sh update-browserslist.mjs add-missing-columns.cjs docker-build.cjs docker-vite-mock.cjs /app/
 
 # Set proper permissions in a single command
 USER root

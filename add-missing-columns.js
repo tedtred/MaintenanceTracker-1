@@ -2,7 +2,8 @@
  * This script adds missing columns to the Docker environment database schema
  */
 
-const { Pool } = require('pg');
+import pg from 'pg';
+const { Pool } = pg;
 
 async function main() {
   // Connect to the database using the DATABASE_URL environment variable

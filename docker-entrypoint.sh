@@ -32,24 +32,22 @@ if [ -f /.dockerenv ]; then
   
   # Run database schema update script without failing if it errors
   echo "Running database schema update script..."
-  node /app/add-missing-columns.js || echo "Database schema update failed but continuing"
+  npx tsx /app/add-missing-columns.js || echo "Database schema update failed but continuing"
 fi
 
 # In production Docker environment, use the production server file if available
 if [ -f /.dockerenv ] && [ "$NODE_ENV" = "production" ]; then
   if [ -f /app/server/prod-index.ts ]; then
     echo "Using production-specific server file"
-    # Compile the TypeScript file
-    echo "Compiling production server file..."
-    npx tsc --esModuleInterop --target es2020 --module nodenext --moduleResolution nodenext /app/server/prod-index.ts --outDir /app/dist/server/
+    # Compile the TypeScript file using tsx directly
+    echo "Starting production server with tsx..."
     
     # Set environment variables for Vite
     export VITE_ENABLED=false
     export USE_VITE=false
     
-    # Use the compiled production server file
-    echo "Starting production server..."
-    exec node /app/dist/server/prod-index.js
+    # Use tsx to run the TypeScript file directly
+    exec npx tsx /app/server/prod-index.ts
   else
     echo "Production server file not found, using default server"
   fi

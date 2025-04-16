@@ -30,7 +30,7 @@ COPY package*.json ./
 COPY drizzle.config.ts ./
 
 # Install production dependencies and required for migrations
-RUN npm ci --omit=dev && npm install --no-save vite drizzle-orm drizzle-kit pg dotenv @vitejs/plugin-react @replit/vite-plugin-cartographer @replit/vite-plugin-runtime-error-modal @replit/vite-plugin-shadcn-theme-json
+RUN npm ci --omit=dev && npm install --no-save vite drizzle-orm drizzle-kit pg dotenv typescript ts-node tsx @vitejs/plugin-react @replit/vite-plugin-cartographer @replit/vite-plugin-runtime-error-modal @replit/vite-plugin-shadcn-theme-json
 
 # Copy schema and migrations
 COPY shared ./shared
@@ -78,4 +78,4 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
 
 # Use our entrypoint script
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
-CMD ["node", "dist/index.js"]
+CMD ["npx", "tsx", "server/index.ts"]

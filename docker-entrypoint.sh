@@ -33,6 +33,11 @@ if [ -f /.dockerenv ]; then
   # Run database schema update script without failing if it errors
   echo "Running database schema update script..."
   node /app/add-missing-columns.cjs || echo "Database schema update failed but continuing"
+  
+  # Patch the build just in case it still contains any Vite imports
+  echo "Ensuring production build is free of Vite imports..."
+  chmod +x /app/docker-build.cjs
+  node /app/docker-build.cjs || echo "Build patching failed but continuing"
 fi
 
 # Execute the main command (node application)

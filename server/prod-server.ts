@@ -59,31 +59,74 @@ async function startProductionServer() {
   });
 
   // Serve static files
-  const distPath = path.resolve(process.cwd(), "dist", "public");
-  console.log("Serving static files from:", distPath);
+  // In Docker, the Vite output will be in /app/dist/public
+  // In Replit/development, it will be in ./dist/public
+  const isDocker = !!process.env.IS_DOCKER || !!process.env.DOCKER_ENV || !!process.env.RUNNING_IN_DOCKER;
+  
+  // Use correct path based on environment
+  let distPath = '';
+  if (isDocker) {
+    distPath = path.resolve("/app", "dist", "public");
+    console.log("Docker environment detected, serving static files from:", distPath);
+  } else {
+    distPath = path.resolve(process.cwd(), "dist", "public");
+    console.log("Non-Docker environment detected, serving static files from:", distPath);
+  }
 
   // Check if the dist directory exists
   if (!fs.existsSync(distPath)) {
     console.error(`Error: Build directory ${distPath} does not exist!`);
-    process.exit(1);
+    console.log("Current working directory:", process.cwd());
+    // Try to find where the files might be
+    const potentialDirs = [
+      path.join(process.cwd(), "dist"),
+      path.join(process.cwd(), "public"),
+      path.join(process.cwd(), "client", "dist"),
+      "/app/dist",
+      "/app/public"
+    ];
+    
+    console.log("Searching for static files in alternative locations...");
+    for (const dir of potentialDirs) {
+      if (fs.existsSync(dir)) {
+        console.log(`Found potential static files directory: ${dir}`);
+        // If we found a directory, let's use it
+        distPath = dir;
+        break;
+      }
+    }
+    
+    // If we still don't have a valid directory, warn but continue
+    if (!fs.existsSync(distPath)) {
+      console.warn(`Warning: Could not find static files directory. Will attempt to continue.`);
+    }
   }
 
   // Check if index.html exists
   const indexPath = path.join(distPath, "index.html");
   if (!fs.existsSync(indexPath)) {
-    console.error(`Error: ${indexPath} does not exist!`);
-    process.exit(1);
+    console.warn(`Warning: ${indexPath} does not exist! Will only serve API routes.`);
   }
 
-  app.use(express.static(distPath));
+  // Only serve static files if the directory exists
+  if (fs.existsSync(distPath)) {
+    app.use(express.static(distPath));
 
-  // Serve index.html for all non-API routes
-  app.get("*", (req, res) => {
-    if (!req.path.startsWith("/api")) {
-      console.log(`Serving index.html for path: ${req.path}`);
-      res.sendFile(path.join(distPath, "index.html"));
+    // Serve index.html for all non-API routes if it exists
+    const indexPath = path.join(distPath, "index.html");
+    if (fs.existsSync(indexPath)) {
+      app.get("*", (req, res) => {
+        if (!req.path.startsWith("/api")) {
+          console.log(`Serving index.html for path: ${req.path}`);
+          res.sendFile(indexPath);
+        }
+      });
+    } else {
+      console.warn("No index.html found, only API routes will be available");
     }
-  });
+  } else {
+    console.warn("No static files directory found, only API routes will be available");
+  }
 
   // ALWAYS serve on port 5000
   const port = 5000;

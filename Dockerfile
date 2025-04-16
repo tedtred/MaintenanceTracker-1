@@ -16,8 +16,11 @@ COPY . .
 # Set production environment for build
 ENV NODE_ENV=production
 
-# Build the application
-RUN npm run build
+# Make docker build script executable
+RUN chmod +x ./docker-build.cjs
+
+# Build the application using Docker-specific build script that removes Vite references
+RUN node ./docker-build.cjs
 
 # Production stage
 FROM node:18-alpine AS runner
@@ -59,6 +62,7 @@ RUN adduser -S nextjs -u 1001
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
 COPY update-browserslist.mjs /app/update-browserslist.mjs
 COPY add-missing-columns.cjs /app/add-missing-columns.cjs
+COPY docker-build.cjs /app/docker-build.cjs
 
 # Set proper permissions and make the entrypoint script executable
 USER root

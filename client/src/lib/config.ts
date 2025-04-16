@@ -23,10 +23,15 @@ export function isDockerEnvironment(): boolean {
     hostname === 'host.docker.internal' ||
     hostname === 'docker.for.mac.localhost' ||
     hostname === 'docker.for.win.localhost' ||
-    hostname === 'localhost' ||  // When accessing Docker through localhost port mapping
+    // Check specific ports which are typically used in Docker deployments
+    (hostname === 'localhost' && 
+     (window.location.port === '5000' || window.location.port === '80' || 
+      window.location.port === '443')) ||
     // Environment variable check (set in index.html)
     (window as any).__IS_DOCKER__ === true ||
-    // Try to check if we're in a Docker environment by testing the API
+    (window as any).RUNNING_IN_DOCKER === true ||
+    (window as any).DOCKER_ENV === true ||
+    // Previous Docker detection
     document.cookie.includes('docker=true')
   );
   

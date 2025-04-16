@@ -52,8 +52,14 @@ export function formatConnectionError(error: unknown, url: string): Error {
       window.location.hostname === 'host.docker.internal' ||
       window.location.hostname === 'docker.for.mac.localhost' ||
       window.location.hostname === 'docker.for.win.localhost' || 
+      // Check specific ports which are typically used in Docker deployments
+      (window.location.hostname === 'localhost' && 
+        (window.location.port === '5000' || window.location.port === '80' || 
+        window.location.port === '443')) || 
       document.cookie.includes('docker=true') ||
-      (window as any).__IS_DOCKER__ === true;
+      (window as any).__IS_DOCKER__ === true ||
+      (window as any).RUNNING_IN_DOCKER === true ||
+      (window as any).DOCKER_ENV === true;
   } catch (e) {
     console.error('Error detecting Docker environment', e);
     // If we can't detect the environment, assume it's not Docker
@@ -75,11 +81,15 @@ export function formatConnectionError(error: unknown, url: string): Error {
         3. The container may not be properly exposing port ${port}
         4. Network connectivity issues between containers
         
-        Check your Docker configuration and ensure the server is running. Specific commands:
+        Check your Docker configuration and ensure the server is running. Common commands:
         
         - Check logs: docker-compose logs app
         - Check containers: docker-compose ps
-        - Try restarting: docker-compose restart app`,
+        - Check running containers: docker ps
+        - Try restarting: docker-compose restart app
+        - Try rebuilding: docker-compose build app && docker-compose up -d
+        
+        If you've just started the Docker containers, please wait a moment as the server may still be initializing.`,
         error
       );
     }

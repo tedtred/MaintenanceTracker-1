@@ -29,8 +29,10 @@ WORKDIR /app
 COPY package*.json ./
 COPY drizzle.config.ts ./
 
-# Install production dependencies and required for migrations
-RUN npm ci --omit=dev && npm install --no-save vite drizzle-orm drizzle-kit pg dotenv
+# Install production dependencies plus development dependencies required for the build
+RUN npm ci --omit=dev && npm install --no-save drizzle-orm drizzle-kit pg dotenv
+# Install Vite as a dependency rather than dev dependency to avoid import errors
+RUN npm install --no-save vite @vitejs/plugin-react
 
 # Copy schema and migrations
 COPY shared ./shared

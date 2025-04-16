@@ -156,20 +156,30 @@ app.use((req, res, next) => {
     if (isReplit) {
       console.log("Detected Replit environment");
     }
-    // In development, import and setup Vite dynamically
-    try {
-      // Use dynamic import with explicit file path to avoid issues
-      // @ts-ignore - Dynamic import
-      const viteModule = await import("./dev-server.js");
-      await viteModule.setupDevServer(app, server);
-    } catch (error) {
-      console.error("Failed to setup development server:", error);
-      if (isProduction) {
-        // In production, continue without Vite if there's an error
-        console.log("Continuing without development server in production mode");
-      } else {
-        // Only exit in development if Vite is required
-        process.exit(1);
+    
+    // Check if this is a Docker environment before trying to load Vite
+    const isDocker = process.env.IS_DOCKER === 'true' || 
+                    process.env.DOCKER_ENV === 'true' || 
+                    process.env.RUNNING_IN_DOCKER === 'true';
+    
+    if (isDocker) {
+      console.log("Docker environment detected, skipping Vite development server");
+    } else {
+      // Only in development and non-Docker environments, import and setup Vite
+      try {
+        // Use dynamic import with explicit file path to avoid issues
+        // @ts-ignore - Dynamic import
+        const viteModule = await import("./dev-server.js");
+        await viteModule.setupDevServer(app, server);
+      } catch (error) {
+        console.error("Failed to setup development server:", error);
+        if (isProduction) {
+          // In production, continue without Vite if there's an error
+          console.log("Continuing without development server in production mode");
+        } else {
+          // Only exit in development if Vite is required
+          process.exit(1);
+        }
       }
     }
   }

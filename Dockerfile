@@ -7,10 +7,16 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install ALL dependencies (including dev dependencies)
-RUN npm install
+# Install dependencies with cache optimization
+RUN npm ci --prefer-offline --no-audit
 
-# Copy source code
+# Copy source files in priority order (for better layer caching)
+COPY shared ./shared
+COPY server ./server
+COPY client ./client
+COPY drizzle.config.ts docker-build.cjs docker-entrypoint.sh add-missing-columns.cjs update-browserslist.mjs ./
+
+# Copy remaining files
 COPY . .
 
 # Set production environment for build
@@ -32,18 +38,12 @@ WORKDIR /app
 COPY package*.json ./
 COPY drizzle.config.ts ./
 
-# Install production dependencies and required dependencies
-RUN npm ci --omit=dev && npm install --no-save \
-    vite@5.4.14 \
-    @vitejs/plugin-react@4.3.2 \
-    @replit/vite-plugin-runtime-error-modal \
-    @replit/vite-plugin-shadcn-theme-json \
-    @replit/vite-plugin-cartographer \
-    nanoid \
-    drizzle-orm \
-    drizzle-kit \
+# Install only what's needed for production, with explicit versioning for stability
+# Uses --no-audit and --prefer-offline for speed
+RUN npm ci --omit=dev --no-audit --prefer-offline && npm install --no-save --no-audit --prefer-offline \
     pg \
-    dotenv
+    drizzle-orm \
+    drizzle-kit
 
 # Copy schema and migrations
 COPY shared ./shared
@@ -54,23 +54,17 @@ COPY --from=builder /app/dist ./dist
 # Create public directory structure to avoid errors
 RUN mkdir -p ./dist/public
 
-# Add postgresql-client for database operations
-RUN apk add --no-cache postgresql-client
-
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nextjs -u 1001
+# Add postgresql-client and set up user permissions in a single layer
+RUN apk add --no-cache postgresql-client && \
+    addgroup -g 1001 -S nodejs && \
+    adduser -S nextjs -u 1001
 
 # Copy our entrypoint script and utility scripts
-COPY docker-entrypoint.sh /app/docker-entrypoint.sh
-COPY update-browserslist.mjs /app/update-browserslist.mjs
-COPY add-missing-columns.cjs /app/add-missing-columns.cjs
-COPY docker-build.cjs /app/docker-build.cjs
+COPY docker-entrypoint.sh update-browserslist.mjs add-missing-columns.cjs docker-build.cjs /app/
 
-# Set proper permissions and make the entrypoint script executable
+# Set proper permissions in a single command
 USER root
-RUN chmod +x /app/docker-entrypoint.sh
-RUN chown -R nextjs:nodejs /app
+RUN chmod +x /app/docker-entrypoint.sh && chown -R nextjs:nodejs /app
 USER nextjs
 
 # Set environment variables

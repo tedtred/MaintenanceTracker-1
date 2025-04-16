@@ -1,9 +1,57 @@
+# Dependency directories
 node_modules
 npm-debug.log
+yarn-error.log
+yarn-debug.log
+.pnpm-debug.log
+
+# Build artifacts
+dist
+build
+.next
+out
+.cache
+.parcel-cache
+
+# Development files
 .git
+.github
 .gitignore
-.env
+*.log
+logs
 *.md
+LICENSE
+docs
+test
+tests
+__tests__
+coverage
+.nyc_output
+.eslintcache
+.stylelintcache
+
+# Environment and configuration
+.env*
+.env.local
+.env.development
+.env.test
+.env.production
+*.local
+
+# Editor directories and files
+.idea
 .vscode
+*.swp
+*.swo
+.DS_Store
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Project-specific files
 attached_assets/*
+!attached_assets/.gitkeep
 uploads/*
+!uploads/.gitkeep
+archive/*

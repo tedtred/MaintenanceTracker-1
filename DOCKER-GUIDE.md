@@ -4,20 +4,25 @@
 
 We've implemented several critical fixes to ensure cross-environment compatibility between Replit and Docker deployments:
 
-1. **Pre-compiled JavaScript Files**: Created vanilla JavaScript versions of critical files to bypass TypeScript compilation issues in Docker:
-   - `add-missing-columns-for-docker.js`: CommonJS version of database migration script
-   - `docker-server.js`: Production-ready server without TypeScript dependencies
+1. **CommonJS Format Scripts**: Created explicit CommonJS versions (with .cjs extension) to avoid conflicts with ES Modules:
+   - `add-missing-columns-for-docker.cjs`: CommonJS version of the database migration script
+   - `docker-server.cjs`: Production-ready server without TypeScript dependencies
 
-2. **Database Schema Adapters**: Implemented comprehensive database migration that detects and fixes schema differences between environments (column names, missing fields, etc.)
+2. **Resilient Module Loading**: Added retry mechanisms that attempt to load required modules multiple times:
+   - Automatically retries imports up to 10 times with delays between attempts
+   - Provides detailed error messages for module loading failures
+   - Makes Docker deployment much more robust against timing issues
 
-3. **Fallback Mechanisms**: Added multiple fallback options in the entrypoint script to ensure the application starts even if certain components fail:
-   - Tries pre-compiled JS files first
-   - Falls back to TypeScript files if JS versions aren't available
+3. **Database Schema Adapters**: Implemented comprehensive database migration that detects and fixes schema differences between environments (column names, missing fields, etc.)
+
+4. **Multi-level Fallbacks**: Added multiple fallback options in the entrypoint script:
+   - Tries pre-compiled CJS files first
+   - Falls back to TypeScript files if CJS versions aren't available
    - Continues execution even if migration scripts fail
 
-4. **Environment Detection**: Added consistent environment variables (`IS_DOCKER`, `DOCKER_ENV`, `RUNNING_IN_DOCKER`) to detect Docker environments correctly.
+5. **Environment Detection**: Added consistent environment variables (`IS_DOCKER`, `DOCKER_ENV`, `RUNNING_IN_DOCKER`) for reliable Docker detection.
 
-5. **Vite Bypass**: Disabled Vite in production Docker environments to avoid frontend build tool issues.
+6. **Vite Bypass**: Disabled Vite in production Docker environments to avoid frontend build tool issues.
 
 ## Deploying with Docker
 
@@ -53,7 +58,7 @@ If you experience issues with the Docker deployment:
    - Set `FORCE_DB_REBUILD=true` temporarily in docker-compose.yml (WARNING: This will wipe your database)
    - Alternatively, run the migration script manually:
      ```bash
-     docker-compose exec app node /app/add-missing-columns-for-docker.js
+     docker-compose exec app node /app/add-missing-columns-for-docker.cjs
      ```
 
 3. **Container fails to start:**

@@ -32,12 +32,12 @@ if [ -f /.dockerenv ]; then
   
   # Run database schema update script without failing if it errors
   echo "Running database schema update script..."
-  node /app/add-missing-columns-for-docker.js || echo "Database schema update failed but continuing"
+  node /app/add-missing-columns-for-docker.cjs || echo "Database schema update failed but continuing"
 fi
 
 # In production Docker environment, use the production server file if available
 if [ -f /.dockerenv ] && [ "$NODE_ENV" = "production" ]; then
-  if [ -f /app/docker-server.js ]; then
+  if [ -f /app/docker-server.cjs ]; then
     echo "Using pre-compiled production-specific server file"
     
     # Set environment variables for Vite
@@ -45,7 +45,7 @@ if [ -f /.dockerenv ] && [ "$NODE_ENV" = "production" ]; then
     export USE_VITE=false
     
     # Use the pre-compiled JavaScript file
-    exec node /app/docker-server.js
+    exec node /app/docker-server.cjs
   elif [ -f /app/server/prod-index.ts ]; then
     echo "Using production-specific server file"
     # Compile the TypeScript file using tsx directly

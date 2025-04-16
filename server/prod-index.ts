@@ -7,11 +7,11 @@ import express from "express";
 import session from "express-session";
 import cors from "cors";
 import { createServer } from "http";
-import { storage } from "./storage.js";
-import { registerRoutes } from "./routes.js";
-import { setupAuth } from "./auth.js";
-import { serveStatic } from "./vite.js";
-import { log } from "./utils.js";
+import { storage } from "./storage";
+import { registerRoutes } from "./routes";
+import { setupAuth } from "./auth";
+import { serveStatic } from "./vite";
+import { log } from "./utils";
 import path from "path";
 import { fileURLToPath } from "url";
 

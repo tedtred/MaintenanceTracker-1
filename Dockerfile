@@ -51,7 +51,7 @@ RUN adduser -S nextjs -u 1001
 # Copy our entrypoint script and utility scripts
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
 COPY update-browserslist.mjs /app/update-browserslist.mjs
-COPY add-missing-columns.js /app/add-missing-columns.js
+COPY add-missing-columns.cjs /app/add-missing-columns.cjs
 
 # Set proper permissions and make the entrypoint script executable
 USER root

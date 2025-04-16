@@ -32,7 +32,7 @@ if [ -f /.dockerenv ]; then
   
   # Run database schema update script without failing if it errors
   echo "Running database schema update script..."
-  node /app/add-missing-columns.js || echo "Database schema update failed but continuing"
+  node /app/add-missing-columns.cjs || echo "Database schema update failed but continuing"
 fi
 
 # Execute the main command (node application)
